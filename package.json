@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
@@ -21,6 +24,7 @@
     "@fullcalendar/timegrid": "^6.1.20",
     "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^5.2.2",
+    "@libsql/client": "^0.18.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.8",
@@ -77,6 +81,7 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "dotenv": "^16.6.1",
+    "drizzle-orm": "^0.45.3",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lottie-react": "^2.4.1",
@@ -115,6 +120,7 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@types/react-world-flags": "^1.6.0",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^9.39.2",
     "eslint-config-next": "^15.5.9",
     "eslint-plugin-better-tailwindcss": "^3.8.0",
