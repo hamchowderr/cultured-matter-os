@@ -122,5 +122,6 @@
     "prettier-plugin-tailwindcss": "^0.6.14",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3"
-  }
+  },
+  "packageManager": "npm@12.0.2"
 }
