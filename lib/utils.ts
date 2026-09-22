@@ -15,23 +15,15 @@ export function generateAvatarFallback(string: string) {
 
 export function generateMeta({
   title,
-  description,
-  canonical
+  description
 }: {
   title: string;
   description: string;
-  canonical: string;
 }): Metadata {
   return {
-    title: `${title} - Shadcnuikit.com`,
+    title: `${title} · Cultured Matter`,
     description: description,
-    metadataBase: new URL(`https://shadcnuikit.com`),
-    alternates: {
-      canonical: `/dashboard${canonical}`
-    },
-    openGraph: {
-      images: [`/images/seo.jpg`]
-    }
+    robots: { index: false, follow: false }
   };
 }
 
