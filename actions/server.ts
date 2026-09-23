@@ -85,3 +85,6 @@ export async function linkTaskToProject(input: In<typeof A.linkTaskToProject>) {
 export async function unlinkTaskFromProject(input: In<typeof A.unlinkTaskFromProject>) {
   return toResult(() => A.unlinkTaskFromProject.run(input));
 }
+export async function listCaptures(input: In<typeof A.listCaptures>) {
+  return toResult(() => A.listCaptures.run(input));
+}

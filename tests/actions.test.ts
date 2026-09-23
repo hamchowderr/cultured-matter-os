@@ -47,6 +47,7 @@ describe("registry", () => {
         "importContacts",
         "setContactSectors",
         "createCapture",
+        "listCaptures",
         "classifyCapture",
         "createTask",
         "setTaskStatus",

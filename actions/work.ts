@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, count, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import { z } from "zod/v4";
 
 import { approvals, captures, projects, tasks } from "@/db/schema";
@@ -73,7 +73,12 @@ export const classifyCapture = defineAction({
   async handler(input, db) {
     const [existing] = await db.select().from(captures).where(eq(captures.id, input.captureId));
     if (!existing) throw new ActionError("not_found", "Inbox item not found");
+    // A task needs a project so it shows up in Projects.
+    if (input.kind === "task" && !input.projectId) {
+      throw new ActionError("invalid", "Choose a project for this task");
+    }
     if (input.projectId) await assertExists(db, projects, input.projectId, "Project");
+    const [already] = await db.select().from(tasks).where(eq(tasks.captureId, input.captureId));
 
     const [capture] = await db
       .update(captures)
@@ -86,14 +91,16 @@ export const classifyCapture = defineAction({
       .where(eq(captures.id, input.captureId))
       .returning();
 
+    // Re-filing an item that already made a task keeps that one task.
     const task =
-      input.kind === "task"
-        ? await insertTask(
+      input.kind !== "task"
+        ? null
+        : (already ??
+          (await insertTask(
             db,
             newTask.parse({ title: existing.body.slice(0, 300), projectId: input.projectId }),
             capture.id
-          )
-        : null;
+          )));
     return { capture, task };
   },
   log: (input, { capture, task }) => ({
@@ -160,4 +167,43 @@ export const requestApproval = defineAction({
     entityId: approval.id,
     summary: `Requested approval: ${approval.summary}`
   })
+});
+
+export const listCaptures = defineAction({
+  name: "listCaptures",
+  description:
+    "Inbox items: unfiled ones newest first, or filed ones filtered by kind, tier or project.",
+  kind: "read",
+  input: z.object({
+    filed: z.boolean().default(false),
+    kind: z.enum(["task", "idea", "reference"]).optional(),
+    tier: z.number().int().min(1).max(3).optional(),
+    projectId: id.optional(),
+    limit: z.number().int().min(1).max(200).default(100)
+  }),
+  output: z.object({
+    captures: z.array(captureSchema.extend({ projectName: z.string().nullable() })),
+    unfiled: z.number()
+  }),
+  async handler(input, db) {
+    const rows = await db
+      .select({ capture: captures, projectName: projects.name })
+      .from(captures)
+      .leftJoin(projects, eq(captures.projectId, projects.id))
+      .where(
+        and(
+          input.filed ? isNotNull(captures.filedAt) : isNull(captures.filedAt),
+          input.kind ? eq(captures.kind, input.kind) : undefined,
+          input.tier ? eq(captures.tier, input.tier) : undefined,
+          input.projectId ? eq(captures.projectId, input.projectId) : undefined
+        )
+      )
+      .orderBy(desc(input.filed ? captures.filedAt : captures.createdAt))
+      .limit(input.limit);
+    const [{ n }] = await db.select({ n: count() }).from(captures).where(isNull(captures.filedAt));
+    return {
+      captures: rows.map((r) => ({ ...r.capture, projectName: r.projectName })),
+      unfiled: n
+    };
+  }
 });

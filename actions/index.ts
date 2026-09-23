@@ -22,6 +22,7 @@ import {
   classifyCapture,
   createCapture,
   createTask,
+  listCaptures,
   requestApproval,
   setTaskStatus
 } from "./work";
@@ -41,6 +42,7 @@ export {
   importContacts,
   setContactSectors,
   createCapture,
+  listCaptures,
   classifyCapture,
   createTask,
   setTaskStatus,
@@ -70,6 +72,7 @@ export const allActions = [
   importContacts,
   setContactSectors,
   createCapture,
+  listCaptures,
   classifyCapture,
   createTask,
   setTaskStatus,
