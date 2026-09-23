@@ -12,10 +12,12 @@ export type ContactCardProps = {
   contact: Contact;
   // Why this contact is shown, e.g. "Works at Glossier, paired with Soliome".
   reason?: string;
+  // Extra controls rendered in the top-right corner, e.g. a tag editor.
+  actions?: React.ReactNode;
   className?: string;
 };
 
-export function ContactCard({ contact, reason, className }: ContactCardProps) {
+export function ContactCard({ contact, reason, actions, className }: ContactCardProps) {
   const role = [contact.position, contact.company].filter(Boolean).join(" at ");
 
   return (
@@ -24,9 +26,12 @@ export function ContactCard({ contact, reason, className }: ContactCardProps) {
         <AvatarFallback>{initials(contact.fullName)}</AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1 space-y-2">
-        <div>
-          <h3 className="truncate font-semibold">{contact.fullName}</h3>
-          {role && <p className="text-muted-foreground truncate text-sm">{role}</p>}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="truncate font-semibold">{contact.fullName}</h3>
+            {role && <p className="text-muted-foreground truncate text-sm">{role}</p>}
+          </div>
+          {actions}
         </div>
         {reason && <p className="text-sm">{reason}</p>}
         {contact.sectors.length > 0 && (

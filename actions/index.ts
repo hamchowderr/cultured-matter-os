@@ -8,7 +8,7 @@ import {
   starCompany
 } from "./radar";
 import { searchGrants, setGrantStatus } from "./grants";
-import { findWarmPath, searchContacts } from "./people";
+import { findWarmPath, importContacts, searchContacts, setContactSectors } from "./people";
 import {
   classifyCapture,
   createCapture,
@@ -29,6 +29,8 @@ export {
   setGrantStatus,
   searchContacts,
   findWarmPath,
+  importContacts,
+  setContactSectors,
   createCapture,
   classifyCapture,
   createTask,
@@ -49,6 +51,8 @@ export const allActions = [
   setGrantStatus,
   searchContacts,
   findWarmPath,
+  importContacts,
+  setContactSectors,
   createCapture,
   classifyCapture,
   createTask,

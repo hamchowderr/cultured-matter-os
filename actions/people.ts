@@ -1,10 +1,11 @@
-import { and, asc, eq, exists, inArray, like, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, exists, inArray, like, or, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 
 import { companies, contactLinks, contacts, pairings } from "@/db/schema";
 import { normalizeDomain, normalizeName } from "@/lib/normalize";
 import { ActionError, defineAction } from "./define";
-import { contactSchema, id, limit, type Contact } from "./schemas";
+import { parseConnectionsCsv } from "@/lib/linkedin";
+import { contactSchema, id, limit, offset, type Contact } from "./schemas";
 
 export const searchContacts = defineAction({
   name: "searchContacts",
@@ -13,35 +14,39 @@ export const searchContacts = defineAction({
   input: z.object({
     query: z.string().trim().optional(),
     sector: z.string().optional(),
-    limit
+    limit,
+    offset
   }),
-  output: z.object({ contacts: z.array(contactSchema) }),
+  output: z.object({ contacts: z.array(contactSchema), total: z.number() }),
   async handler(input, db) {
-    const rows = await db
-      .select()
-      .from(contacts)
-      .where(
-        and(
-          input.query
-            ? or(
-                like(contacts.fullName, `%${input.query}%`),
-                like(contacts.company, `%${input.query}%`),
-                like(contacts.position, `%${input.query}%`)
-              )
-            : undefined,
-          input.sector
-            ? exists(
-                db
-                  .select({ one: sql`1` })
-                  .from(sql`json_each(${contacts.sectors})`)
-                  .where(sql`value = ${input.sector}`)
-              )
-            : undefined
-        )
-      )
-      .orderBy(asc(contacts.fullName))
-      .limit(input.limit);
-    return { contacts: rows };
+    const where = and(
+      input.query
+        ? or(
+            like(contacts.fullName, `%${input.query}%`),
+            like(contacts.company, `%${input.query}%`),
+            like(contacts.position, `%${input.query}%`)
+          )
+        : undefined,
+      input.sector
+        ? exists(
+            db
+              .select({ one: sql`1` })
+              .from(sql`json_each(${contacts.sectors})`)
+              .where(sql`value = ${input.sector}`)
+          )
+        : undefined
+    );
+    const [rows, [{ total }]] = await Promise.all([
+      db
+        .select()
+        .from(contacts)
+        .where(where)
+        .orderBy(asc(contacts.fullName))
+        .limit(input.limit)
+        .offset(input.offset),
+      db.select({ total: count() }).from(contacts).where(where)
+    ]);
+    return { contacts: rows, total };
   }
 });
 
@@ -137,4 +142,113 @@ export const findWarmPath = defineAction({
 
     return { paths };
   }
+});
+
+const CHUNK = 100;
+
+export const importContacts = defineAction({
+  name: "importContacts",
+  description:
+    "Import a LinkedIn Connections.csv. Creates or updates contacts keyed by profile URL (email when there is no URL); sector tags are kept.",
+  kind: "write",
+  input: z.object({ csv: z.string().min(1).max(5_000_000) }),
+  output: z.object({ created: z.number(), updated: z.number(), skipped: z.number() }),
+  async handler(input, db) {
+    let parsed;
+    try {
+      parsed = parseConnectionsCsv(input.csv);
+    } catch (e) {
+      throw new ActionError("invalid", e instanceof Error ? e.message : "Could not read the file");
+    }
+
+    const existing = await db
+      .select({ id: contacts.id, profileUrl: contacts.profileUrl, email: contacts.email })
+      .from(contacts);
+    const byUrl = new Map(existing.filter((c) => c.profileUrl).map((c) => [c.profileUrl!, c]));
+    const byEmail = new Map(existing.filter((c) => c.email).map((c) => [c.email!, c]));
+
+    let created = 0;
+    let updated = 0;
+    const withUrl: (typeof contacts.$inferInsert)[] = [];
+    const emailOnly: (typeof contacts.$inferInsert)[] = [];
+    const seen = new Set<string>();
+
+    for (const row of parsed.rows) {
+      const key = row.profileUrl ?? `email:${row.email}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const match =
+        (row.profileUrl && byUrl.get(row.profileUrl)) || (row.email && byEmail.get(row.email));
+      // An email already used by a different contact stays with that contact.
+      const emailOwner = row.email ? byEmail.get(row.email) : undefined;
+      const email = emailOwner && emailOwner !== match ? null : row.email;
+      if (match) updated++;
+      else created++;
+
+      const values = { ...row, email, source: "linkedin_csv" as const };
+      if (row.profileUrl) withUrl.push(values);
+      else emailOnly.push(values);
+    }
+
+    // Refresh LinkedIn fields on re-import; sector tags are never overwritten.
+    const refresh = {
+      firstName: sql`excluded.first_name`,
+      lastName: sql`excluded.last_name`,
+      fullName: sql`excluded.full_name`,
+      email: sql`coalesce(excluded.email, ${contacts.email})`,
+      company: sql`excluded.company`,
+      companyDomain: sql`coalesce(excluded.company_domain, ${contacts.companyDomain})`,
+      position: sql`excluded.position`,
+      connectedOn: sql`excluded.connected_on`,
+      source: sql`excluded.source`,
+      updatedAt: new Date()
+    };
+    for (let i = 0; i < withUrl.length; i += CHUNK) {
+      await db
+        .insert(contacts)
+        .values(withUrl.slice(i, i + CHUNK))
+        .onConflictDoUpdate({ target: contacts.profileUrl, set: refresh });
+    }
+    for (let i = 0; i < emailOnly.length; i += CHUNK) {
+      await db
+        .insert(contacts)
+        .values(emailOnly.slice(i, i + CHUNK))
+        .onConflictDoUpdate({ target: contacts.email, set: refresh });
+    }
+    return { created, updated, skipped: parsed.skipped };
+  },
+  log: (_input, r) => ({
+    entityType: "contact",
+    summary: `Imported LinkedIn connections: ${r.created} new, ${r.updated} updated${
+      r.skipped ? `, ${r.skipped} skipped` : ""
+    }`
+  })
+});
+
+export const setContactSectors = defineAction({
+  name: "setContactSectors",
+  description: "Replace the sector tags on a contact.",
+  kind: "write",
+  input: z.object({
+    contactId: id,
+    sectors: z.array(z.string().trim().min(1).max(60)).max(20)
+  }),
+  output: contactSchema,
+  async handler(input, db) {
+    const [row] = await db
+      .update(contacts)
+      .set({ sectors: [...new Set(input.sectors)] })
+      .where(eq(contacts.id, input.contactId))
+      .returning();
+    if (!row) throw new ActionError("not_found", "Contact not found");
+    return row;
+  },
+  log: (input, contact) => ({
+    entityType: "contact",
+    entityId: contact.id,
+    summary: input.sectors.length
+      ? `Tagged ${contact.fullName}: ${input.sectors.join(", ")}`
+      : `Cleared tags on ${contact.fullName}`
+  })
 });

@@ -44,6 +44,8 @@ describe("registry", () => {
         "setGrantStatus",
         "searchContacts",
         "findWarmPath",
+        "importContacts",
+        "setContactSectors",
         "createCapture",
         "classifyCapture",
         "createTask",

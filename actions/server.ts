@@ -40,6 +40,12 @@ export async function setGrantStatus(input: In<typeof A.setGrantStatus>) {
 export async function searchContacts(input: In<typeof A.searchContacts>) {
   return toResult(() => A.searchContacts.run(input));
 }
+export async function importContacts(input: In<typeof A.importContacts>) {
+  return toResult(() => A.importContacts.run(input));
+}
+export async function setContactSectors(input: In<typeof A.setContactSectors>) {
+  return toResult(() => A.setContactSectors.run(input));
+}
 export async function findWarmPath(input: In<typeof A.findWarmPath>) {
   return toResult(() => A.findWarmPath.run(input));
 }
