@@ -50,6 +50,13 @@ describe("registry", () => {
         "classifyCapture",
         "createTask",
         "setTaskStatus",
+        "listProjects",
+        "getProject",
+        "createProject",
+        "updateProject",
+        "updateTask",
+        "linkTaskToProject",
+        "unlinkTaskFromProject",
         "requestApproval"
       ].sort()
     );

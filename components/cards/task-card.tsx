@@ -27,6 +27,7 @@ export type TaskCardProps = {
   projectName?: string;
   subtaskCount?: number;
   onStatusChange?: (status: TaskStatus) => void;
+  onOpen?: () => void;
   now?: Date;
   className?: string;
 };
@@ -36,6 +37,7 @@ export function TaskCard({
   projectName,
   subtaskCount,
   onStatusChange,
+  onOpen,
   now = new Date(),
   className
 }: TaskCardProps) {
@@ -53,7 +55,13 @@ export function TaskCard({
       />
       <div className="min-w-0 flex-1 space-y-2">
         <h3 className={cn("font-medium", done && "text-muted-foreground line-through")}>
-          {task.title}
+          {onOpen ? (
+            <button type="button" onClick={onOpen} className="text-left hover:underline">
+              {task.title}
+            </button>
+          ) : (
+            task.title
+          )}
         </h3>
         <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
           {projectName && <span>{projectName}</span>}

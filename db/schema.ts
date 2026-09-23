@@ -3,6 +3,7 @@ import {
   type AnySQLiteColumn,
   index,
   integer,
+  primaryKey,
   real,
   sqliteTable,
   text,
@@ -260,6 +261,24 @@ export const tasks = sqliteTable(
     index("tasks_project_idx").on(t.projectId),
     index("tasks_parent_idx").on(t.parentTaskId),
     index("tasks_status_due_idx").on(t.status, t.dueDate)
+  ]
+);
+
+// A task that also belongs to other projects besides its home project.
+export const taskProjects = sqliteTable(
+  "task_projects",
+  {
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    createdAt: createdAt()
+  },
+  (t) => [
+    primaryKey({ columns: [t.taskId, t.projectId] }),
+    index("task_projects_project_idx").on(t.projectId)
   ]
 );
 

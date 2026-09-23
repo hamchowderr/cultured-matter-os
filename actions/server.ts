@@ -64,3 +64,24 @@ export async function setTaskStatus(input: In<typeof A.setTaskStatus>) {
 export async function requestApproval(input: In<typeof A.requestApproval>) {
   return toResult(() => A.requestApproval.run(input));
 }
+export async function listProjects(input: In<typeof A.listProjects>) {
+  return toResult(() => A.listProjects.run(input));
+}
+export async function getProject(input: In<typeof A.getProject>) {
+  return toResult(() => A.getProject.run(input));
+}
+export async function createProject(input: In<typeof A.createProject>) {
+  return toResult(() => A.createProject.run(input));
+}
+export async function updateProject(input: In<typeof A.updateProject>) {
+  return toResult(() => A.updateProject.run(input));
+}
+export async function updateTask(input: In<typeof A.updateTask>) {
+  return toResult(() => A.updateTask.run(input));
+}
+export async function linkTaskToProject(input: In<typeof A.linkTaskToProject>) {
+  return toResult(() => A.linkTaskToProject.run(input));
+}
+export async function unlinkTaskFromProject(input: In<typeof A.unlinkTaskFromProject>) {
+  return toResult(() => A.unlinkTaskFromProject.run(input));
+}

@@ -8,6 +8,15 @@ import {
   starCompany
 } from "./radar";
 import { searchGrants, setGrantStatus } from "./grants";
+import {
+  createProject,
+  getProject,
+  linkTaskToProject,
+  listProjects,
+  unlinkTaskFromProject,
+  updateProject,
+  updateTask
+} from "./projects";
 import { findWarmPath, importContacts, searchContacts, setContactSectors } from "./people";
 import {
   classifyCapture,
@@ -35,6 +44,13 @@ export {
   classifyCapture,
   createTask,
   setTaskStatus,
+  listProjects,
+  getProject,
+  createProject,
+  updateProject,
+  updateTask,
+  linkTaskToProject,
+  unlinkTaskFromProject,
   requestApproval
 };
 
@@ -57,6 +73,13 @@ export const allActions = [
   classifyCapture,
   createTask,
   setTaskStatus,
+  listProjects,
+  getProject,
+  createProject,
+  updateProject,
+  updateTask,
+  linkTaskToProject,
+  unlinkTaskFromProject,
   requestApproval
 ] as const;
 
