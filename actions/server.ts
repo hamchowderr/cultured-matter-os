@@ -88,3 +88,9 @@ export async function unlinkTaskFromProject(input: In<typeof A.unlinkTaskFromPro
 export async function listCaptures(input: In<typeof A.listCaptures>) {
   return toResult(() => A.listCaptures.run(input));
 }
+export async function dueTasks(input: In<typeof A.dueTasks>) {
+  return toResult(() => A.dueTasks.run(input));
+}
+export async function listApprovals(input: In<typeof A.listApprovals>) {
+  return toResult(() => A.listApprovals.run(input));
+}

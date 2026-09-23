@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 
 import type { Executor } from "@/db";
 import { projects, taskProjects, tasks } from "@/db/schema";
+import { HOME_TIME_ZONE, startOfDayIn } from "@/lib/time";
 import { ActionError, defineAction } from "./define";
 import { id, projectSchema, taskSchema } from "./schemas";
 
@@ -285,4 +286,43 @@ export const unlinkTaskFromProject = defineAction({
     entityId: input.taskId,
     summary: "Unlinked a task from a project"
   })
+});
+
+const dueTaskSchema = taskSchema.extend({ projectName: z.string().nullable() });
+
+export const dueTasks = defineAction({
+  name: "dueTasks",
+  description:
+    "Open tasks that are overdue, due today, or due in the next 7 days, with their project names. Subtasks are included.",
+  kind: "read",
+  input: z.object({
+    now: z.coerce.date().optional(),
+    timeZone: z.string().default(HOME_TIME_ZONE)
+  }),
+  output: z.object({
+    overdue: z.array(dueTaskSchema),
+    today: z.array(dueTaskSchema),
+    week: z.array(dueTaskSchema)
+  }),
+  async handler(input, db) {
+    const now = input.now ?? new Date();
+    const start = startOfDayIn(input.timeZone, now);
+    const tomorrow = startOfDayIn(input.timeZone, new Date(start.getTime() + 36 * 3_600_000)).getTime();
+    const weekEnd = startOfDayIn(input.timeZone, new Date(start.getTime() + 7 * 86_400_000 + 36 * 3_600_000)).getTime();
+
+    const rows = await db
+      .select({ task: tasks, projectName: projects.name })
+      .from(tasks)
+      .leftJoin(projects, eq(tasks.projectId, projects.id))
+      .where(and(ne(tasks.status, "done"), sql`${tasks.dueDate} < ${weekEnd}`))
+      .orderBy(asc(tasks.dueDate), asc(tasks.createdAt));
+
+    const all = rows.map((r) => ({ ...r.task, projectName: r.projectName }));
+    const at = (t: (typeof all)[number]) => t.dueDate!.getTime();
+    return {
+      overdue: all.filter((t) => at(t) < start.getTime()),
+      today: all.filter((t) => at(t) >= start.getTime() && at(t) < tomorrow),
+      week: all.filter((t) => at(t) >= tomorrow)
+    };
+  }
 });

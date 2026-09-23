@@ -10,6 +10,7 @@ import {
 import { searchGrants, setGrantStatus } from "./grants";
 import {
   createProject,
+  dueTasks,
   getProject,
   linkTaskToProject,
   listProjects,
@@ -22,6 +23,7 @@ import {
   classifyCapture,
   createCapture,
   createTask,
+  listApprovals,
   listCaptures,
   requestApproval,
   setTaskStatus
@@ -53,7 +55,9 @@ export {
   updateTask,
   linkTaskToProject,
   unlinkTaskFromProject,
-  requestApproval
+  requestApproval,
+  listApprovals,
+  dueTasks
 };
 
 // Every named action, for the phase-2 agent to wrap as tools.
@@ -83,7 +87,9 @@ export const allActions = [
   updateTask,
   linkTaskToProject,
   unlinkTaskFromProject,
-  requestApproval
+  requestApproval,
+  listApprovals,
+  dueTasks
 ] as const;
 
 export { ActionError, type Action, type ActionResult } from "./define";

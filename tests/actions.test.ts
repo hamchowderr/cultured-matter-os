@@ -58,7 +58,9 @@ describe("registry", () => {
         "updateTask",
         "linkTaskToProject",
         "unlinkTaskFromProject",
-        "requestApproval"
+        "requestApproval",
+        "listApprovals",
+        "dueTasks"
       ].sort()
     );
     for (const a of A.allActions) {

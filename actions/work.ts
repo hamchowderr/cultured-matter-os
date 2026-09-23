@@ -207,3 +207,23 @@ export const listCaptures = defineAction({
     };
   }
 });
+
+export const listApprovals = defineAction({
+  name: "listApprovals",
+  description: "Approval requests, pending first by default; oldest pending at the top.",
+  kind: "read",
+  input: z.object({
+    status: z.enum(["pending", "approved", "rejected"]).default("pending"),
+    limit: z.number().int().min(1).max(200).default(50)
+  }),
+  output: z.object({ approvals: z.array(approvalSchema) }),
+  async handler(input, db) {
+    const rows = await db
+      .select()
+      .from(approvals)
+      .where(eq(approvals.status, input.status))
+      .orderBy(input.status === "pending" ? approvals.createdAt : desc(approvals.decidedAt))
+      .limit(input.limit);
+    return { approvals: rows };
+  }
+});
