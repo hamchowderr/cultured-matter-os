@@ -11,7 +11,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "test": "vitest run",
-    "ingest:radar": "tsx scripts/ingest-radar.mts"
+    "ingest:radar": "tsx scripts/ingest-radar.mts",
+    "ingest:grants": "tsx scripts/ingest-grants.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
