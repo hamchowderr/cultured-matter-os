@@ -1,6 +1,13 @@
 "use client";
 
-import { ExternalLinkIcon, StarIcon, UsersIcon, XIcon } from "lucide-react";
+import {
+  BookmarkPlusIcon,
+  ExternalLinkIcon,
+  StarIcon,
+  Undo2Icon,
+  UsersIcon,
+  XIcon
+} from "lucide-react";
 
 import type { Company } from "@/actions/schemas";
 import { Badge } from "@/components/ui/badge";
@@ -18,9 +25,13 @@ export type CompanyCardProps = {
   company: Company;
   sources?: string[];
   warmPathCount?: number;
+  onStar?: () => void;
   onShortlist?: () => void;
   onPass?: () => void;
+  onReset?: () => void;
   onOpen?: () => void;
+  // Disables the action buttons while a change is saving.
+  busy?: boolean;
   className?: string;
 };
 
@@ -28,9 +39,12 @@ export function CompanyCard({
   company,
   sources = [],
   warmPathCount,
+  onStar,
   onShortlist,
   onPass,
+  onReset,
   onOpen,
+  busy = false,
   className
 }: CompanyCardProps) {
   const status = statusLabel[company.status];
@@ -91,17 +105,29 @@ export function CompanyCard({
             {warmPathCount} {warmPathCount === 1 ? "contact" : "contacts"} can introduce you
           </span>
         )}
-        {(onShortlist || onPass) && (
+        {(onStar || onShortlist || onPass || onReset) && (
           <span className="ml-auto flex gap-1">
+            {onReset && company.status !== "new" && (
+              <Button size="sm" variant="ghost" onClick={onReset} disabled={busy}>
+                <Undo2Icon />
+                Undo
+              </Button>
+            )}
             {onPass && company.status !== "passed" && (
-              <Button size="sm" variant="ghost" onClick={onPass}>
+              <Button size="sm" variant="ghost" onClick={onPass} disabled={busy}>
                 <XIcon />
                 Pass
               </Button>
             )}
-            {onShortlist && company.status !== "shortlisted" && (
-              <Button size="sm" variant="outline" onClick={onShortlist}>
+            {onStar && company.status === "new" && (
+              <Button size="sm" variant="ghost" onClick={onStar} disabled={busy}>
                 <StarIcon />
+                Star
+              </Button>
+            )}
+            {onShortlist && company.status !== "shortlisted" && (
+              <Button size="sm" variant="outline" onClick={onShortlist} disabled={busy}>
+                <BookmarkPlusIcon />
                 Shortlist
               </Button>
             )}

@@ -13,6 +13,18 @@ type In<T extends { input: z.ZodType }> = z.input<T["input"]>;
 export async function searchCompanies(input: In<typeof A.searchCompanies>) {
   return toResult(() => A.searchCompanies.run(input));
 }
+export async function getCompany(input: In<typeof A.getCompany>) {
+  return toResult(() => A.getCompany.run(input));
+}
+export async function radarFacets(input: In<typeof A.radarFacets>) {
+  return toResult(() => A.radarFacets.run(input));
+}
+export async function starCompany(input: In<typeof A.starCompany>) {
+  return toResult(() => A.starCompany.run(input));
+}
+export async function resetCompany(input: In<typeof A.resetCompany>) {
+  return toResult(() => A.resetCompany.run(input));
+}
 export async function shortlistCompany(input: In<typeof A.shortlistCompany>) {
   return toResult(() => A.shortlistCompany.run(input));
 }

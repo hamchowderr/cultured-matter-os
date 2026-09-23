@@ -30,10 +30,14 @@ async function seedCompany(values: Partial<typeof t.companies.$inferInsert> & { 
 }
 
 describe("registry", () => {
-  it("exposes the twelve named actions from the PRD", () => {
+  it("exposes the PRD actions plus the Radar helpers", () => {
     expect(A.allActions.map((a) => a.name).sort()).toEqual(
       [
         "searchCompanies",
+        "getCompany",
+        "radarFacets",
+        "starCompany",
+        "resetCompany",
         "shortlistCompany",
         "passCompany",
         "searchGrants",
