@@ -1,0 +1,348 @@
+{
+  "json": {
+    "entries": [
+      {
+        "name": "Syre",
+        "website": "https://www.fashionforgood.com/innovator/syre/",
+        "description": "A textile impact company on a mission to reduce waste in the textile industry through textile-to-textile recycling, starting with polyester.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "The 8 Impact",
+        "website": "https://www.fashionforgood.com/innovator/the-8-impact/",
+        "description": "Creates recycled elastomers from used sports equipment and sneakers with a focus on material regeneration.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "TrusTrace",
+        "website": "https://www.fashionforgood.com/innovator/trustrace/",
+        "description": "Offers a market-leading platform for supply chain traceability and compliance, enabling standardisation of data sharing.",
+        "year": 2016,
+        "category": "Early Stage"
+      },
+      {
+        "name": "ZymoChem",
+        "website": "https://www.fashionforgood.com/innovator/zymochem/",
+        "description": "Offers bio-based materials powered by proprietary carbon conserving microbes that convert renewable feedstocks into high-value materials.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "&Wider",
+        "website": "https://www.fashionforgood.com/innovator/wider/",
+        "description": "Dedicated to improving working conditions across global supply chains by leveraging mobile technology for reporting.",
+        "year": 2014,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Alchemie",
+        "website": "https://www.fashionforgood.com/innovator/alchemie/",
+        "description": "Develops clean-tech dyeing and finishing processes enabled by unique digital fluid jetting technology.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "AltMat",
+        "website": "https://www.fashionforgood.com/innovator/altmat/",
+        "description": "Uses proprietary technology to produce natural fibres from agricultural residues sourced directly from farmers.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Ambercycle",
+        "website": "https://www.fashionforgood.com/innovator/ambercycle/",
+        "description": "Converts polyester textile waste into cycora yarns® as a regenerated alternative to virgin polyester.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Bext360",
+        "website": "https://www.fashionforgood.com/innovator/bext360/",
+        "description": "Offers a SaaS platform that digitises global supply chains for agricultural commodities leveraging AI, blockchain, and app technology.",
+        "year": 2016,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Biophilica",
+        "website": "https://www.fashionforgood.com/innovator/biophilica/",
+        "description": "Transforms garden and park waste into Treekind™, a leather alternative that is compostable and recyclable.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "BlockTexx",
+        "website": "https://www.fashionforgood.com/innovator/blocktexx/",
+        "description": "Developed S.O.F.T.™ technology for producing recycled materials from textile waste.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Chlorohemp Agrotech",
+        "website": "https://www.fashionforgood.com/innovator/chlorohemp-agrotech/",
+        "description": "Developing large scale hemp processing units using cutting-edge biosciences for hemp varieties research.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Circ",
+        "website": "https://www.fashionforgood.com/innovator/circ/",
+        "description": "A textile-to-textile chemical recycler that produces virgin-equivalent outputs from textile waste.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Dimpora",
+        "website": "https://www.fashionforgood.com/innovator/dimpora/",
+        "description": "Has developed a fluorine-free membrane with high breathability and waterproof capabilities.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "DyeRecycle",
+        "website": "https://www.fashionforgood.com/innovator/dyerecycle/",
+        "description": "Developed technology that enables the reuse and recycling of dyes from textile waste.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Epoch Biodesign",
+        "website": "https://www.fashionforgood.com/innovator/epoch-biodesign/",
+        "description": "Focuses on recycling PA66/elastane blends using AI and machine learning for enzyme screening.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Ever Dye",
+        "website": "https://www.fashionforgood.com/innovator/ever-dye/",
+        "description": "Developed a novel dyeing process with biobased pigments usable at room temperature.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "GALY",
+        "website": "https://www.fashionforgood.com/innovator/galy/",
+        "description": "Engineers cotton in labs, allowing for cotton growth without pesticides or fertilisers.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Good On You",
+        "website": "https://www.fashionforgood.com/innovator/good-on-you/",
+        "description": "Uses consumer choices for driving change in sustainability and offers brand ratings.",
+        "year": 2015,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Graviky Labs",
+        "website": "https://www.fashionforgood.com/innovator/graviky-labs/",
+        "description": "Transforms end-of-use carbon emissions into inks and pigments for printing processes.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Greenhope",
+        "website": "https://www.fashionforgood.com/innovator/greenhope/",
+        "description": "Manufactures biodegradable technologies targeted at hard-to-recycle items.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Imogo",
+        "website": "https://www.fashionforgood.com/innovator/imogo/",
+        "description": "Offers a digitally enabled spray dyeing technology with improved efficiency.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Infinited Fiber Company",
+        "website": "https://www.fashionforgood.com/innovator/the-infinited-fiber-company/",
+        "description": "Recycles cotton-rich textile waste into cellulose carbamate fibre for the industry.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Keel Labs",
+        "website": "https://www.fashionforgood.com/innovator/keel-labs/",
+        "description": "Produces yarns and fibres from kelp, creating biodegradable materials.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Kintra",
+        "website": "https://www.fashionforgood.com/innovator/kintra-fibers-inc/",
+        "description": "Develops biobased and biodegradable polyester alternatives derived from renewable feedstocks.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Living Ink",
+        "website": "https://www.fashionforgood.com/innovator/living-ink/",
+        "description": "Transforms waste-algae material into bio-based carbon black, a sustainable alternative.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Lizee",
+        "website": "https://www.fashionforgood.com/innovator/lizee/",
+        "description": "Develops a reuse management system for brands to scale their rental and second-hand offerings.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Made2Flow",
+        "website": "https://www.fashionforgood.com/innovator/made2flow/",
+        "description": "Data-driven platform for impact measurement and decarbonisation focused on supply chain data.",
+        "year": 2019,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Mango Materials",
+        "website": "https://www.fashionforgood.com/innovator/mango-materials/",
+        "description": "Uses waste methane to produce PHA pellets as an alternative to polyester.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Materra",
+        "website": "https://www.fashionforgood.com/innovator/materra/",
+        "description": "Develops technology for efficient cotton agriculture to reduce water and fertiliser use.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Matoha",
+        "website": "https://www.fashionforgood.com/innovator/matoha/",
+        "description": "Specialises in automated sorting solutions using near-infrared spectroscopy.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "MYCL",
+        "website": "https://www.fashionforgood.com/innovator/mycl/",
+        "description": "Produces leather-like material from agricultural waste using mycelium.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Natural Fiber Welding",
+        "website": "https://www.fashionforgood.com/innovator/natural-fiber-welding/",
+        "description": "Develops sustainable technologies using plants and natural fibres to create plastic-free goods.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Nature Coatings",
+        "website": "https://www.fashionforgood.com/innovator/nature-coatings/",
+        "description": "Transforms wood waste into high-performing black pigments as a petroleum alternative.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Norman Hangers",
+        "website": "https://www.fashionforgood.com/innovator/normn-hangers/",
+        "description": "Produces sustainable hangers made from paper or recycled cardboard.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "OSM Shield",
+        "website": "https://www.fashionforgood.com/innovator/osm-shield/",
+        "description": "Developed a non-PFAS solution for providing water and oil repellency in textiles.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Pili Bio",
+        "website": "https://www.fashionforgood.com/innovator/pili-bio/",
+        "description": "Uses microorganisms to produce organic dyes with lower CO2 emissions.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Polybion",
+        "website": "https://www.fashionforgood.com/innovator/polybion/",
+        "description": "Develops premium materials designed with nature using bacteria and agroindustrial waste.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Protein Evolution",
+        "website": "https://www.fashionforgood.com/innovator/protein-evolution/",
+        "description": "Chemical recycler using enzymes for recycling waste in diverse forms.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Refiberd",
+        "website": "https://www.fashionforgood.com/innovator/refiberd/",
+        "description": "Offers automated sorting for blended post-consumer textile waste to enhance recycling outcomes.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Reflaunt",
+        "website": "https://www.fashionforgood.com/innovator/reflaunt/",
+        "description": "Connects retailers with the second-hand market for easy resale and recycling of products.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Resortecs",
+        "website": "https://www.fashionforgood.com/innovator/resortecs/",
+        "description": "Produces a dissolvable stitching thread for easy repair and recycling of garments.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Reverse Resources",
+        "website": "https://www.fashionforgood.com/innovator/reverse-resources/",
+        "description": "A SaaS platform facilitating collaboration in moving textile waste to recycling.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "SeaChange Technologies",
+        "website": "https://www.fashionforgood.com/innovator/seachange-technologies/",
+        "description": "Developed a solution for zero-liquid-discharge desalination to eliminate wastewater.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Smartex",
+        "website": "https://www.fashionforgood.com/innovator/smartex/",
+        "description": "Engineered solution for textile manufacturers to improve production yields and reduce waste.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Spintex",
+        "website": "https://www.fashionforgood.com/innovator/spintex/",
+        "description": "Developed energy-efficient silk spinning processes using post-consumer waste streams.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Sonovia",
+        "website": "https://www.fashionforgood.com/innovator/sonovia/",
+        "description": "Applies ultrasonic technology to embed dyes into natural fibers, primarily cotton.",
+        "year": null,
+        "category": "Early Stage"
+      },
+      {
+        "name": "Swatchbook",
+        "website": "https://www.fashionforgood.com/innovator/swatchbook/",
+        "description": "A cloud platform for visualisation and sharing of materials in the textile industry.",
+        "year": null,
+        "category": "Early Stage"
+      }
+    ]
+  },
+  "metadata": {
+    "statusCode": 200,
+    "sourceURL": "https://www.fashionforgood.com/investment-hub/our-investments/",
+    "title": "Our Investments - Fashion for Good"
+  },
+  "warning": "This scrape job was throttled at your current concurrency limit. If you'd like to scrape faster, you can upgrade your plan."
+}

@@ -1,0 +1,74 @@
+import { inArray } from "drizzle-orm";
+
+import { db as appDb, type Database } from "@/db";
+import { sources } from "@/db/schema";
+import { runRadarIngestion } from "@/ingest/radar/run";
+import { firecrawlScrape, monitorSource, type Scrape } from "./firecrawl";
+import { CHECK_EVERY_DAYS, MAX_PAGES_PER_RUN, MONITORS, type Monitor } from "./pages";
+
+export { MONITORS } from "./pages";
+
+const DAY = 24 * 60 * 60 * 1000;
+// Vercel Hobby crons fire anywhere within their hour, so a page checked a week ago
+// at 12:50 is still due at 12:05.
+const SLACK = 2 * 60 * 60 * 1000;
+
+// Pages due a check: never checked or failed last time first, then the oldest check.
+export async function duePages(
+  db: Database,
+  monitors: Monitor[],
+  now: Date,
+  { everyDays = CHECK_EVERY_DAYS, max = MAX_PAGES_PER_RUN } = {}
+): Promise<Monitor[]> {
+  const rows = await db
+    .select({ slug: sources.slug, at: sources.lastCheckedAt, status: sources.lastStatus })
+    .from(sources)
+    .where(
+      inArray(
+        sources.slug,
+        monitors.map((m) => m.slug)
+      )
+    );
+  const last = new Map(rows.map((r) => [r.slug, r]));
+  const rank = (m: Monitor) => {
+    const row = last.get(m.slug);
+    if (!row?.at || row.status === "failed") return 0;
+    return row.at.getTime();
+  };
+  const cutoff = now.getTime() - everyDays * DAY + SLACK;
+  return monitors
+    .filter((m) => rank(m) <= cutoff)
+    .sort((a, b) => rank(a) - rank(b))
+    .slice(0, max);
+}
+
+// Scrapes the pages that are due and stores entries not already known, with a sighting.
+// Uses Radar's runner, so dedupe, sightings and per-page failure logging match the feeds.
+export async function runMonitors({
+  db,
+  scrape,
+  monitors = MONITORS,
+  now = new Date(),
+  everyDays,
+  max
+}: {
+  db: Database;
+  scrape: Scrape;
+  monitors?: Monitor[];
+  now?: Date;
+  everyDays?: number;
+  max?: number;
+}) {
+  const due = await duePages(db, monitors, now, { everyDays, max });
+  if (!due.length) return [];
+  return runRadarIngestion({
+    db,
+    radarSources: due.map((m) => monitorSource(m, scrape)),
+    now
+  });
+}
+
+// Runs the due monitors against the app database with the live Firecrawl client.
+export function ingestMonitors() {
+  return runMonitors({ db: appDb, scrape: firecrawlScrape() });
+}
