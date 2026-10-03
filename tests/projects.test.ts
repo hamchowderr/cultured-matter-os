@@ -1,7 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { and, eq } from "drizzle-orm";
+
 import * as A from "@/actions";
 import type { Database } from "@/db";
+import * as t from "@/db/schema";
 import { projectStats, taskActivity } from "@/lib/project-stats";
 import { freshDb } from "./test-db";
 
@@ -88,6 +91,51 @@ describe("projects and tasks", () => {
       ctx()
     );
     expect(edited).toMatchObject({ title: "New title", notes: "details", dueDate: null });
+  });
+
+  it("sets priority on create and edit, defaults to medium, and logs the change", async () => {
+    const plain = await A.createTask.run({ title: "Plain" }, ctx());
+    expect(plain.priority).toBe("medium");
+    const hot = await A.createTask.run({ title: "Hot", priority: "urgent" }, ctx());
+    expect(hot.priority).toBe("urgent");
+    await expect(
+      A.createTask.run({ title: "Bad", priority: "critical" } as never, ctx())
+    ).rejects.toThrow();
+
+    const lowered = await A.updateTask.run({ taskId: hot.id, priority: "low" }, ctx());
+    expect(lowered.priority).toBe("low");
+    // Other edits leave priority alone.
+    const renamed = await A.updateTask.run({ taskId: hot.id, title: "Warm" }, ctx());
+    expect(renamed.priority).toBe("low");
+
+    const entries = await db
+      .select({ summary: t.activityLog.summary, data: t.activityLog.data })
+      .from(t.activityLog)
+      .where(and(eq(t.activityLog.action, "updateTask"), eq(t.activityLog.entityId, hot.id)));
+    expect(entries).toContainEqual({
+      summary: 'Set "Hot" to low priority',
+      data: { priority: "low" }
+    });
+    expect(entries).toContainEqual({ summary: 'Updated task "Warm"', data: null });
+
+    const listed = await A.listTasks.run({}, ctx());
+    expect(listed.tasks.find((x) => x.id === hot.id)?.priority).toBe("low");
+    expect(listed.tasks.find((x) => x.id === plain.id)?.priority).toBe("medium");
+  });
+
+  it("returns priority from dueTasks and tasksDueBetween", async () => {
+    const now = new Date("2031-03-10T12:00:00Z");
+    const due = await A.createTask.run(
+      { title: "Due soon", priority: "high", dueDate: new Date(now.getTime() + day) },
+      ctx()
+    );
+    const { today, week } = await A.dueTasks.run({ now, timeZone: "UTC" }, ctx());
+    expect([...today, ...week].find((x) => x.id === due.id)?.priority).toBe("high");
+    const between = await A.tasksDueBetween.run(
+      { from: now, to: new Date(now.getTime() + 3 * day) },
+      ctx()
+    );
+    expect(between.tasks.find((x) => x.id === due.id)?.priority).toBe("high");
   });
 
   it("hides done projects unless asked", async () => {

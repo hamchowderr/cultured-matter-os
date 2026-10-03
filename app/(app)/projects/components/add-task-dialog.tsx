@@ -1,7 +1,7 @@
 "use client";
 
 // Adapted from the kit's project-management/components/add-reminder-dialog.tsx: a task with a
-// title, an optional due date and a project. Priority and category are gone (tasks have neither).
+// title, an optional due date, a priority and a project. Category is gone (tasks have none).
 
 import * as React from "react";
 import { toast } from "sonner";
@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import { priorities, type TaskPriority } from "@/lib/task-priority";
 import { fromDateInput, type ProjectSummary } from "../types";
 
 export function AddTaskDialog({
@@ -35,6 +36,7 @@ export function AddTaskDialog({
 }) {
   const [title, setTitle] = React.useState("");
   const [due, setDue] = React.useState("");
+  const [priority, setPriority] = React.useState<TaskPriority>("medium");
   const [projectId, setProjectId] = React.useState("");
   const [saving, setSaving] = React.useState(false);
 
@@ -49,6 +51,7 @@ export function AddTaskDialog({
     const result = await createTask({
       title: title.trim(),
       projectId,
+      priority,
       dueDate: fromDateInput(due) ?? undefined
     });
     setSaving(false);
@@ -56,6 +59,7 @@ export function AddTaskDialog({
     toast.success(`Added "${result.data.title}"`);
     setTitle("");
     setDue("");
+    setPriority("medium");
     onOpenChange(false);
     onCreated();
   }
@@ -87,6 +91,23 @@ export function AddTaskDialog({
                 value={due}
                 onChange={(e) => setDue(e.target.value)}
               />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="new-task-priority">Priority</Label>
+              <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
+                <SelectTrigger id="new-task-priority" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {priorities.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>
+                      <p.icon className="text-muted-foreground size-4" />
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid gap-2">

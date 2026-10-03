@@ -1,7 +1,7 @@
 "use client";
 
-// Ported from the kit's apps/tasks/components/columns.tsx. Priority and labels are gone
-// (tasks have neither); project and due date take their place.
+// Ported from the kit's apps/tasks/components/columns.tsx. Labels are gone (tasks have none);
+// project and due date take their place.
 
 import { ColumnDef } from "@tanstack/react-table";
 
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDue } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { projectIdsOf, type TaskRow, type TaskStatus } from "../../types";
-import { dueBucket, statuses } from "./data";
+import { dueBucket, priorities, priorityRank, statuses } from "./data";
 import { DataTableColumnHeader } from "./data-table-column-header";
 import { DataTableRowActions } from "./data-table-row-actions";
 
@@ -67,6 +67,24 @@ export function taskColumns({
         );
       },
       sortingFn: (a, b) => statusRank[a.original.status] - statusRank[b.original.status],
+      filterFn: (row, id, value) => value.includes(row.getValue(id))
+    },
+    {
+      accessorKey: "priority",
+      meta: { label: "Priority" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Priority" />,
+      cell: ({ row }) => {
+        const priority = priorities.find((priority) => priority.value === row.getValue("priority"));
+        if (!priority) return null;
+        return (
+          <div className="flex items-center gap-2">
+            <priority.icon className="text-muted-foreground size-4" />
+            <span>{priority.label}</span>
+          </div>
+        );
+      },
+      // Low to urgent, not alphabetical.
+      sortingFn: (a, b) => priorityRank[a.original.priority] - priorityRank[b.original.priority],
       filterFn: (row, id, value) => value.includes(row.getValue(id))
     },
     {

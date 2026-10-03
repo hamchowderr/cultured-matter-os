@@ -5,7 +5,7 @@ import type { Executor } from "@/db";
 import { projects, taskProjects, tasks } from "@/db/schema";
 import { HOME_TIME_ZONE, startOfDayIn } from "@/lib/time";
 import { ActionError, defineAction } from "./define";
-import { id, projectSchema, taskSchema } from "./schemas";
+import { id, projectSchema, taskPriority, taskSchema } from "./schemas";
 
 const projectStatus = z.enum(["active", "paused", "done"]);
 const name = z.string().trim().min(1).max(200);
@@ -217,11 +217,13 @@ export const updateProject = defineAction({
 
 export const updateTask = defineAction({
   name: "updateTask",
-  description: "Edit a task: title, notes, due date (null clears it) or home project.",
+  description:
+    "Edit a task: title, notes, due date (null clears it), priority (low, medium, high, urgent) or home project.",
   kind: "write",
   input: z.object({
     taskId: id,
     title: name.optional(),
+    priority: taskPriority.optional(),
     notes: z.string().trim().max(5000).nullable().optional(),
     dueDate: z.coerce.date().nullable().optional(),
     projectId: id.nullable().optional()
@@ -233,7 +235,15 @@ export const updateTask = defineAction({
     const [row] = await db.update(tasks).set(patch).where(eq(tasks.id, taskId)).returning();
     return row;
   },
-  log: (_input, t) => ({ entityType: "task", entityId: t.id, summary: `Updated task "${t.title}"` })
+  log: (input, t) => ({
+    entityType: "task",
+    entityId: t.id,
+    summary:
+      input.priority && Object.keys(input).length === 2
+        ? `Set "${t.title}" to ${t.priority} priority`
+        : `Updated task "${t.title}"`,
+    data: input.priority ? { priority: t.priority } : undefined
+  })
 });
 
 export const linkTaskToProject = defineAction({

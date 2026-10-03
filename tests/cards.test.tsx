@@ -80,6 +80,18 @@ describe("cards render in isolation from props", () => {
     expect(overdue).toContain("Overdue by 2 days");
   });
 
+  it("task shows high and urgent priority only", () => {
+    expect(html(<TaskCard task={taskFixture} now={fixtureNow} />)).toContain("High");
+    const urgent = html(
+      <TaskCard task={{ ...taskFixture, priority: "urgent" }} now={fixtureNow} />
+    );
+    expect(urgent).toContain("Urgent");
+    const medium = html(
+      <TaskCard task={{ ...taskFixture, priority: "medium" }} now={fixtureNow} />
+    );
+    expect(medium).not.toContain("Medium");
+  });
+
   it("approval", () => {
     const pending = html(
       <ApprovalCard approval={approvalFixture} onApprove={() => {}} onReject={() => {}} />
