@@ -37,6 +37,9 @@ export async function searchGrants(input: In<typeof A.searchGrants>) {
 export async function setGrantStatus(input: In<typeof A.setGrantStatus>) {
   return toResult(() => A.setGrantStatus.run(input));
 }
+export async function listActivity(input: In<typeof A.listActivity>) {
+  return toResult(() => A.listActivity.run(input));
+}
 export async function searchContacts(input: In<typeof A.searchContacts>) {
   return toResult(() => A.searchContacts.run(input));
 }
