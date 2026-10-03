@@ -22,8 +22,8 @@ export function CaptureList({ items, empty }: { items: Capture[]; empty: string 
             key={item.id}
             type="button"
             className={cn(
-              "hover:bg-accent/70 flex flex-col items-start gap-2 rounded-lg border p-3 text-left text-sm transition-all",
-              selectedId === item.id && "bg-accent/70"
+              "hover:bg-muted/60 flex flex-col items-start gap-2 rounded-lg p-3 text-left text-sm transition-colors",
+              selectedId === item.id && "bg-muted"
             )}
             onClick={() => setSelectedId(item.id)}
           >

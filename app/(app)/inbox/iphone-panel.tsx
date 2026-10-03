@@ -10,8 +10,8 @@ export const CAPTURE_URL = "https://cultured-matter-os.vercel.app/api/capture";
 // in docs/iphone-shortcut.md. The capture key itself is never shown here.
 export function IphonePanel() {
   return (
-    <Collapsible className="bg-card rounded-lg border">
-      <CollapsibleTrigger className="group flex w-full items-center gap-3 p-4 text-left">
+    <Collapsible className="rounded-lg">
+      <CollapsibleTrigger className="group hover:bg-muted/60 flex w-full items-center gap-3 rounded-lg p-2 text-left">
         <SmartphoneIcon className="text-muted-foreground size-5 shrink-0" />
         <span className="flex-1">
           <span className="block text-sm font-medium">Capture from your iPhone</span>
@@ -21,7 +21,7 @@ export function IphonePanel() {
         </span>
         <ChevronDownIcon className="text-muted-foreground size-4 transition-transform group-data-[state=open]:rotate-180" />
       </CollapsibleTrigger>
-      <CollapsibleContent className="max-h-[50vh] space-y-4 overflow-y-auto border-t p-4 text-sm">
+      <CollapsibleContent className="max-h-[50vh] space-y-4 overflow-y-auto px-2 pt-3 pb-2 text-sm">
         <div className="space-y-1">
           <p className="font-medium">What you were sent</p>
           <p className="text-muted-foreground">

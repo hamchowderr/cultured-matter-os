@@ -76,7 +76,7 @@ export function NavMain() {
         <SidebarGroup key={nav.title}>
           <SidebarGroupLabel>{nav.title}</SidebarGroupLabel>
           <SidebarGroupContent className="flex flex-col gap-2">
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {nav.items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   {Array.isArray(item.items) && item.items.length > 0 ? (
@@ -114,7 +114,7 @@ export function NavMain() {
                       >
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton
-                            className="hover:text-foreground active:text-foreground hover:bg-sidebar-accent active:bg-sidebar-accent"
+                            className="hover:text-foreground hover:bg-sidebar-foreground/5 active:bg-sidebar-foreground/10 data-active:hover:bg-sidebar-accent data-active:hover:text-sidebar-accent-foreground"
                             tooltip={item.title}
                           >
                             {item.icon && <item.icon />}
@@ -127,7 +127,7 @@ export function NavMain() {
                             {item?.items?.map((subItem, key) => (
                               <SidebarMenuSubItem key={key}>
                                 <SidebarMenuSubButton
-                                  className="hover:text-foreground active:text-foreground hover:bg-sidebar-accent active:bg-sidebar-accent"
+                                  className="hover:text-foreground hover:bg-sidebar-foreground/5 active:bg-sidebar-foreground/10 data-active:hover:bg-sidebar-accent data-active:hover:text-sidebar-accent-foreground"
                                   isActive={pathname === subItem.href}
                                   asChild
                                 >
@@ -143,7 +143,7 @@ export function NavMain() {
                     </>
                   ) : (
                     <SidebarMenuButton
-                      className="hover:text-foreground active:text-foreground hover:bg-sidebar-accent active:bg-sidebar-accent"
+                      className="hover:text-foreground hover:bg-sidebar-foreground/5 active:bg-sidebar-foreground/10 data-active:hover:bg-sidebar-accent data-active:hover:text-sidebar-accent-foreground"
                       isActive={pathname === item.href}
                       tooltip={item.title}
                       asChild
