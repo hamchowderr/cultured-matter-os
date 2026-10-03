@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 import type { Executor } from "@/db";
 import {
   activityLog,
+  approvals,
   captures,
   companies,
   contacts,
@@ -64,8 +65,9 @@ async function resolveEntities(
   const projectIds = ids("project");
   const taskIds = ids("task");
   const captureIds = ids("capture");
+  const approvalIds = ids("approval");
 
-  const [companyRows, contactRows, grantRows, projectRows, taskRows, captureRows] =
+  const [companyRows, contactRows, grantRows, projectRows, taskRows, captureRows, approvalRows] =
     await Promise.all([
       companyIds.length
         ? db
@@ -102,6 +104,13 @@ async function resolveEntities(
             .select({ id: captures.id, name: captures.body, filedAt: captures.filedAt })
             .from(captures)
             .where(inArray(captures.id, captureIds))
+        : [],
+      // Only approvals still waiting are linkable: they are decided on Today.
+      approvalIds.length
+        ? db
+            .select({ id: approvals.id, name: approvals.summary })
+            .from(approvals)
+            .where(and(inArray(approvals.id, approvalIds), eq(approvals.status, "pending")))
         : []
     ]);
 
@@ -115,6 +124,7 @@ async function resolveEntities(
     );
   }
   for (const r of captureRows) out.set(key("capture", r.id), ref(r.name, { filed: !!r.filedAt }));
+  for (const r of approvalRows) out.set(key("approval", r.id), ref(r.name));
 
   if (taskRows.length) {
     // A task without a home project may still be cross-linked into one.

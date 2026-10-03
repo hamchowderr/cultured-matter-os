@@ -3,7 +3,7 @@
 import { ExternalLinkIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import {
@@ -91,6 +91,20 @@ export function RadarList({
     if (result.ok) setDetail({ company, data: result.data });
     else toast.error(result.error.message);
   }
+
+  // ?company=<id> (e.g. from the Archive) opens that company's detail panel on arrival.
+  const linkedId = params.get("company");
+  useEffect(() => {
+    if (!linkedId) return;
+    getCompany({ companyId: linkedId }).then((result) => {
+      if (!result.ok) {
+        toast.error(result.error.message);
+        return;
+      }
+      const sources = [...new Set(result.data.sightings.map((s) => s.source))];
+      setDetail({ company: { ...result.data.company, sources }, data: result.data });
+    });
+  }, [linkedId]);
 
   function confirmNote() {
     if (!noteFor) return;

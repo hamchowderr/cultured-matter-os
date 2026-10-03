@@ -145,7 +145,9 @@ describe("activity links", () => {
     expect(activityHref(created)).toBe(`/projects?p=${project.id}&done=1`);
     expect(activityHref(marked)).toBe(`/projects?p=${project.id}&done=1`);
     expect(shortlisted.action).toBe("shortlistCompany");
-    expect(activityHref(shortlisted)).toBe("/radar?view=all&q=Fungi+%26+Co");
+    expect(activityHref(shortlisted)).toBe(
+      `/radar?view=all&q=Fungi+%26+Co&company=${shortlisted.entityId}`
+    );
     expect(task.id).toBeTruthy();
   });
 

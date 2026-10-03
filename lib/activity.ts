@@ -28,13 +28,15 @@ const qs = (params: Record<string, string | undefined>) => {
 };
 
 // Where a log row's entity can be seen. Only pages that can actually show it get a link:
-// Radar and People find it by name, Grants by title (all grants, not just for-profit),
-// Projects by id, captures in the Inbox. Approvals have no page of their own yet.
+// Radar opens the company by id, People find it by name, Grants by title (all grants, not
+// just for-profit), Projects by id, captures in the Inbox, approvals on Today.
 export function activityHref(row: Linkable): string | null {
   const e = row.entity;
   switch (row.entityType) {
     case "company":
-      return e ? `/radar?${qs({ view: "all", q: e.name })}` : null;
+      return e
+        ? `/radar?${qs({ view: "all", q: e.name, company: row.entityId ?? undefined })}`
+        : null;
     case "contact":
       // The LinkedIn import logs no single contact; it belongs on People as a whole.
       if (!row.entityId) return "/people";
@@ -48,6 +50,9 @@ export function activityHref(row: Linkable): string | null {
         : null;
     case "capture":
       return e ? `/inbox${e.filed ? "?view=filed" : ""}` : null;
+    case "approval":
+      // Open approvals are decided on Today.
+      return e ? "/today" : null;
     default:
       return null;
   }
