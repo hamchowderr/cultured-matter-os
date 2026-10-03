@@ -57,10 +57,10 @@ export const navItems: NavGroup[] = [
     items: [
       { title: "Today", href: "/today", icon: SunIcon },
       { title: "Inbox", href: "/inbox", icon: InboxIcon },
+      { title: "Projects", href: "/projects", icon: FolderKanbanIcon },
+      { title: "People", href: "/people", icon: UsersIcon },
       { title: "Radar", href: "/radar", icon: RadarIcon },
       { title: "Grants", href: "/grants", icon: LandmarkIcon },
-      { title: "People", href: "/people", icon: UsersIcon },
-      { title: "Projects", href: "/projects", icon: FolderKanbanIcon },
       { title: "Archive", href: "/archive", icon: ArchiveIcon }
     ]
   }
