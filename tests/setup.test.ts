@@ -25,6 +25,14 @@ const FLUENT_ENV = {
 function stubFluent(env: Record<string, string>) {
   for (const [k, v] of Object.entries(env)) vi.stubEnv(k, v);
 }
+const GRANTED = [
+  "openid email profile",
+  "https://www.googleapis.com/auth/gmail.readonly",
+  "https://www.googleapis.com/auth/gmail.compose",
+  "https://www.googleapis.com/auth/contacts.readonly",
+  "https://www.googleapis.com/auth/contacts.other.readonly"
+].join(" ");
+
 const noFluent = () => stubFluent(Object.fromEntries(Object.keys(FLUENT_ENV).map((k) => [k, ""])));
 
 describe("setupStatus", () => {
@@ -77,23 +85,20 @@ describe("setupStatus", () => {
     expect(Date.now() - iphone.lastCaptureAt!.getTime()).toBeLessThan(60_000);
   });
 
-  it("counts Outlook once Microsoft granted mail and contacts", async () => {
+  it("counts Google once it granted Gmail and Contacts", async () => {
     noFluent();
     await db.insert(t.users).values({ id: "u1", name: "Simone", email: "simone@example.com" });
     await db.insert(t.accounts).values({
       id: "acc1",
-      accountId: "ms-oid",
-      providerId: "microsoft",
+      accountId: "google-sub",
+      providerId: "google",
       userId: "u1",
-      scope: "openid,profile,email,User.Read,offline_access",
+      scope: "openid,email,profile",
       updatedAt: new Date()
     });
     expect((await A.setupStatus.run({}, ctx())).outlook).toEqual({ done: false });
 
-    await db
-      .update(t.accounts)
-      .set({ scope: "openid,profile,email,User.Read,offline_access,Contacts.Read,Mail.ReadWrite" })
-      .where(eq(t.accounts.id, "acc1"));
+    await db.update(t.accounts).set({ scope: GRANTED }).where(eq(t.accounts.id, "acc1"));
     const status = await A.setupStatus.run({}, ctx());
     expect(status.outlook).toEqual({ done: true });
     expect(status.done).toBe(3);

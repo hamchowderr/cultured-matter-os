@@ -45,7 +45,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     <div className="space-y-6">
       <PageHeader
         title="People"
-        description="Your LinkedIn and Outlook contacts. Search by name, company or role, and tag people by sector."
+        description="Your LinkedIn and Google contacts. Search by name, company or role, and tag people by sector."
       />
       {result.ok ? (
         <PeopleView

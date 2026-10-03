@@ -22,7 +22,7 @@ export type SetupStatus = z.infer<typeof setupStatusSchema>;
 export const setupStatus = defineAction({
   name: "setupStatus",
   description:
-    "What is set up so far: LinkedIn contacts imported, Outlook connected, iPhone Shortcuts used, and the newsletter connected to FluentCRM.",
+    "What is set up so far: LinkedIn contacts imported, Google (Gmail and Contacts) connected, iPhone Shortcuts used, and the newsletter connected to FluentCRM.",
   kind: "read",
   input: z.object({}),
   output: setupStatusSchema,

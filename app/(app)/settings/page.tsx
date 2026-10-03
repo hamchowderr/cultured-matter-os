@@ -3,19 +3,19 @@ import Link from "next/link";
 
 import { setupStatus } from "@/actions/server";
 import { PageHeader } from "@/components/layout/page-shell";
-import { ConnectOutlookDialog } from "@/components/setup/connect-outlook-dialog";
+import { ConnectGoogleDialog } from "@/components/setup/connect-google-dialog";
 import { ConnectionCard, type ConnectionState } from "@/components/setup/connection-card";
 import { STEPS, stepSummary, type Step } from "@/components/setup/steps";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { getSession } from "@/lib/session";
 import { generateMeta } from "@/lib/utils";
-import { OutlookReturn } from "./outlook-return";
+import { GoogleReturn } from "./google-return";
 
 export async function generateMetadata() {
   return generateMeta({
     title: "Settings",
-    description: "Your account and what is connected: LinkedIn, Outlook, iPhone and newsletter."
+    description: "Your account and what is connected: LinkedIn, Google, iPhone and newsletter."
   });
 }
 
@@ -42,7 +42,7 @@ export default async function Page() {
 
   function action(step: Step, done: boolean) {
     if (done) return <LinkAction href={step.doneHref} label={step.doneLabel} />;
-    if (step.id === "outlook") return <ConnectOutlookDialog />;
+    if (step.id === "outlook") return <ConnectGoogleDialog />;
     // The newsletter connects once her newsletter site exists; nothing for her to do yet.
     if (step.id === "newsletter") return null;
     return <LinkAction href={step.href} label={step.todoLabel} />;
@@ -50,7 +50,7 @@ export default async function Page() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
-      <OutlookReturn />
+      <GoogleReturn />
       <PageHeader title="Settings" description="Your account and what is connected." />
 
       {user && (
@@ -68,7 +68,7 @@ export default async function Page() {
               <p className="text-muted-foreground truncate text-sm">{user.email}</p>
             </div>
             <span className="text-muted-foreground hidden text-sm sm:block">
-              Signed in with Microsoft
+              Signed in with Google
             </span>
           </div>
         </section>

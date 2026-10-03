@@ -198,7 +198,7 @@ export function PeopleView({
           </EmptyMedia>
           <EmptyTitle>No contacts yet</EmptyTitle>
           <EmptyDescription>
-            Bring in your LinkedIn connections in five steps, or your Outlook contacts in one.
+            Bring in your LinkedIn connections in five steps, or your Google contacts in one.
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent className="max-w-md">

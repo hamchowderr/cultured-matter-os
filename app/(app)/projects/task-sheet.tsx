@@ -164,11 +164,11 @@ export function TaskSheet({
             <section className="space-y-2">
               <h3 className="text-sm font-medium">Follow-up email</h3>
               <p className="text-muted-foreground text-sm">
-                {task.outlookConversationId
+                {task.emailThreadId
                   ? task.status === "waiting"
-                    ? "Saved in your Outlook Drafts. Once you send it, the task moves to Replied when they write back."
-                    : "A follow-up for this task was saved in your Outlook Drafts."
-                  : "Write an email for this task. After you approve it, it waits in your Outlook Drafts."}
+                    ? "Saved in your Gmail Drafts. Once you send it, the task moves to Replied when they write back."
+                    : "A follow-up for this task was saved in your Gmail Drafts."
+                  : "Write an email for this task. After you approve it, it waits in your Gmail Drafts."}
               </p>
               <Button size="sm" variant="outline" onClick={() => setDrafting(true)}>
                 <MailIcon />

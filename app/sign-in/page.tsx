@@ -5,12 +5,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ACCOUNT_NOT_ALLOWED } from "@/lib/allowed-emails";
 import { getSession } from "@/lib/session";
 import { generateMeta } from "@/lib/utils";
-import { MicrosoftSignInButton } from "./microsoft-button";
+import { GoogleSignInButton } from "./google-button";
 
 export async function generateMetadata() {
   return generateMeta({
     title: "Sign in",
-    description: "Sign in to Cultured Matter with your Microsoft account."
+    description: "Sign in to Cultured Matter with your Google account."
   });
 }
 
@@ -20,12 +20,12 @@ function errorMessage(code: string) {
   if (code === ACCOUNT_NOT_ALLOWED) {
     return {
       title: "This account isn't allowed",
-      body: "Cultured Matter only opens for its owner's Microsoft account. Try again and pick that account."
+      body: "Cultured Matter only opens for its owner's Google account. Try again and pick that account."
     };
   }
   return {
     title: "Sign-in didn't finish",
-    body: "Microsoft didn't complete the sign-in. Please try again."
+    body: "Google didn't complete the sign-in. Please try again."
   };
 }
 
@@ -56,7 +56,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
           </Alert>
         )}
 
-        <MicrosoftSignInButton />
+        <GoogleSignInButton />
       </div>
     </main>
   );

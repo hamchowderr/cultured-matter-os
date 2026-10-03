@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { accounts, sessions, users, verifications } from "@/db/schema";
 import { ACCOUNT_NOT_ALLOWED, isAllowedEmail } from "@/lib/allowed-emails";
-import { GRAPH_SCOPES } from "@/lib/graph-scopes";
+import { GOOGLE_SCOPES } from "@/lib/google-scopes";
 
 function refuse(): never {
   // The OAuth callback turns this into a redirect to /sign-in?error=ACCOUNT_NOT_ALLOWED.
@@ -17,7 +17,7 @@ function refuse(): never {
   });
 }
 
-// Microsoft sign-in for one person. No email/password, no sign-up page, no organizations.
+// Google sign-in for one person. No email/password, no sign-up page, no organizations.
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "sqlite",
@@ -25,22 +25,23 @@ export const auth = betterAuth({
     schema: { users, sessions, accounts, verifications }
   }),
   socialProviders: {
-    microsoft: {
-      clientId: process.env.MICROSOFT_CLIENT_ID as string,
-      clientSecret: process.env.MICROSOFT_CLIENT_SECRET as string,
-      tenantId: "common",
-      prompt: "select_account",
-      // Outlook contacts and mail for People (on top of Better Auth's openid, profile, email,
-      // User.Read and offline_access). Accounts that signed in before this ask again through
-      // "Connect Outlook" (authClient.linkSocial), which records the new scopes.
-      scope: [...GRAPH_SCOPES]
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      // A refresh token, so the daily reply check works while she is away. Google only issues
+      // one on a consent screen, hence "consent" on every sign-in.
+      accessType: "offline",
+      prompt: "select_account consent",
+      // Gmail and Contacts for People (on top of Better Auth's openid, email and profile).
+      // Accounts that signed in before this ask again through "Connect Google"
+      // (authClient.linkSocial), which records the new scopes.
+      scope: [...GOOGLE_SCOPES]
     }
   },
   account: {
     accountLinking: {
-      // "Connect Outlook" re-links the same Microsoft account to add scopes. Microsoft often
-      // omits email_verified, which Better Auth otherwise requires to link.
-      trustedProviders: ["microsoft"]
+      // "Connect Google" re-links the same Google account to add scopes.
+      trustedProviders: ["google"]
     }
   },
   databaseHooks: {
@@ -65,7 +66,7 @@ export const auth = betterAuth({
       }
     }
   },
-  // Errors with no stored callback (e.g. Microsoft replaying an already-used callback) land on
+  // Errors with no stored callback (e.g. Google replaying an already-used callback) land on
   // /sign-in instead of Better Auth's default error page; a signed-in visitor goes on to /today.
   onAPIError: { errorURL: "/sign-in" },
   plugins: [nextCookies()]

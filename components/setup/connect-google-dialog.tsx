@@ -18,14 +18,14 @@ import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 
 const ALLOWS = [
-  "Read your Outlook contacts, to add them to People",
-  "See who you emailed and when, with a link to each email",
-  "Save follow-up emails you approve in your Drafts, for you to send"
+  "Read your Google contacts, to add them to People",
+  "See who you emailed in Gmail and when, with a link to each email",
+  "Save follow-up emails you approve in your Gmail Drafts, for you to send"
 ];
 
-// Explains what connecting Outlook allows before Microsoft asks her to agree
+// Explains what connecting Google allows before Google asks her to agree
 // (from the UI kit's dashboard-modal24).
-export function ConnectOutlookDialog() {
+export function ConnectGoogleDialog() {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
 
@@ -34,7 +34,7 @@ export function ConnectOutlookDialog() {
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
           <MailIcon />
-          Connect Outlook
+          Connect Google
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md" showCloseButton={false}>
@@ -49,9 +49,9 @@ export function ConnectOutlookDialog() {
         </div>
 
         <DialogHeader className="items-center text-center">
-          <DialogTitle className="text-lg">Connect Outlook</DialogTitle>
+          <DialogTitle className="text-lg">Connect Google</DialogTitle>
           <DialogDescription className="max-w-sm">
-            Microsoft will ask you to agree. You use the same account you sign in with.
+            Google will ask you to agree. You use the same account you sign in with.
           </DialogDescription>
         </DialogHeader>
 
@@ -89,7 +89,7 @@ export function ConnectOutlookDialog() {
             }}
           >
             {pending && <Spinner />}
-            Continue to Microsoft
+            Continue to Google
           </Button>
         </DialogFooter>
       </DialogContent>

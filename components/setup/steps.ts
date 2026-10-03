@@ -37,10 +37,10 @@ export const STEPS: Step[] = [
   {
     id: "outlook",
     icon: MailIcon,
-    title: "Connect Outlook",
-    description: "See recent emails with each person and save follow-up drafts.",
+    title: "Connect Google",
+    description: "See recent emails with each person and save follow-up drafts in Gmail.",
     href: "/people",
-    todoLabel: "Connect Outlook",
+    todoLabel: "Connect Google",
     doneLabel: "Open People",
     doneHref: "/people"
   },

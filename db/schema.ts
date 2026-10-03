@@ -142,7 +142,7 @@ export const contacts = sqliteTable(
     connectedOn: text("connected_on"),
     sectors: text("sectors", { mode: "json" }).$type<string[]>().notNull().default([]),
     source: text("source", {
-      enum: ["linkedin_csv", "manual", "sample", "newsletter_signup", "outlook"]
+      enum: ["linkedin_csv", "manual", "sample", "newsletter_signup", "google"]
     }).notNull(),
     // Newsletter: the flag is ours; FluentCRM is told on the next sync.
     newsletter: integer("newsletter", { mode: "boolean" }).notNull().default(false),
@@ -180,7 +180,7 @@ export const contactLinks = sqliteTable(
   ]
 );
 
-// Recent Outlook emails with a contact: metadata and a link only, never the body.
+// Recent Gmail emails with a contact: metadata and a link only, never the body.
 export const contactEmails = sqliteTable(
   "contact_emails",
   {
@@ -188,8 +188,9 @@ export const contactEmails = sqliteTable(
     contactId: text("contact_id")
       .notNull()
       .references(() => contacts.id, { onDelete: "cascade" }),
-    // Graph immutable message id.
+    // Gmail message id.
     messageId: text("message_id").notNull(),
+    // Gmail thread id.
     conversationId: text("conversation_id"),
     subject: text("subject"),
     direction: text("direction", { enum: ["in", "out"] }).notNull(),
@@ -285,8 +286,9 @@ export const tasks = sqliteTable(
       .notNull()
       .default("todo"),
     dueDate: integer("due_date", { mode: "timestamp_ms" }),
-    // The Outlook thread of a follow-up drafted from this task; the daily reply check watches it.
-    outlookConversationId: text("outlook_conversation_id"),
+    // The Gmail thread of a follow-up drafted from this task; the daily reply check watches it.
+    // The column keeps its name from the Outlook version (no table rewrite needed).
+    emailThreadId: text("outlook_conversation_id"),
     completedAt: integer("completed_at", { mode: "timestamp_ms" }),
     createdAt: createdAt(),
     updatedAt: updatedAt()

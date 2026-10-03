@@ -34,7 +34,7 @@ export type SortDir = "asc" | "desc";
 
 const SOURCE_LABELS: Record<Contact["source"], string> = {
   linkedin_csv: "LinkedIn",
-  outlook: "Outlook",
+  google: "Google",
   newsletter_signup: "Signup",
   manual: "Manual",
   sample: "Sample"

@@ -19,9 +19,9 @@ export class ActionError extends Error {
       | "invalid"
       | "conflict"
       | "unauthorized"
-      // Microsoft hasn't granted the Outlook permissions yet; the UI offers "Connect Outlook".
-      | "outlook_not_connected"
-      // An outside service (e.g. Microsoft Graph) failed.
+      // Google hasn't granted the Gmail and Contacts permissions yet; the UI offers "Connect Google".
+      | "google_not_connected"
+      // An outside service (e.g. Gmail) failed.
       | "unavailable",
     message: string
   ) {
@@ -41,7 +41,7 @@ type ActionConfig<I extends z.ZodType, O extends z.ZodType, P = undefined> = {
   | { kind: "read"; handler: Handler<z.output<I>, z.input<O>> }
   | {
       kind: "write";
-      // Optional step that runs before the transaction opens: network calls (Microsoft Graph,
+      // Optional step that runs before the transaction opens: network calls (Gmail, People API,
       // token refresh) must not hold the database lock. Its result is passed to the handler.
       prepare?: (input: z.output<I>, db: Database) => Promise<P>;
       handler: (input: z.output<I>, db: Executor, prepared: P) => Promise<z.input<O>>;

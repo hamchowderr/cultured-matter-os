@@ -255,7 +255,7 @@ export function ContactSheet({
                 <ContactEmails contactId={contact.id} />
               ) : (
                 <p className="text-muted-foreground text-sm">
-                  No email address, so no Outlook emails.
+                  No email address, so no Gmail emails.
                 </p>
               )}
             </section>
