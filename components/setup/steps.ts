@@ -25,16 +25,6 @@ export type Step = {
 // The four things to set up, in the order she does them. Shared by Today and Settings.
 export const STEPS: Step[] = [
   {
-    id: "linkedin",
-    icon: LinkedinIcon,
-    title: "Bring in your LinkedIn contacts",
-    description: "Download your connections from LinkedIn and add the file to People.",
-    href: "/people",
-    todoLabel: "Import contacts",
-    doneLabel: "Open People",
-    doneHref: "/people"
-  },
-  {
     id: "outlook",
     icon: MailIcon,
     title: "Connect Google",
@@ -53,6 +43,16 @@ export const STEPS: Step[] = [
     todoLabel: "Show me how",
     doneLabel: "Open Inbox",
     doneHref: "/inbox"
+  },
+  {
+    id: "linkedin",
+    icon: LinkedinIcon,
+    title: "Bring in your LinkedIn contacts",
+    description: "Download your connections from LinkedIn and add the file to People.",
+    href: "/people",
+    todoLabel: "Import contacts",
+    doneLabel: "Open People",
+    doneHref: "/people"
   },
   {
     id: "newsletter",
