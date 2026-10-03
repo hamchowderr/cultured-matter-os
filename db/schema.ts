@@ -338,6 +338,23 @@ export const approvals = sqliteTable(
   (t) => [index("approvals_status_idx").on(t.status)]
 );
 
+// Header notifications she has marked as read. Item ids are built by listNotifications and
+// change when the underlying thing changes (e.g. more radar finds), so a fresh event shows again.
+export const notificationReads = sqliteTable(
+  "notification_reads",
+  {
+    userId: text("user_id").notNull(),
+    itemId: text("item_id").notNull(),
+    readAt: integer("read_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch('subsec') * 1000)`)
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.itemId] }),
+    index("notification_reads_read_at_idx").on(t.readAt)
+  ]
+);
+
 // ---------------------------------------------------------------- Log
 
 export const activityLog = sqliteTable(

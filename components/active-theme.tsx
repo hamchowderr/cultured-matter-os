@@ -82,7 +82,7 @@ export function ActiveThemeProvider({
       body.removeAttribute("data-theme-sidebar-collapsible");
     }
 
-    if (theme.sidebarVariant != "inset") {
+    if (theme.sidebarVariant != DEFAULT_THEME.sidebarVariant) {
       setThemeCookie("theme_sidebar_variant", theme.sidebarVariant);
       body.setAttribute("data-theme-sidebar-variant", theme.sidebarVariant);
     } else {

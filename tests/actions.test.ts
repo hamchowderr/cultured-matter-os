@@ -79,7 +79,9 @@ describe("registry", () => {
         "syncOutlook",
         "listContactEmails",
         "draftFollowUp",
-        "checkOutlookReplies"
+        "checkOutlookReplies",
+        "listNotifications",
+        "markNotificationsRead"
       ].sort()
     );
     for (const a of A.allActions) {
