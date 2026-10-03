@@ -66,6 +66,7 @@ describe("registry", () => {
         "unlinkTaskFromProject",
         "requestApproval",
         "listApprovals",
+        "decideApproval",
         "dueTasks"
       ].sort()
     );

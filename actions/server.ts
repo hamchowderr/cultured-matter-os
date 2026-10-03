@@ -112,3 +112,6 @@ export async function dueTasks(input: In<typeof A.dueTasks>) {
 export async function listApprovals(input: In<typeof A.listApprovals>) {
   return toResult(() => A.listApprovals.run(input));
 }
+export async function decideApproval(input: In<typeof A.decideApproval>) {
+  return toResult(() => A.decideApproval.run(input));
+}
