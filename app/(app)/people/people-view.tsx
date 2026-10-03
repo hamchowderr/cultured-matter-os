@@ -1,6 +1,6 @@
 "use client";
 
-import { SearchIcon, TagIcon, UploadIcon, UsersIcon } from "lucide-react";
+import { CircleHelpIcon, SearchIcon, TagIcon, UploadIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -19,10 +19,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle
+} from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CATEGORIES } from "@/lib/categories";
 import { cn } from "@/lib/utils";
+import { LinkedInSteps } from "./linkedin-steps";
 
 export function PeopleView({
   contacts,
@@ -120,14 +130,19 @@ export function PeopleView({
 
   if (total === 0 && !filtered) {
     return (
-      <div className="space-y-4">
-        <ComingSoon
-          icon={UsersIcon}
-          title="No contacts yet"
-          description="On LinkedIn, go to Settings → Data privacy → Get a copy of your data, choose Connections, then upload the Connections.csv file here."
-        />
-        <div className="flex justify-center">{importButton}</div>
-      </div>
+      <Empty className="border border-dashed">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <UsersIcon />
+          </EmptyMedia>
+          <EmptyTitle>No contacts yet</EmptyTitle>
+          <EmptyDescription>Bring in your LinkedIn connections in five steps.</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent className="max-w-md">
+          <LinkedInSteps />
+          {importButton}
+        </EmptyContent>
+      </Empty>
     );
   }
 
@@ -161,7 +176,20 @@ export function PeopleView({
         <span className="text-muted-foreground text-sm">
           {total.toLocaleString()} {total === 1 ? "contact" : "contacts"}
         </span>
-        <div className="ml-auto">{importButton}</div>
+        <div className="ml-auto flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="ghost">
+                <CircleHelpIcon />
+                How to get this file
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80">
+              <LinkedInSteps />
+            </PopoverContent>
+          </Popover>
+          {importButton}
+        </div>
       </div>
 
       {contacts.length === 0 ? (
