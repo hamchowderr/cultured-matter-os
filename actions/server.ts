@@ -152,3 +152,28 @@ export async function draftFollowUp(input: In<typeof A.draftFollowUp>) {
 export async function setupStatus(input: In<typeof A.setupStatus>) {
   return toResult(() => A.setupStatus.run(input));
 }
+
+// The header bell. Who is asking and the Radar baseline come from the request, not the client.
+async function notificationContext() {
+  const [{ cookies }, { getSession }, { RADAR_BASELINE_COOKIE }] = await Promise.all([
+    import("next/headers"),
+    import("@/lib/session"),
+    import("@/app/(app)/radar/constants")
+  ]);
+  const session = await getSession();
+  const baselineRaw = (await cookies()).get(RADAR_BASELINE_COOKIE)?.value;
+  const baseline = Number(baselineRaw);
+  return {
+    userId: session?.user.id ?? "",
+    radarSince: baselineRaw && Number.isFinite(baseline) ? new Date(baseline) : undefined
+  };
+}
+export async function listNotifications() {
+  return toResult(async () => A.listNotifications.run(await notificationContext()));
+}
+export async function markNotificationsRead(input: { itemIds: string[] }) {
+  return toResult(async () => {
+    const { userId } = await notificationContext();
+    return A.markNotificationsRead.run({ userId, itemIds: input.itemIds });
+  });
+}

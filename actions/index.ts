@@ -60,6 +60,7 @@ import {
   syncOutlook
 } from "./outlook";
 import { setupStatus } from "./setup";
+import { listNotifications, markNotificationsRead } from "./notifications";
 
 export {
   searchCompanies,
@@ -112,7 +113,9 @@ export {
   syncOutlook,
   listContactEmails,
   draftFollowUp,
-  checkOutlookReplies
+  checkOutlookReplies,
+  listNotifications,
+  markNotificationsRead
 };
 
 // Every named action, for the phase-2 agent to wrap as tools.
@@ -163,7 +166,9 @@ export const allActions = [
   syncOutlook,
   listContactEmails,
   draftFollowUp,
-  checkOutlookReplies
+  checkOutlookReplies,
+  listNotifications,
+  markNotificationsRead
 ] as const;
 
 export { ActionError, type Action, type ActionResult } from "./define";

@@ -5,7 +5,8 @@ export const DEFAULT_THEME = {
   radius: "default",
   scale: "none",
   contentLayout: "full",
-  sidebarVariant: "inset",
+  // The app keeps the plain sidebar it has always had; the kit default is "inset".
+  sidebarVariant: "sidebar",
   sidebarCollapsible: "icon",
   font: "default",
   displayFont: "default"
@@ -72,9 +73,10 @@ export const CHART_COLOR_SHADES = [600, 500, 400, 300, 200];
 
 export const THEMES = [
   {
-    name: "Default",
+    // The app's calm palette (globals.css :root); what "Reset to default" returns to.
+    name: "Calm (default)",
     value: "default",
-    colors: ["oklch(0.33 0 0)"]
+    colors: ["var(--accent-blue)"]
   },
   {
     name: "Underground",
