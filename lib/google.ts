@@ -3,6 +3,7 @@ import { desc, eq } from "drizzle-orm";
 import { ActionError } from "@/actions/define";
 import type { Executor } from "@/db";
 import { accounts, users } from "@/db/schema";
+import { parseAllowedEmails } from "@/lib/allowed-emails";
 import { GOOGLE_SCOPES } from "@/lib/google-scopes";
 
 // Gmail API v1 and People API v1 over plain fetch with typed helpers. Permissions are granted on
@@ -61,7 +62,12 @@ export async function googleSession(db: Executor): Promise<GoogleSession> {
   }
   if (!token) throw googleNotConnected();
   const signIn = row.email.toLowerCase();
-  const session: GoogleSession = { token, mailbox: signIn, me: new Set([signIn]) };
+  // Every address allowed to sign in is hers too, so none of them is ever imported as a person.
+  const session: GoogleSession = {
+    token,
+    mailbox: signIn,
+    me: new Set([signIn, ...parseAllowedEmails(process.env.ALLOWED_EMAILS)])
+  };
   const profile = await gmail<{ emailAddress?: string | null }>(session, "/profile");
   const mailbox = profile?.emailAddress?.toLowerCase();
   if (mailbox?.includes("@")) {

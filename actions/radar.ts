@@ -193,11 +193,26 @@ export const radarFacets = defineAction({
 });
 
 const WEEK_MS = 7 * 86_400_000;
+// A run's companies are stamped with the run's start time; its log entry follows within minutes.
+const RUN_WINDOW_MS = 60 * 60 * 1000;
+
+// True when the company was created by the first successful run of a source it was seen in:
+// the bulk import of everything that source already listed, not a new find.
+const fromFirstImport = sql`(
+  select 1 from sightings si
+  join (
+    select entity_id, min(at) as first_at from activity_log
+    where action = 'ingestRadar' and json_extract(data, '$.ok') = 1
+    group by entity_id
+  ) fr on fr.entity_id = si.source_id
+  where si.company_id = "companies"."id"
+    and "companies"."first_seen_at" between fr.first_at - ${RUN_WINDOW_MS} and fr.first_at
+)`;
 
 export const radarFindsByWeek = defineAction({
   name: "radarFindsByWeek",
   description:
-    "How many companies Radar first found in each of the last N weeks (rolling 7-day windows ending now), oldest first.",
+    "How many companies Radar first found in each of the last N weeks (rolling 7-day windows ending now), oldest first. Companies from a source's first import are left out, so only genuinely new finds count.",
   kind: "read",
   input: z.object({
     weeks: z.number().int().min(1).max(26).default(8),
@@ -214,7 +229,11 @@ export const radarFindsByWeek = defineAction({
       .select({ bucket, n: count() })
       .from(companies)
       .where(
-        and(gte(companies.firstSeenAt, new Date(start)), lte(companies.firstSeenAt, new Date(end)))
+        and(
+          gte(companies.firstSeenAt, new Date(start)),
+          lte(companies.firstSeenAt, new Date(end)),
+          sql`not exists ${fromFirstImport}`
+        )
       )
       .groupBy(bucket);
     const counts = new Array<number>(input.weeks).fill(0);

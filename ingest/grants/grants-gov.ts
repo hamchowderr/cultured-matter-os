@@ -1,6 +1,7 @@
 import { decodeHTML } from "entities";
 
 import { stripHtml } from "@/ingest/radar/types";
+import { MIN_REAL_AMOUNT } from "@/lib/format";
 import { dateOnly, type Fetch, type GrantRecord, type GrantSource } from "./types";
 
 const API = "https://api.grants.gov/v1/api";
@@ -74,9 +75,10 @@ const fromUs = (s: string | undefined) => {
   const m = s?.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   return m ? dateOnly(+m[3], +m[1], +m[2]) : null;
 };
+// Placeholder award figures such as "1" and "2" (common on Requests for Information) are dropped.
 const money = (s: string | undefined) => {
   const n = Number(s);
-  return s && Number.isFinite(n) && n > 0 ? n : null;
+  return s && Number.isFinite(n) && n >= MIN_REAL_AMOUNT ? n : null;
 };
 
 async function mapLimit<T, R>(

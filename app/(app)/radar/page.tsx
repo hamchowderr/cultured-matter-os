@@ -2,6 +2,8 @@ import { cookies } from "next/headers";
 
 import { countWarmPaths, radarFacets, searchCompanies } from "@/actions/server";
 import { PageHeader } from "@/components/layout/page-shell";
+import { MONITORS } from "@/ingest/monitors/pages";
+import { RADAR_SOURCES } from "@/ingest/radar/run";
 import { CATEGORIES } from "@/lib/categories";
 import { STAGE_GROUPS, type StageGroup } from "@/lib/stages";
 import { generateMeta } from "@/lib/utils";
@@ -19,6 +21,10 @@ export async function generateMetadata() {
 }
 
 const PAGE_SIZE = 24;
+
+// Built from the feeds and watched pages Radar actually reads, so it can't go stale.
+const SOURCE_NAMES = [...RADAR_SOURCES, ...MONITORS].map((s) => s.name);
+const SOURCES_LINE = `Early-stage climate and materials startups from ${SOURCE_NAMES.length} free sources: ${SOURCE_NAMES.slice(0, -1).join(", ")} and ${SOURCE_NAMES.at(-1)}.`;
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -59,11 +65,8 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   return (
     <div className="space-y-6">
       <VisitMarker />
-      <PageHeader
-        title="Radar"
-        description="Early-stage climate and materials startups from SOSV, Greentown Labs, Y Combinator and CTVC."
-      />
-      {facets.ok && <RadarSummary facets={facets.data} hasBaseline={!!baseline} />}
+      <PageHeader title="Radar" description={SOURCES_LINE} />
+      {facets.ok && <RadarSummary facets={facets.data} />}
       <RadarFilters
         filters={{ view, category, stage, source, query, newOnly }}
         facets={facets.ok ? facets.data : null}

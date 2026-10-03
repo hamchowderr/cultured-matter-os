@@ -9,7 +9,7 @@ import {
   searchGrants,
   setupStatus
 } from "@/actions/server";
-import { CompanyCard, GrantCard } from "@/components/cards";
+import { CompanyCard } from "@/components/cards";
 import { ComingSoon } from "@/components/layout/page-shell";
 import { GetStarted } from "@/components/setup/get-started";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,8 +44,6 @@ function greeting(now: Date) {
   );
   return hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 }
-
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 // Layout from the UI kit's default dashboard (app/dashboard/(auth)/default): a heading row,
 // a row of summary cards, then a three-column card grid.
@@ -82,14 +80,13 @@ export default async function Page() {
   const t = tasks.ok ? tasks.data : { overdue: [], today: [], week: [] };
   const taskCount = t.overdue.length + t.today.length + t.week.length;
   const allClosing = grants.ok ? grants.data.grants : [];
-  const closing = allClosing.slice(0, 5);
   const nextDeadline = allClosing[0]?.deadline;
   const finds = radar.ok ? radar.data : { companies: [], total: 0 };
   const weeks = weekly.ok ? weekly.data.weeks : [];
   const showChart = weeks.some((w) => w.count > 0);
   const showSetup = setup.ok && setup.data.done < setup.data.total;
   const nothing =
-    pending.length === 0 && taskCount === 0 && closing.length === 0 && finds.total === 0;
+    pending.length === 0 && taskCount === 0 && allClosing.length === 0 && finds.total === 0;
 
   return (
     <div className="space-y-4">
@@ -173,7 +170,7 @@ export default async function Page() {
         {taskCount > 0 && (
           <Section
             title="Tasks"
-            description={`${plural(taskCount, "open task")}, overdue or due within 7 days`}
+            description="Overdue or due within 7 days"
             href="/projects"
             linkLabel="All projects"
             className="lg:col-span-2"
@@ -182,25 +179,11 @@ export default async function Page() {
           </Section>
         )}
 
-        {closing.length > 0 && (
-          <Section
-            title="Grants closing within 30 days"
-            href="/grants?soon=1"
-            linkLabel="Open the board"
-          >
-            <div className="space-y-3">
-              {closing.map((g) => (
-                <GrantCard key={g.id} grant={g} now={now} />
-              ))}
-            </div>
-          </Section>
-        )}
-
         {finds.total > 0 && (
           <Section
             title={baselineRaw ? "New on Radar since your last visit" : "New on Radar this week"}
             href={baselineRaw ? "/radar?new=1" : "/radar"}
-            linkLabel={`See all ${finds.total}`}
+            linkLabel="See them all"
             className="lg:col-span-3"
           >
             <div className="grid gap-3 md:grid-cols-2">

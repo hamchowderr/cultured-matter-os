@@ -164,10 +164,18 @@ export function RadarList({
       <Card>
         <CardHeader>
           <CardTitle>Companies</CardTitle>
-          <CardDescription>
-            {total.toLocaleString()} {total === 1 ? "company" : "companies"}
-            {pages > 1 && ` · page ${page} of ${pages}`}
-          </CardDescription>
+          {/* The tab already shows the unfiltered count, so the total appears only when filtered. */}
+          {(hasFilters || pages > 1) && (
+            <CardDescription>
+              {[
+                hasFilters &&
+                  `${total.toLocaleString()} ${total === 1 ? "company matches" : "companies match"} your filters`,
+                pages > 1 && `page ${page} of ${pages}`
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent>
           {companies.length === 0 ? (
@@ -203,7 +211,7 @@ export function RadarList({
             <div className="flex items-center justify-end space-x-2 pt-4">
               <div className="text-muted-foreground flex-1 text-sm tabular-nums">
                 Showing {((page - 1) * pageSize + 1).toLocaleString()} to{" "}
-                {Math.min(page * pageSize, total).toLocaleString()} of {total.toLocaleString()}
+                {Math.min(page * pageSize, total).toLocaleString()}
               </div>
               <nav className="space-x-2" aria-label="Pages">
                 <Button size="sm" variant="outline" disabled={page <= 1} asChild={page > 1}>

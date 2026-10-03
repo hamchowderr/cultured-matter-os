@@ -2,12 +2,20 @@
 
 // Ported from the kit's project-management/components/reminders.tsx: the reminders are the
 // open tasks that are overdue or due in the next week. The check marks a task done.
+// The "Due this week" card above carries the counts; this card shows the tasks themselves.
 
 import { ArrowRight, CircleCheck, PlusCircleIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card";
 import { formatDue } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { DueTask, DueTasks } from "../types";
@@ -45,7 +53,8 @@ export function Reminders({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Reminders</CardTitle>
+        <CardTitle>Next up</CardTitle>
+        <CardDescription>Most urgent first. Tick a task to mark it done.</CardDescription>
         <CardAction>
           <Button variant="outline" onClick={onAdd}>
             <PlusCircleIcon />
@@ -113,8 +122,7 @@ export function Reminders({
               className="text-muted-foreground hover:text-primary"
               onClick={onShowAll}
             >
-              Show the other {rest} {rest === 1 ? "reminder" : "reminders"}{" "}
-              <ArrowRight className="size-4" />
+              See every task due soon <ArrowRight className="size-4" />
             </Button>
           </div>
         )}

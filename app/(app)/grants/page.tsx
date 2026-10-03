@@ -19,6 +19,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const query = one(sp.q)?.trim() || undefined;
   const closingSoon = one(sp.soon) === "1";
   const includeNonprofit = one(sp.all) === "1";
+  const showClosed = one(sp.closed) === "1";
 
   const view = one(sp.view) === "calendar" ? "calendar" : "board";
 
@@ -29,6 +30,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
       query,
       forProfitOnly: !includeNonprofit,
       closingWithinDays: closingSoon ? 30 : undefined,
+      hideClosed: !showClosed,
       limit: 200
     }),
     tasksDueBetween({ from: new Date(now - 90 * DAY), to: new Date(now + 366 * DAY) })
@@ -44,7 +46,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         <GrantsKanban
           grants={result.data.grants}
           tasks={due.ok ? due.data.tasks : []}
-          filters={{ query, closingSoon, includeNonprofit }}
+          filters={{ query, closingSoon, includeNonprofit, showClosed }}
           view={view}
         />
       ) : (
