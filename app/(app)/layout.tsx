@@ -1,15 +1,22 @@
 import React from "react";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/sidebar/app-sidebar";
 import { SiteHeader } from "@/components/layout/header";
+import { getSession } from "@/lib/session";
 
 export default async function AppLayout({
   children
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // proxy.ts already redirects signed-out visitors; this keeps the layout safe on its own.
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+  const { name, email, image } = session.user;
+
   const cookieStore = await cookies();
   const defaultOpen =
     cookieStore.get("sidebar_state")?.value === "true" ||
@@ -27,10 +34,11 @@ export default async function AppLayout({
           "--content-full-height":
             "calc(100vh - var(--header-height) - (var(--content-padding) * 2) - (var(--content-margin) * 2))"
         } as React.CSSProperties
-      }>
+      }
+    >
       <AppSidebar />
       <SidebarInset>
-        <SiteHeader />
+        <SiteHeader user={{ name, email, image }} />
         <div className="bg-background flex flex-1 flex-col">
           <div className="@container/main p-(--content-padding) xl:group-data-[theme-content-layout=centered]/layout:container xl:group-data-[theme-content-layout=centered]/layout:mx-auto">
             {children}
