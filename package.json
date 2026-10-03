@@ -12,7 +12,8 @@
     "db:studio": "drizzle-kit studio",
     "test": "vitest run",
     "ingest:radar": "tsx scripts/ingest-radar.mts",
-    "ingest:grants": "tsx scripts/ingest-grants.mts"
+    "ingest:grants": "tsx scripts/ingest-grants.mts",
+    "ingest:monitors": "tsx scripts/ingest-monitors.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
@@ -29,6 +30,7 @@
     "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^5.2.2",
     "@libsql/client": "^0.18.0",
+    "@mendable/firecrawl-js": "^4.42.4",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.8",

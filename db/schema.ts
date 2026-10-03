@@ -33,7 +33,7 @@ export const sources = sqliteTable("sources", {
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
   kind: text("kind", {
-    enum: ["wp_json", "yc_tag", "rss", "grants_gov", "ca_grants", "nsf_awards"]
+    enum: ["wp_json", "yc_tag", "rss", "grants_gov", "ca_grants", "nsf_awards", "firecrawl"]
   }).notNull(),
   url: text("url").notNull(),
   lastCheckedAt: integer("last_checked_at", { mode: "timestamp_ms" }),
