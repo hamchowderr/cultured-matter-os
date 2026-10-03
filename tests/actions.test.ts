@@ -36,6 +36,7 @@ describe("registry", () => {
         "searchCompanies",
         "getCompany",
         "radarFacets",
+        "radarFindsByWeek",
         "starCompany",
         "resetCompany",
         "shortlistCompany",
@@ -146,6 +147,21 @@ describe("radar", () => {
 
     const bySource = await A.searchCompanies.run({ sourceSlug: "sosv" }, ctx());
     expect(bySource.companies.map((c) => c.name)).toEqual(["Glowcell"]);
+  });
+
+  it("counts first finds per week, oldest first", async () => {
+    // A fixed "now" far from the other tests' companies keeps the windows to this test's rows.
+    const now = new Date("2030-01-29T12:00:00Z");
+    const day = 86_400_000;
+    const ago = (days: number) => new Date(now.getTime() - days * day);
+    await seedCompany({ name: "Weekly A", firstSeenAt: ago(1) });
+    await seedCompany({ name: "Weekly B", firstSeenAt: ago(2) });
+    await seedCompany({ name: "Weekly C", firstSeenAt: ago(9) });
+    await seedCompany({ name: "Weekly D", firstSeenAt: ago(40) });
+
+    const { weeks } = await A.radarFindsByWeek.run({ weeks: 4, now }, ctx());
+    expect(weeks.map((w) => w.count)).toEqual([0, 0, 1, 2]);
+    expect(weeks[3].start.getTime()).toBe(now.getTime() - 7 * day);
   });
 
   it("rejects bad input", async () => {

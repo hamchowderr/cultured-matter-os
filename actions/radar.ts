@@ -6,8 +6,10 @@ import {
   exists,
   getTableColumns,
   gt,
+  gte,
   inArray,
   like,
+  lte,
   or,
   sql,
   type SQL
@@ -176,6 +178,39 @@ export const radarFacets = defineAction({
       newCount: newRow.n,
       statuses,
       sources: sourceRows
+    };
+  }
+});
+
+const WEEK_MS = 7 * 86_400_000;
+
+export const radarFindsByWeek = defineAction({
+  name: "radarFindsByWeek",
+  description:
+    "How many companies Radar first found in each of the last N weeks (rolling 7-day windows ending now), oldest first.",
+  kind: "read",
+  input: z.object({
+    weeks: z.number().int().min(1).max(26).default(8),
+    now: z.coerce.date().optional()
+  }),
+  output: z.object({
+    weeks: z.array(z.object({ start: z.date(), count: z.number() }))
+  }),
+  async handler(input, db) {
+    const end = (input.now ?? new Date()).getTime();
+    const start = end - input.weeks * WEEK_MS;
+    const bucket = sql<number>`cast((${companies.firstSeenAt} - ${start}) / ${WEEK_MS} as integer)`;
+    const rows = await db
+      .select({ bucket, n: count() })
+      .from(companies)
+      .where(
+        and(gte(companies.firstSeenAt, new Date(start)), lte(companies.firstSeenAt, new Date(end)))
+      )
+      .groupBy(bucket);
+    const counts = new Array<number>(input.weeks).fill(0);
+    for (const r of rows) counts[Math.min(Number(r.bucket), input.weeks - 1)] += r.n;
+    return {
+      weeks: counts.map((n, i) => ({ start: new Date(start + i * WEEK_MS), count: n }))
     };
   }
 });

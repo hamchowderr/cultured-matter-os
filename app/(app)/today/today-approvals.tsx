@@ -10,7 +10,13 @@ import { ApprovalCard } from "@/components/cards";
 import { cn } from "@/lib/utils";
 import { Section } from "./section";
 
-export function TodayApprovals({ approvals }: { approvals: Approval[] }) {
+export function TodayApprovals({
+  approvals,
+  className
+}: {
+  approvals: Approval[];
+  className?: string;
+}) {
   const router = useRouter();
   const [refreshing, startTransition] = useTransition();
   const [saving, setSaving] = useState<string | null>(null);
@@ -36,7 +42,13 @@ export function TodayApprovals({ approvals }: { approvals: Approval[] }) {
   }
 
   return (
-    <Section title="Needs your approval" href="/archive" linkLabel="See the history">
+    <Section
+      id="approvals"
+      className={className}
+      title="Needs your approval"
+      href="/archive"
+      linkLabel="See the history"
+    >
       <div
         className={cn("grid gap-3 transition-opacity md:grid-cols-2", refreshing && "opacity-70")}
       >
