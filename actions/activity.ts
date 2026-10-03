@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, inArray, like, lt } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, like, lt, ne } from "drizzle-orm";
 import { z } from "zod/v4";
 
 import type { Executor } from "@/db";
@@ -176,6 +176,8 @@ export const listActivity = defineAction({
   output: z.object({ entries: z.array(activityEntrySchema), total: z.number() }),
   async handler(input, db) {
     const where = and(
+      // Reading a notification is logged but is not a change worth showing in the Archive.
+      ne(activityLog.entityType, "notification"),
       input.entityType ? eq(activityLog.entityType, input.entityType) : undefined,
       input.from ? gte(activityLog.at, input.from) : undefined,
       input.to ? lt(activityLog.at, input.to) : undefined,
