@@ -21,7 +21,7 @@ export function IphonePanel() {
         </span>
         <ChevronDownIcon className="text-muted-foreground size-4 transition-transform group-data-[state=open]:rotate-180" />
       </CollapsibleTrigger>
-      <CollapsibleContent className="space-y-4 border-t p-4 text-sm">
+      <CollapsibleContent className="max-h-[50vh] space-y-4 overflow-y-auto border-t p-4 text-sm">
         <div className="space-y-1">
           <p className="font-medium">What you were sent</p>
           <p className="text-muted-foreground">
