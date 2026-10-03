@@ -54,6 +54,9 @@ export function RadarFilters({
     startTransition(() => router.replace(`${pathname}?${next.toString()}`, { scroll: false }));
   }
 
+  // Follow the URL when a link elsewhere on the page (a summary card, Clear filters) changes it.
+  useEffect(() => setQuery(filters.query ?? ""), [filters.query]);
+
   // Search as she types, after a short pause.
   useEffect(() => {
     if (query === (filters.query ?? "")) return;

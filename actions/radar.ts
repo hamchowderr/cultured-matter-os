@@ -144,17 +144,18 @@ export const getCompany = defineAction({
 export const radarFacets = defineAction({
   name: "radarFacets",
   description:
-    "Counts for the Radar filters: per source, per status, and how many are new since a date.",
+    "Counts for the Radar filters: per source, per status, per category (most first), and how many are new since a date.",
   kind: "read",
   input: z.object({ newSince: z.coerce.date().optional() }),
   output: z.object({
     total: z.number(),
     newCount: z.number(),
     statuses: z.record(z.string(), z.number()),
-    sources: z.array(z.object({ slug: z.string(), name: z.string(), count: z.number() }))
+    sources: z.array(z.object({ slug: z.string(), name: z.string(), count: z.number() })),
+    categories: z.array(z.object({ name: z.string(), count: z.number() }))
   }),
   async handler(input, db) {
-    const [statusRows, sourceRows, [newRow]] = await Promise.all([
+    const [statusRows, sourceRows, [newRow], categoryRows] = await Promise.all([
       db.select({ status: companies.status, n: count() }).from(companies).groupBy(companies.status),
       db
         .select({
@@ -168,14 +169,21 @@ export const radarFacets = defineAction({
         .orderBy(sources.name),
       input.newSince
         ? db.select({ n: count() }).from(companies).where(gt(companies.firstSeenAt, input.newSince))
-        : Promise.resolve([{ n: 0 }])
+        : Promise.resolve([{ n: 0 }]),
+      db.all<{ name: string; count: number }>(sql`
+        select value as name, count(*) as count
+        from companies, json_each(companies.categories)
+        group by value
+        order by count desc, value
+      `)
     ]);
     const statuses = Object.fromEntries(statusRows.map((r) => [r.status, r.n]));
     return {
       total: statusRows.reduce((s, r) => s + r.n, 0),
       newCount: newRow.n,
       statuses,
-      sources: sourceRows
+      sources: sourceRows,
+      categories: categoryRows.map((r) => ({ name: r.name, count: Number(r.count) }))
     };
   }
 });

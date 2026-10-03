@@ -146,6 +146,11 @@ describe("radar", () => {
 
     const bySource = await A.searchCompanies.run({ sourceSlug: "sosv" }, ctx());
     expect(bySource.companies.map((c) => c.name)).toEqual(["Glowcell"]);
+
+    await seedCompany({ name: "Glowtwo", categories: ["Beauty"] });
+    const facets = await A.radarFacets.run({}, ctx());
+    expect(facets.categories[0]).toEqual({ name: "Beauty", count: 2 });
+    expect(facets.categories).toContainEqual({ name: "Industry", count: 1 });
   });
 
   it("rejects bad input", async () => {
