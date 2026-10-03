@@ -34,6 +34,7 @@ import {
   classifyCapture,
   createCapture,
   createTask,
+  decideApproval,
   listApprovals,
   listCaptures,
   requestApproval,
@@ -74,6 +75,7 @@ export {
   unlinkTaskFromProject,
   requestApproval,
   listApprovals,
+  decideApproval,
   dueTasks
 };
 
@@ -112,6 +114,7 @@ export const allActions = [
   unlinkTaskFromProject,
   requestApproval,
   listApprovals,
+  decideApproval,
   dueTasks
 ] as const;
 

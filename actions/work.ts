@@ -169,6 +169,46 @@ export const requestApproval = defineAction({
   })
 });
 
+export const decideApproval = defineAction({
+  name: "decideApproval",
+  description:
+    "Approve or reject a pending approval, with an optional note. Records the decision only; an approval can be decided once.",
+  kind: "write",
+  input: z.object({
+    approvalId: id,
+    decision: z.enum(["approve", "reject"]),
+    note: z.string().trim().max(500).optional()
+  }),
+  output: approvalSchema,
+  async handler(input, db) {
+    // Only a pending row matches, so two decisions on the same item cannot both win.
+    const [row] = await db
+      .update(approvals)
+      .set({
+        status: input.decision === "approve" ? "approved" : "rejected",
+        decidedAt: new Date()
+      })
+      .where(and(eq(approvals.id, input.approvalId), eq(approvals.status, "pending")))
+      .returning();
+    if (row) {
+      // Later: carry out the approved action per kind (row.action), e.g. Outlook drafts or chat.
+      return row;
+    }
+    const [existing] = await db
+      .select({ status: approvals.status })
+      .from(approvals)
+      .where(eq(approvals.id, input.approvalId));
+    if (!existing) throw new ActionError("not_found", "Approval not found");
+    throw new ActionError("conflict", `This approval was already ${existing.status}`);
+  },
+  log: (input, approval) => ({
+    entityType: "approval",
+    entityId: approval.id,
+    summary: `${input.decision === "approve" ? "Approved" : "Rejected"}: ${approval.summary}`,
+    data: input.note ? { note: input.note } : undefined
+  })
+});
+
 export const listCaptures = defineAction({
   name: "listCaptures",
   description:
