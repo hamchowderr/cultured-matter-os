@@ -68,19 +68,22 @@ export const STEPS: Step[] = [
 
 const day = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
 
+// Looked up by id, so reordering STEPS never pairs a step with another one's text.
+const describe = (id: StepId) => STEPS.find((step) => step.id === id)!.description;
+
 // One plain line about where each step stands.
 export function stepSummary(id: StepId, status: SetupStatus): string {
   switch (id) {
     case "linkedin":
       return status.linkedin.done
         ? `${status.linkedin.contacts} ${status.linkedin.contacts === 1 ? "person" : "people"} from LinkedIn`
-        : STEPS[0].description;
+        : describe("linkedin");
     case "outlook":
-      return status.outlook.done ? "Connected" : STEPS[1].description;
+      return status.outlook.done ? "Connected" : describe("outlook");
     case "iphone":
       return status.iphone.lastCaptureAt
         ? `Last capture from your iPhone on ${day.format(status.iphone.lastCaptureAt)}`
-        : STEPS[2].description;
+        : describe("iphone");
     case "newsletter":
       return status.newsletter.done ? "Connected" : "Waiting on your newsletter tool";
   }
