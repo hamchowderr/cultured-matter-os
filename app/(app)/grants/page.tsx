@@ -1,7 +1,7 @@
-import { searchGrants } from "@/actions/server";
+import { searchGrants, tasksDueBetween } from "@/actions/server";
 import { PageHeader } from "@/components/layout/page-shell";
 import { generateMeta } from "@/lib/utils";
-import { GrantsBoard } from "./grants-board";
+import GrantsKanban from "./components/grants-kanban";
 
 export async function generateMetadata() {
   return generateMeta({
@@ -11,6 +11,7 @@ export async function generateMetadata() {
 }
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+const DAY = 86_400_000;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
@@ -19,23 +20,32 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const closingSoon = one(sp.soon) === "1";
   const includeNonprofit = one(sp.all) === "1";
 
-  const result = await searchGrants({
-    query,
-    forProfitOnly: !includeNonprofit,
-    closingWithinDays: closingSoon ? 30 : undefined,
-    limit: 200
-  });
+  const view = one(sp.view) === "calendar" ? "calendar" : "board";
+
+  // Tasks for the calendar: three months back through a year ahead.
+  const now = Date.now();
+  const [result, due] = await Promise.all([
+    searchGrants({
+      query,
+      forProfitOnly: !includeNonprofit,
+      closingWithinDays: closingSoon ? 30 : undefined,
+      limit: 200
+    }),
+    tasksDueBetween({ from: new Date(now - 90 * DAY), to: new Date(now + 366 * DAY) })
+  ]);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Grants"
-        description="Federal and California grants, soonest deadline first. Move a grant across the board as you work on it."
+        description="Federal and California grants, soonest deadline first. Drag a grant across the board as you work on it, or see deadlines by month on the calendar."
       />
       {result.ok ? (
-        <GrantsBoard
+        <GrantsKanban
           grants={result.data.grants}
+          tasks={due.ok ? due.data.tasks : []}
           filters={{ query, closingSoon, includeNonprofit }}
+          view={view}
         />
       ) : (
         <p className="text-destructive text-sm">Couldn’t load grants: {result.error.message}</p>
