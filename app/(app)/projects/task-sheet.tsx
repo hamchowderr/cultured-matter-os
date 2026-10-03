@@ -26,7 +26,7 @@ import {
   SheetTitle
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { fromDateInput, type ProjectSummary, type ProjectTask } from "./projects-view";
+import { fromDateInput, type ProjectSummary, type ProjectTask } from "./types";
 
 const toDateInput = (d: Date | null) =>
   d

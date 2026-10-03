@@ -101,6 +101,9 @@ export async function createProject(input: In<typeof A.createProject>) {
 export async function updateProject(input: In<typeof A.updateProject>) {
   return toResult(() => A.updateProject.run(input));
 }
+export async function listTasks(input: In<typeof A.listTasks>) {
+  return toResult(() => A.listTasks.run(input));
+}
 export async function updateTask(input: In<typeof A.updateTask>) {
   return toResult(() => A.updateTask.run(input));
 }
