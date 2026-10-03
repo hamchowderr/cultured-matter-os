@@ -154,6 +154,12 @@ describe("radar", () => {
     const facets = await A.radarFacets.run({}, ctx());
     expect(facets.categories[0]).toEqual({ name: "Beauty", count: 2 });
     expect(facets.categories).toContainEqual({ name: "Industry", count: 1 });
+
+    // Passed companies don't count toward categories.
+    await seedCompany({ name: "Glowgone", categories: ["Beauty", "Dropped"], status: "passed" });
+    const after = await A.radarFacets.run({}, ctx());
+    expect(after.categories[0]).toEqual({ name: "Beauty", count: 2 });
+    expect(after.categories.some((c) => c.name === "Dropped")).toBe(false);
   });
 
   it("counts first finds per week, oldest first", async () => {

@@ -216,8 +216,10 @@ function KanbanRoot<T>(props: KanbanRootProps<T>) {
   const lastOverIdRef = React.useRef<UniqueIdentifier | null>(null);
   const hasMovedRef = React.useRef(false);
   const sensors = useSensors(
-    useSensor(MouseSensor),
-    useSensor(TouchSensor),
+    // A drag starts only after the pointer moves, so a plain click still reaches the item.
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    // Touch waits for a short press so a tap opens and a swipe scrolls.
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
     useSensor(KeyboardSensor, {
       coordinateGetter
     })
@@ -612,7 +614,8 @@ const KanbanBoard = React.forwardRef<HTMLDivElement, KanbanBoardProps>((props, f
           context.orientation === "horizontal"
             ? horizontalListSortingStrategy
             : verticalListSortingStrategy
-        }>
+        }
+      >
         <BoardPrimitive
           aria-orientation={context.orientation}
           data-orientation={context.orientation}
@@ -734,7 +737,8 @@ const KanbanColumn = React.forwardRef<HTMLDivElement, KanbanColumnProps>((props,
           context.orientation === "horizontal"
             ? horizontalListSortingStrategy
             : verticalListSortingStrategy
-        }>
+        }
+      >
         <ColumnPrimitive
           id={id}
           data-disabled={disabled}
@@ -973,8 +977,10 @@ const dropAnimation: DropAnimation = {
   })
 };
 
-interface KanbanOverlayProps
-  extends Omit<React.ComponentPropsWithoutRef<typeof DragOverlay>, "children"> {
+interface KanbanOverlayProps extends Omit<
+  React.ComponentPropsWithoutRef<typeof DragOverlay>,
+  "children"
+> {
   container?: Element | DocumentFragment | null;
   children?:
     | ((params: { value: UniqueIdentifier; variant: "column" | "item" }) => React.ReactNode)
@@ -1000,7 +1006,8 @@ function KanbanOverlay(props: KanbanOverlayProps) {
       dropAnimation={dropAnimation}
       modifiers={context.modifiers}
       className={cn(!context.flatCursor && "cursor-grabbing")}
-      {...overlayProps}>
+      {...overlayProps}
+    >
       <KanbanOverlayContext.Provider value={true}>
         {context.activeId && children
           ? typeof children === "function"

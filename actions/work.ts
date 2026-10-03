@@ -6,7 +6,7 @@ import type { Executor } from "@/db";
 import { graphSession } from "@/lib/graph";
 import { ActionError, defineAction } from "./define";
 import { OUTLOOK_DRAFT, saveOutlookDraft } from "./outlook";
-import { approvalSchema, captureSchema, id, taskSchema } from "./schemas";
+import { approvalSchema, captureSchema, id, taskPriority, taskSchema } from "./schemas";
 
 const taskStatus = z.enum(["todo", "in_progress", "waiting", "replied", "done"]);
 
@@ -16,6 +16,7 @@ const newTask = z.object({
   parentTaskId: id.optional(),
   notes: z.string().trim().max(5000).optional(),
   status: taskStatus.default("todo"),
+  priority: taskPriority.default("medium"),
   dueDate: z.coerce.date().optional()
 });
 
@@ -126,7 +127,8 @@ export const classifyCapture = defineAction({
 
 export const createTask = defineAction({
   name: "createTask",
-  description: "Create a task, optionally in a project, as a subtask, or with a due date.",
+  description:
+    "Create a task, optionally in a project, as a subtask, with a due date or a priority (low, medium, high, urgent; default medium).",
   kind: "write",
   input: newTask,
   output: taskSchema,

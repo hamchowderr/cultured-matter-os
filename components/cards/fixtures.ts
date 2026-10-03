@@ -71,6 +71,7 @@ export const taskFixture: Task = {
   title: "Ask Jordan for an intro to Soliome",
   notes: null,
   status: "waiting",
+  priority: "high",
   dueDate: days(3),
   outlookConversationId: null,
   completedAt: null,

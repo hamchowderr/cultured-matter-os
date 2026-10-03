@@ -29,6 +29,13 @@
       "when": 1791041436721,
       "tag": "0003_v1_1",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1791051065087,
+      "tag": "0004_task_priority",
+      "breakpoints": true
     }
   ]
 }

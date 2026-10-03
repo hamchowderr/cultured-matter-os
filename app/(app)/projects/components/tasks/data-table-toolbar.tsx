@@ -1,7 +1,7 @@
 "use client";
 
-// Ported from the kit's apps/tasks/components/data-table-toolbar.tsx: Status, Project and Due
-// filters in place of Status and Priority.
+// Ported from the kit's apps/tasks/components/data-table-toolbar.tsx: Status and Priority
+// filters, plus Project and Due.
 
 import { Table } from "@tanstack/react-table";
 import { PlusIcon, X } from "lucide-react";
@@ -10,7 +10,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { projectIdsOf, type ProjectSummary, type TaskRow } from "../../types";
-import { dueBuckets, statuses } from "./data";
+import { dueBuckets, priorities, statuses } from "./data";
 import { DataTableFacetedFilter } from "./data-table-faceted-filter";
 import { DataTableViewOptions } from "./data-table-view-options";
 
@@ -46,6 +46,13 @@ export function DataTableToolbar({ table, projects, onAdd }: DataTableToolbarPro
             column={table.getColumn("status")}
             title="Status"
             options={statuses}
+          />
+        )}
+        {table.getColumn("priority") && (
+          <DataTableFacetedFilter
+            column={table.getColumn("priority")}
+            title="Priority"
+            options={priorities}
           />
         )}
         {table.getColumn("project") && (

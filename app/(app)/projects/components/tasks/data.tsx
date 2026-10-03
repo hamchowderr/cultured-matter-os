@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { daysUntil } from "@/lib/format";
+export { priorities, priorityRank } from "@/lib/task-priority";
 import type { TaskStatus } from "../../types";
 
 export const statuses: {

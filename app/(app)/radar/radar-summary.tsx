@@ -71,7 +71,10 @@ export function RadarSummary({ facets, hasBaseline }: { facets: Facets; hasBasel
           href="/radar?view=starred"
         />
       </div>
-      <TopCategories categories={facets.categories} total={facets.total} />
+      <TopCategories
+        categories={facets.categories}
+        total={facets.total - (s.passed ?? 0)}
+      />
     </div>
   );
 }
@@ -131,7 +134,8 @@ function TopCategories({
       <CardHeader>
         <CardTitle>Top categories</CardTitle>
         <CardDescription>
-          Across {total.toLocaleString()} {total === 1 ? "company" : "companies"} on Radar.
+          Across {total.toLocaleString()} {total === 1 ? "company" : "companies"} on Radar, not
+          counting passed.
         </CardDescription>
       </CardHeader>
       <CardContent>

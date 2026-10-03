@@ -26,6 +26,7 @@ import {
   SheetTitle
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { priorities } from "@/lib/task-priority";
 import { fromDateInput, type ProjectSummary, type ProjectTask } from "./types";
 
 const toDateInput = (d: Date | null) =>
@@ -94,7 +95,7 @@ export function TaskSheet({
             <SheetHeader className="px-0">
               <SheetTitle className="sr-only">Edit task</SheetTitle>
               <SheetDescription className="sr-only">
-                Title, notes, due date, subtasks and projects.
+                Title, status, priority, notes, due date, subtasks and projects.
               </SheetDescription>
               <Input
                 value={title}
@@ -128,6 +129,26 @@ export function TaskSheet({
                   {Object.entries(taskStatusLabel).map(([v, l]) => (
                     <NativeSelectOption key={v} value={v}>
                       {l}
+                    </NativeSelectOption>
+                  ))}
+                </NativeSelect>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="task-priority">Priority</Label>
+                <NativeSelect
+                  id="task-priority"
+                  size="sm"
+                  value={task.priority}
+                  onChange={(e) =>
+                    save({
+                      taskId: task.id,
+                      priority: e.target.value as ProjectTask["priority"]
+                    })
+                  }
+                >
+                  {priorities.map((p) => (
+                    <NativeSelectOption key={p.value} value={p.value}>
+                      {p.label}
                     </NativeSelectOption>
                   ))}
                 </NativeSelect>

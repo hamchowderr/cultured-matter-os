@@ -284,6 +284,9 @@ export const tasks = sqliteTable(
     status: text("status", { enum: ["todo", "in_progress", "waiting", "replied", "done"] })
       .notNull()
       .default("todo"),
+    priority: text("priority", { enum: ["low", "medium", "high", "urgent"] })
+      .notNull()
+      .default("medium"),
     dueDate: integer("due_date", { mode: "timestamp_ms" }),
     // The Outlook thread of a follow-up drafted from this task; the daily reply check watches it.
     outlookConversationId: text("outlook_conversation_id"),

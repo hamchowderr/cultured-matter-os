@@ -88,6 +88,9 @@ export default function GrantsKanban({
   React.useEffect(() => setColumns(group(grants)), [grants, setColumns]);
 
   const dragFrom = React.useRef<{ column: ColumnKey; snapshot: Columns } | null>(null);
+  // The click that ends a drag must not also open the card.
+  const dragging = React.useRef(false);
+  const endDrag = () => setTimeout(() => (dragging.current = false));
   const [openGrant, setOpenGrant] = React.useState<Grant | null>(null);
   const [filtersOpen, setFiltersOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState(filters.query ?? "");
@@ -146,11 +149,13 @@ export default function GrantsKanban({
   function onDragStart(event: DragStartEvent) {
     const column = columnOf(columnsRef.current, String(event.active.id));
     dragFrom.current = column ? { column, snapshot: columnsRef.current } : null;
+    dragging.current = true;
   }
 
   function onDragEnd(event: DragEndEvent) {
     const from = dragFrom.current;
     dragFrom.current = null;
+    endDrag();
     if (!from) return;
     const id = String(event.active.id);
     const to = columnOf(columnsRef.current, id);
@@ -171,6 +176,7 @@ export default function GrantsKanban({
   function onDragCancel() {
     if (dragFrom.current) setColumns(dragFrom.current.snapshot);
     dragFrom.current = null;
+    endDrag();
   }
 
   // The status menu in the grant dialog moves a grant without dragging.
@@ -306,7 +312,10 @@ export default function GrantsKanban({
                       <div className="flex flex-col gap-2 p-0.5">
                         {items.map((grant) => (
                           <Kanban.Item key={grant.id} value={grant.id} asHandle asChild>
-                            <GrantKanbanCard grant={grant} onOpen={() => setOpenGrant(grant)} />
+                            <GrantKanbanCard
+                              grant={grant}
+                              onOpen={() => !dragging.current && setOpenGrant(grant)}
+                            />
                           </Kanban.Item>
                         ))}
                       </div>
@@ -341,6 +350,8 @@ export default function GrantsKanban({
 }
 
 // Keeps the open button from starting a drag: the item listens for mouse, touch and key down.
+// A click anywhere on the card opens it; the button is the keyboard route (Space and Enter on
+// the card itself pick it up to move).
 const stopDrag = {
   onMouseDown: (e: React.SyntheticEvent) => e.stopPropagation(),
   onTouchStart: (e: React.SyntheticEvent) => e.stopPropagation(),
@@ -356,7 +367,12 @@ const GrantKanbanCard = React.forwardRef<
   const urgent = days != null && days >= 0 && days <= 14;
 
   return (
-    <Card ref={ref} className={cn("gap-4 border-0 py-4", className)} {...props}>
+    <Card
+      ref={ref}
+      className={cn("gap-4 border-0 py-4", className)}
+      {...props}
+      onClick={onOpen}
+    >
       <CardHeader className="px-4">
         <CardTitle className="text-sm leading-snug font-semibold">{grant.title}</CardTitle>
         {grant.agency && <CardDescription>{grant.agency}</CardDescription>}
@@ -378,7 +394,10 @@ const GrantKanbanCard = React.forwardRef<
             size="icon"
             className="size-7"
             aria-label={`Open ${grant.title}`}
-            onClick={onOpen}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen();
+            }}
             {...stopDrag}
           >
             <Maximize2Icon className="size-3.5" />

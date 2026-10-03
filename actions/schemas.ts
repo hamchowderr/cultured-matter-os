@@ -27,6 +27,7 @@ export type Task = z.infer<typeof taskSchema>;
 export type Approval = z.infer<typeof approvalSchema>;
 
 export const id = z.string().min(1);
+export const taskPriority = z.enum(["low", "medium", "high", "urgent"]);
 export const note = z.string().trim().max(2000).optional();
 export const limit = z.number().int().min(1).max(200).default(50);
 export const offset = z.number().int().min(0).default(0);

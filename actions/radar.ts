@@ -146,7 +146,7 @@ export const getCompany = defineAction({
 export const radarFacets = defineAction({
   name: "radarFacets",
   description:
-    "Counts for the Radar filters: per source, per status, per category (most first), and how many are new since a date.",
+    "Counts for the Radar filters: per source, per status, per category (most first, passed companies left out), and how many are new since a date.",
   kind: "read",
   input: z.object({ newSince: z.coerce.date().optional() }),
   output: z.object({
@@ -172,9 +172,11 @@ export const radarFacets = defineAction({
       input.newSince
         ? db.select({ n: count() }).from(companies).where(gt(companies.firstSeenAt, input.newSince))
         : Promise.resolve([{ n: 0 }]),
+      // Passed companies are out of the running, so they don't count toward a category.
       db.all<{ name: string; count: number }>(sql`
         select value as name, count(*) as count
         from companies, json_each(companies.categories)
+        where companies.status != 'passed'
         group by value
         order by count desc, value
       `)
