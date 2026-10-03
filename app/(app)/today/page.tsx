@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { dueTasks, listApprovals, searchCompanies, searchGrants } from "@/actions/server";
 import { CompanyCard, GrantCard } from "@/components/cards";
 import { ComingSoon } from "@/components/layout/page-shell";
+import { getSession } from "@/lib/session";
 import { HOME_TIME_ZONE } from "@/lib/time";
 import { generateMeta } from "@/lib/utils";
 import { RADAR_BASELINE_COOKIE } from "../radar/constants";
@@ -34,6 +35,8 @@ function greeting(now: Date) {
 
 export default async function Page() {
   const now = new Date();
+  const session = await getSession();
+  const firstName = session?.user.name.trim().split(/\s+/)[0] ?? "";
   const baselineRaw = (await cookies()).get(RADAR_BASELINE_COOKIE)?.value;
   // Before her first Radar visit, "new" means the last week.
   const since = baselineRaw ? new Date(Number(baselineRaw)) : new Date(now.getTime() - WEEK);
@@ -64,7 +67,10 @@ export default async function Page() {
     <div className="mx-auto max-w-5xl space-y-8">
       <header className="space-y-1">
         <p className="text-muted-foreground text-sm">{dateLabel}</p>
-        <h1 className="text-3xl font-semibold tracking-tight">{greeting(now)}, Simone</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          {greeting(now)}
+          {firstName && `, ${firstName}`}
+        </h1>
         <p className="text-muted-foreground text-sm">
           {[
             pending.length && `${pending.length} to approve`,
