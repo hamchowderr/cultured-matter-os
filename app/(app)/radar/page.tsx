@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 
-import { radarFacets, searchCompanies } from "@/actions/server";
+import { countWarmPaths, radarFacets, searchCompanies } from "@/actions/server";
 import { PageHeader } from "@/components/layout/page-shell";
 import { CATEGORIES } from "@/lib/categories";
 import { STAGE_GROUPS, type StageGroup } from "@/lib/stages";
@@ -50,6 +50,10 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     }),
     radarFacets({ newSince: baseline })
   ]);
+  // One batched lookup for the visible page.
+  const counts = list.ok
+    ? await countWarmPaths({ companyIds: list.data.companies.map((c) => c.id) })
+    : null;
 
   return (
     <div className="space-y-6">
@@ -70,6 +74,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
           page={page}
           pageSize={PAGE_SIZE}
           newSince={baseline ?? null}
+          warmPathCounts={counts?.ok ? counts.data.counts : undefined}
         />
       ) : (
         <p className="text-destructive text-sm">Couldn’t load companies: {list.error.message}</p>

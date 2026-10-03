@@ -8,6 +8,7 @@ import {
   starCompany
 } from "./radar";
 import { searchGrants, setGrantStatus } from "./grants";
+import { listActivity } from "./activity";
 import {
   createProject,
   dueTasks,
@@ -18,11 +19,23 @@ import {
   updateProject,
   updateTask
 } from "./projects";
-import { findWarmPath, importContacts, searchContacts, setContactSectors } from "./people";
+import {
+  addPairing,
+  countWarmPaths,
+  findWarmPath,
+  importContacts,
+  linkContact,
+  listPairings,
+  removePairing,
+  searchContacts,
+  setContactSectors,
+  unlinkContact
+} from "./people";
 import {
   classifyCapture,
   createCapture,
   createTask,
+  decideApproval,
   listApprovals,
   listCaptures,
   requestApproval,
@@ -39,8 +52,15 @@ export {
   resetCompany,
   searchGrants,
   setGrantStatus,
+  listActivity,
   searchContacts,
   findWarmPath,
+  countWarmPaths,
+  listPairings,
+  addPairing,
+  removePairing,
+  linkContact,
+  unlinkContact,
   importContacts,
   setContactSectors,
   createCapture,
@@ -57,6 +77,7 @@ export {
   unlinkTaskFromProject,
   requestApproval,
   listApprovals,
+  decideApproval,
   dueTasks
 };
 
@@ -71,8 +92,15 @@ export const allActions = [
   resetCompany,
   searchGrants,
   setGrantStatus,
+  listActivity,
   searchContacts,
   findWarmPath,
+  countWarmPaths,
+  listPairings,
+  addPairing,
+  removePairing,
+  linkContact,
+  unlinkContact,
   importContacts,
   setContactSectors,
   createCapture,
@@ -89,6 +117,7 @@ export const allActions = [
   unlinkTaskFromProject,
   requestApproval,
   listApprovals,
+  decideApproval,
   dueTasks
 ] as const;
 

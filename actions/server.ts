@@ -37,6 +37,9 @@ export async function searchGrants(input: In<typeof A.searchGrants>) {
 export async function setGrantStatus(input: In<typeof A.setGrantStatus>) {
   return toResult(() => A.setGrantStatus.run(input));
 }
+export async function listActivity(input: In<typeof A.listActivity>) {
+  return toResult(() => A.listActivity.run(input));
+}
 export async function searchContacts(input: In<typeof A.searchContacts>) {
   return toResult(() => A.searchContacts.run(input));
 }
@@ -48,6 +51,24 @@ export async function setContactSectors(input: In<typeof A.setContactSectors>) {
 }
 export async function findWarmPath(input: In<typeof A.findWarmPath>) {
   return toResult(() => A.findWarmPath.run(input));
+}
+export async function countWarmPaths(input: In<typeof A.countWarmPaths>) {
+  return toResult(() => A.countWarmPaths.run(input));
+}
+export async function listPairings(input: In<typeof A.listPairings>) {
+  return toResult(() => A.listPairings.run(input));
+}
+export async function addPairing(input: In<typeof A.addPairing>) {
+  return toResult(() => A.addPairing.run(input));
+}
+export async function removePairing(input: In<typeof A.removePairing>) {
+  return toResult(() => A.removePairing.run(input));
+}
+export async function linkContact(input: In<typeof A.linkContact>) {
+  return toResult(() => A.linkContact.run(input));
+}
+export async function unlinkContact(input: In<typeof A.unlinkContact>) {
+  return toResult(() => A.unlinkContact.run(input));
 }
 export async function createCapture(input: In<typeof A.createCapture>) {
   return toResult(() => A.createCapture.run(input));
@@ -93,4 +114,7 @@ export async function dueTasks(input: In<typeof A.dueTasks>) {
 }
 export async function listApprovals(input: In<typeof A.listApprovals>) {
   return toResult(() => A.listApprovals.run(input));
+}
+export async function decideApproval(input: In<typeof A.decideApproval>) {
+  return toResult(() => A.decideApproval.run(input));
 }

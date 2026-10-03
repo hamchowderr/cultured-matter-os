@@ -42,8 +42,15 @@ describe("registry", () => {
         "passCompany",
         "searchGrants",
         "setGrantStatus",
+        "listActivity",
         "searchContacts",
         "findWarmPath",
+        "countWarmPaths",
+        "listPairings",
+        "addPairing",
+        "removePairing",
+        "linkContact",
+        "unlinkContact",
         "importContacts",
         "setContactSectors",
         "createCapture",
@@ -60,6 +67,7 @@ describe("registry", () => {
         "unlinkTaskFromProject",
         "requestApproval",
         "listApprovals",
+        "decideApproval",
         "dueTasks"
       ].sort()
     );

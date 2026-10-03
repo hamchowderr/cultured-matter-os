@@ -3,7 +3,7 @@
 import { ExternalLinkIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import {
@@ -36,6 +36,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { formatDate } from "@/lib/format";
 import { RadarIcon } from "lucide-react";
+import { WarmPaths } from "./warm-paths";
 
 type RadarCompany = Company & { sources: string[] };
 type Detail = Extract<Awaited<ReturnType<typeof getCompany>>, { ok: true }>["data"];
@@ -46,13 +47,15 @@ export function RadarList({
   total,
   page,
   pageSize,
-  newSince
+  newSince,
+  warmPathCounts = {}
 }: {
   companies: RadarCompany[];
   total: number;
   page: number;
   pageSize: number;
   newSince: Date | null;
+  warmPathCounts?: Record<string, number>;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -88,6 +91,20 @@ export function RadarList({
     if (result.ok) setDetail({ company, data: result.data });
     else toast.error(result.error.message);
   }
+
+  // ?company=<id> (e.g. from the Archive) opens that company's detail panel on arrival.
+  const linkedId = params.get("company");
+  useEffect(() => {
+    if (!linkedId) return;
+    getCompany({ companyId: linkedId }).then((result) => {
+      if (!result.ok) {
+        toast.error(result.error.message);
+        return;
+      }
+      const sources = [...new Set(result.data.sightings.map((s) => s.source))];
+      setDetail({ company: { ...result.data.company, sources }, data: result.data });
+    });
+  }, [linkedId]);
 
   function confirmNote() {
     if (!noteFor) return;
@@ -138,6 +155,7 @@ export function RadarList({
             <CompanyCard
               company={c}
               sources={c.sources}
+              warmPathCount={warmPathCounts[c.id]}
               busy={busyId === c.id}
               onOpen={() => openDetail(c)}
               onStar={() => run(c, () => starCompany({ companyId: c.id }), `Starred ${c.name}`)}
@@ -204,14 +222,28 @@ export function RadarList({
 
       <Sheet open={!!detail} onOpenChange={(open) => !open && setDetail(null)}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
-          {detail && <CompanyDetail company={detail.company} data={detail.data} />}
+          {detail && (
+            <CompanyDetail
+              company={detail.company}
+              data={detail.data}
+              onWarmPathsChange={() => startTransition(() => router.refresh())}
+            />
+          )}
         </SheetContent>
       </Sheet>
     </>
   );
 }
 
-function CompanyDetail({ company, data }: { company: RadarCompany; data: Detail | null }) {
+function CompanyDetail({
+  company,
+  data,
+  onWarmPathsChange
+}: {
+  company: RadarCompany;
+  data: Detail | null;
+  onWarmPathsChange: () => void;
+}) {
   const c = data?.company ?? company;
   const facts = [
     ["Stage", c.stage],
@@ -293,6 +325,8 @@ function CompanyDetail({ company, data }: { company: RadarCompany; data: Detail 
           <p className="text-muted-foreground text-sm">Loading…</p>
         )}
       </section>
+
+      <WarmPaths company={c} onChange={onWarmPathsChange} />
     </div>
   );
 }

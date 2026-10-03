@@ -1,7 +1,10 @@
+import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import * as A from "@/actions";
+import { ActionError } from "@/actions";
 import type { Database } from "@/db";
+import * as t from "@/db/schema";
 import { startOfDayIn } from "@/lib/time";
 import { freshDb } from "./test-db";
 
@@ -56,5 +59,69 @@ describe("listApprovals", () => {
     const r = await A.listApprovals.run({}, ctx());
     expect(r.approvals.map((a) => a.summary)).toEqual(["First", "Second"]);
     expect((await A.listApprovals.run({ status: "approved" }, ctx())).approvals).toHaveLength(0);
+  });
+});
+
+describe("decideApproval", () => {
+  const request = (summary: string) =>
+    A.requestApproval.run({ action: "sendEmail", summary, payload: { to: "jordan" } }, ctx());
+  const logFor = (entityId: string) =>
+    db.select().from(t.activityLog).where(eq(t.activityLog.entityId, entityId));
+
+  it("approves: sets status and decided time, and logs it", async () => {
+    const a = await request("Email Jordan");
+    const before = Date.now();
+    const d = await A.decideApproval.run({ approvalId: a.id, decision: "approve" }, ctx());
+    expect(d.status).toBe("approved");
+    expect(d.decidedAt!.getTime()).toBeGreaterThanOrEqual(before);
+    const log = await logFor(a.id);
+    expect(log.map((l) => [l.action, l.summary])).toEqual([
+      ["requestApproval", "Requested approval: Email Jordan"],
+      ["decideApproval", "Approved: Email Jordan"]
+    ]);
+    expect(log[1].data).toBeNull();
+  });
+
+  it("rejects with a note and keeps the note in the log", async () => {
+    const a = await request("Email Kwaku");
+    const d = await A.decideApproval.run(
+      { approvalId: a.id, decision: "reject", note: "  Not yet  " },
+      ctx()
+    );
+    expect(d.status).toBe("rejected");
+    expect(d.decidedAt).toBeInstanceOf(Date);
+    const [, entry] = await logFor(a.id);
+    expect(entry.summary).toBe("Rejected: Email Kwaku");
+    expect(entry.data).toEqual({ note: "Not yet" });
+  });
+
+  it("refuses a second decision and logs nothing more", async () => {
+    const a = await request("Email Ama");
+    await A.decideApproval.run({ approvalId: a.id, decision: "reject" }, ctx());
+    const err = await A.decideApproval
+      .run({ approvalId: a.id, decision: "approve" }, ctx())
+      .catch((e) => e);
+    expect(err).toBeInstanceOf(ActionError);
+    expect(err.code).toBe("conflict");
+    expect(err.message).toBe("This approval was already rejected");
+    const [row] = await db.select().from(t.approvals).where(eq(t.approvals.id, a.id));
+    expect(row.status).toBe("rejected");
+    expect(await logFor(a.id)).toHaveLength(2);
+  });
+
+  it("returns not_found for a missing approval", async () => {
+    await expect(
+      A.decideApproval.run({ approvalId: "missing", decision: "approve" }, ctx())
+    ).rejects.toThrow("Approval not found");
+  });
+
+  it("drops decided items from the open list", async () => {
+    const open = await request("Still open");
+    const r = await A.listApprovals.run({ status: "pending" }, ctx());
+    expect(r.approvals.map((a) => a.id)).toContain(open.id);
+    expect(r.approvals.every((a) => a.status === "pending")).toBe(true);
+    expect(r.approvals.map((a) => a.summary)).not.toContain("Email Jordan");
+    const approved = await A.listApprovals.run({ status: "approved" }, ctx());
+    expect(approved.approvals.map((a) => a.summary)).toEqual(["Email Jordan"]);
   });
 });
