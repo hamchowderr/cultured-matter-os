@@ -12,7 +12,7 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        "group/card @container/card flex flex-col gap-1 overflow-hidden rounded-xl bg-muted/40 text-sm text-card-foreground ring-1 ring-foreground/10 [--card-spacing:--spacing(4)] data-[size=sm]:[--card-spacing:--spacing(3)] *:[img:first-child]:rounded-t-lg *:[img:last-child]:rounded-b-lg",
+        "group/card @container/card flex flex-col gap-1 overflow-hidden rounded-xl bg-card text-sm text-card-foreground ring-1 ring-foreground/10 [--card-spacing:--spacing(4)] data-[size=sm]:[--card-spacing:--spacing(3)] *:[img:first-child]:rounded-t-lg *:[img:last-child]:rounded-b-lg",
         className
       )}
       {...props}
@@ -72,12 +72,14 @@ function CardAction({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+// App style: one border per card. Kit v2 draws a tinted frame with a second bordered panel
+// inside it, which reads as double lines.
 function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-content"
       className={cn(
-        "flex-1 overflow-hidden rounded-lg bg-card p-(--card-spacing) ring-1 ring-foreground/5 shadow-2xs",
+        "flex-1 overflow-hidden px-(--card-spacing) pb-(--card-spacing) first:pt-(--card-spacing)",
         className
       )}
       {...props}
