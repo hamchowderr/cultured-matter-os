@@ -4,7 +4,7 @@ Two Shortcuts send things straight to the Cultured Matter OS Inbox: one for word
 
 ## How this is set up
 
-The app owner builds both Shortcuts once on an iPhone, tests them, and shares them as iCloud links. Simone installs them from the links and pastes the key when the Shortcut asks for it. The key is never inside a shared link.
+The app owner builds both Shortcuts once on an iPhone, with the capture key already inside, tests them, and shares them with Simone once as iCloud links. Simone only taps each link and **Add Shortcut**; she never handles the key. Because the key is inside the Shortcuts, anyone with the links could send to her Inbox: share them only with her, and change the key (below) if a link is ever passed on.
 
 The address both Shortcuts send to:
 
@@ -14,13 +14,12 @@ https://cultured-matter-os.vercel.app/api/capture
 
 ## For Simone: install from the links
 
-You get two links (**Capture** and **Capture Photo**) and, separately, the capture key. Treat the key like a password: anyone who has it can add items to your Inbox.
+You get two links: **Capture** and **Capture Photo**. They are ready to use. Keep them to yourself.
 
 1. On your iPhone, tap the **Capture** link. It opens in the Shortcuts app.
 2. Tap **Add Shortcut**.
-3. When it asks for your key, paste the key exactly as it was sent. Tap **Add**.
-4. Do the same with the **Capture Photo** link.
-5. Test: tap **Capture**, say something, and wait for "Saved to your Inbox." Then tap **Capture Photo** and pick a photo. Both appear in the app's Inbox under **To sort**.
+3. Do the same with the **Capture Photo** link.
+4. Test: tap **Capture**, say something, and wait for "Saved to your Inbox." Then tap **Capture Photo** and pick a photo. Both appear in the app's Inbox under **To sort**.
 
 ## For the owner: build once, then share
 
@@ -63,21 +62,11 @@ Do not add a `Content-Type` header. Shortcuts sets it for you.
 7. Optional caption: add **Ask for Input** before step 5, then add a second **Text** field with key `text` and the **Provided Input** variable.
 8. Add **Show Result** (or **Show Notification**) at the end. Tap **Done** and test it.
 
-### Ask for the key when someone installs it
-
-Do this on each Shortcut before sharing, so the link never contains the key.
-
-1. Open the Shortcut and tap the **ⓘ** (details) button at the bottom.
-2. Tap **Setup** (called **Import Questions** on older iOS).
-3. Tap **Add Question** and tap the value of the `key` field in the Get Contents of URL step.
-4. Question: `Paste your capture key`. Clear the default answer so your key is not carried along.
-5. Tap **Done**.
-
 ### Share the links
 
 1. In the Shortcuts list, long-press the Shortcut and tap **Share**.
 2. Tap **Copy iCloud Link**.
-3. Send Simone both links, and send the key separately and privately.
+3. Send Simone both links privately. The key travels inside them, so send them only to her.
 
 ## Using them
 

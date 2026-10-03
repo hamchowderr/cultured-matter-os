@@ -25,9 +25,8 @@ export function IphonePanel() {
         <div className="space-y-1">
           <p className="font-medium">What you were sent</p>
           <p className="text-muted-foreground">
-            Two links, one for <em>Capture</em> (words, spoken or typed) and one for{" "}
-            <em>Capture Photo</em>, plus a capture key sent separately. Treat the key like a
-            password: anyone with it can add to your Inbox.
+            Two links: one for <em>Capture</em> (words, spoken) and one for <em>Capture Photo</em>.
+            They are ready to use. Keep the links to yourself.
           </p>
         </div>
 
@@ -37,10 +36,6 @@ export function IphonePanel() {
             <li>On your iPhone, tap the first link. It opens in the Shortcuts app.</li>
             <li>
               Tap <strong className="text-foreground">Add Shortcut</strong>.
-            </li>
-            <li>
-              When it asks for your key, paste the key exactly as it was sent to you, then tap{" "}
-              <strong className="text-foreground">Add</strong>.
             </li>
             <li>Do the same with the second link.</li>
           </ol>
@@ -61,8 +56,7 @@ export function IphonePanel() {
             </li>
           </ol>
           <p className="text-muted-foreground">
-            If it says “Unauthorized”, the key is wrong: open the Shortcut, tap the value of the{" "}
-            <code className="bg-muted rounded px-1">key</code> field and paste the key again. Both
+            If it says anything else, send a screenshot to whoever set up this app for you. Both
             Shortcuts send to <code className="bg-muted rounded px-1 break-all">{CAPTURE_URL}</code>
             .
           </p>
