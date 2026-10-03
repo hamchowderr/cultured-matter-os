@@ -1,23 +1,42 @@
 "use client";
 
-import { SearchIcon } from "lucide-react";
+// Adapted from the filter bar of the shadcn UI kit notifications page
+// (pages/notifications/data-table.tsx): a wide search box and popover pickers.
+
+import { CalendarIcon, CheckIcon, ChevronDownIcon, SearchIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
-import { ENTITY_TYPES } from "@/lib/activity";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ENTITY_TYPES, entityLabel } from "@/lib/activity";
 import { cn } from "@/lib/utils";
 
 export type ArchiveFilterState = { type?: string; from?: string; to?: string; query?: string };
 
-export function ArchiveFilters({ filters, total }: { filters: ArchiveFilterState; total: number }) {
+const shortDay = (day: string) =>
+  new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", {
+    timeZone: "UTC",
+    month: "short",
+    day: "numeric"
+  });
+
+export function ArchiveFilters({ filters }: { filters: ArchiveFilterState }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const [pending, startTransition] = useTransition();
   const [query, setQuery] = useState(filters.query ?? "");
+  const [typeOpen, setTypeOpen] = useState(false);
 
   function update(patch: Record<string, string | undefined>) {
     const next = new URLSearchParams(params.toString());
@@ -29,6 +48,9 @@ export function ArchiveFilters({ filters, total }: { filters: ArchiveFilterState
     startTransition(() => router.replace(`${pathname}?${next.toString()}`, { scroll: false }));
   }
 
+  // Follow the URL when a link on the page (Clear filters) changes it.
+  useEffect(() => setQuery(filters.query ?? ""), [filters.query]);
+
   // Search as she types, after a short pause.
   useEffect(() => {
     if (query === (filters.query ?? "")) return;
@@ -37,66 +59,111 @@ export function ArchiveFilters({ filters, total }: { filters: ArchiveFilterState
   }, [query]);
 
   const anyFilter = !!(filters.type || filters.from || filters.to || filters.query);
+  const dateLabel =
+    filters.from && filters.to
+      ? `${shortDay(filters.from)} – ${shortDay(filters.to)}`
+      : filters.from
+        ? `From ${shortDay(filters.from)}`
+        : filters.to
+          ? `Until ${shortDay(filters.to)}`
+          : "Any date";
 
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-2 transition-opacity",
+        "flex flex-wrap gap-3 transition-opacity sm:flex-nowrap",
         pending && "opacity-60"
       )}
     >
-      <div className="relative w-full sm:w-64">
+      <div className="relative w-full sm:grow">
         <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search what happened"
-          className="h-8 pl-9"
+          className="pl-9"
           aria-label="Search the archive"
         />
       </div>
-      <NativeSelect
-        size="sm"
-        className="w-auto"
-        value={filters.type ?? ""}
-        onChange={(e) => update({ type: e.target.value || undefined })}
-        aria-label="Kind of change"
-      >
-        <NativeSelectOption value="">Everything</NativeSelectOption>
-        {ENTITY_TYPES.map((t) => (
-          <NativeSelectOption key={t.value} value={t.value}>
-            {t.label}
-          </NativeSelectOption>
-        ))}
-      </NativeSelect>
-      <label className="text-muted-foreground flex items-center gap-1.5 text-sm">
-        From
-        <Input
-          type="date"
-          value={filters.from ?? ""}
-          max={filters.to}
-          onChange={(e) => update({ from: e.target.value || undefined })}
-          className="h-8 w-auto"
-          aria-label="From date"
-        />
-      </label>
-      <label className="text-muted-foreground flex items-center gap-1.5 text-sm">
-        To
-        <Input
-          type="date"
-          value={filters.to ?? ""}
-          min={filters.from}
-          onChange={(e) => update({ to: e.target.value || undefined })}
-          className="h-8 w-auto"
-          aria-label="To date"
-        />
-      </label>
-      <span className="text-muted-foreground text-sm">
-        {total.toLocaleString()} {total === 1 ? "entry" : "entries"}
-      </span>
+      <Popover open={typeOpen} onOpenChange={setTypeOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" aria-label="Kind of change">
+            {filters.type ? entityLabel(filters.type) : "Everything"}
+            <ChevronDownIcon />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-52 p-0" align="end">
+          <Command>
+            <CommandInput placeholder="Kind" className="h-9" />
+            <CommandList>
+              <CommandEmpty>No kind found.</CommandEmpty>
+              <CommandGroup>
+                {[{ value: "", label: "Everything" }, ...ENTITY_TYPES].map((t) => (
+                  <CommandItem
+                    key={t.value || "all"}
+                    value={t.label}
+                    onSelect={() => {
+                      setTypeOpen(false);
+                      update({ type: t.value || undefined });
+                    }}
+                  >
+                    {t.label}
+                    <CheckIcon
+                      className={cn(
+                        "ml-auto",
+                        (filters.type ?? "") === t.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" aria-label="Date range">
+            <CalendarIcon />
+            {dateLabel}
+            <ChevronDownIcon />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-64 space-y-3" align="end">
+          <label className="text-muted-foreground grid gap-1.5 text-sm">
+            From
+            <Input
+              type="date"
+              value={filters.from ?? ""}
+              max={filters.to}
+              onChange={(e) => update({ from: e.target.value || undefined })}
+              aria-label="From date"
+            />
+          </label>
+          <label className="text-muted-foreground grid gap-1.5 text-sm">
+            To
+            <Input
+              type="date"
+              value={filters.to ?? ""}
+              min={filters.from}
+              onChange={(e) => update({ to: e.target.value || undefined })}
+              aria-label="To date"
+            />
+          </label>
+          {(filters.from || filters.to) && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="w-full"
+              onClick={() => update({ from: undefined, to: undefined })}
+            >
+              Any date
+            </Button>
+          )}
+        </PopoverContent>
+      </Popover>
       {anyFilter && (
         <Button
-          size="sm"
           variant="ghost"
           onClick={() => {
             setQuery("");

@@ -8,6 +8,7 @@ import { generateMeta } from "@/lib/utils";
 import { RADAR_BASELINE_COOKIE, RADAR_VIEWS, type RadarView } from "./constants";
 import { RadarFilters } from "./radar-filters";
 import { RadarList } from "./radar-list";
+import { RadarSummary } from "./radar-summary";
 import { VisitMarker } from "./visit-marker";
 
 export async function generateMetadata() {
@@ -62,6 +63,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         title="Radar"
         description="Early-stage climate and materials startups from SOSV, Greentown Labs, Y Combinator and CTVC."
       />
+      {facets.ok && <RadarSummary facets={facets.data} hasBaseline={!!baseline} />}
       <RadarFilters
         filters={{ view, category, stage, source, query, newOnly }}
         facets={facets.ok ? facets.data : null}
@@ -75,6 +77,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
           pageSize={PAGE_SIZE}
           newSince={baseline ?? null}
           warmPathCounts={counts?.ok ? counts.data.counts : undefined}
+          radarEmpty={facets.ok && facets.data.total === 0}
         />
       ) : (
         <p className="text-destructive text-sm">Couldn’t load companies: {list.error.message}</p>
