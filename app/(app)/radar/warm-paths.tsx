@@ -15,6 +15,17 @@ import {
 } from "@/actions/server";
 import type { Contact, Pairing } from "@/actions/schemas";
 import { ContactCard } from "@/components/cards";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
@@ -195,21 +206,41 @@ function TargetBrands({
                   <span className="text-muted-foreground ml-2 text-xs">{b.brandDomain}</span>
                 )}
               </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={busy}
-                aria-label={`Remove ${b.brandName}`}
-                onClick={() =>
-                  save(
-                    () => removePairing({ pairingId: b.id }),
-                    `Removed ${b.brandName} from ${company.name}`
-                  )
-                }
-              >
-                <XIcon />
-                Remove
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={busy}
+                    aria-label={`Remove ${b.brandName}`}
+                  >
+                    <XIcon />
+                    Remove
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Remove {b.brandName}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Anyone you linked to {b.brandName} by hand for {company.name} will be unlinked
+                      too.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() =>
+                        save(
+                          () => removePairing({ pairingId: b.id }),
+                          `Removed ${b.brandName} from ${company.name}`
+                        )
+                      }
+                    >
+                      Remove
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </li>
           ))}
         </ul>

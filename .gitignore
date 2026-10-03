@@ -55,3 +55,6 @@ next-env.d.ts
 # local database
 local.db
 local.db-*
+
+# Claude Code agent worktrees
+.claude/worktrees/
