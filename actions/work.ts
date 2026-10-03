@@ -45,16 +45,27 @@ export const createCapture = defineAction({
   name: "createCapture",
   description: "Capture a note into the Inbox to sort later.",
   kind: "write",
-  input: z.object({ body: z.string().trim().min(1).max(10_000) }),
+  input: z.object({
+    body: z.string().trim().min(1).max(10_000),
+    // Blob pathname of an attached photo; set by the iPhone capture endpoint.
+    imagePath: z.string().min(1).max(500).optional(),
+    source: z.enum(["web", "iphone"]).default("web")
+  }),
   output: captureSchema,
   async handler(input, db) {
-    const [row] = await db.insert(captures).values({ body: input.body }).returning();
+    const [row] = await db
+      .insert(captures)
+      .values({ body: input.body, imagePath: input.imagePath ?? null })
+      .returning();
     return row;
   },
-  log: (_input, capture) => ({
+  log: (input, capture) => ({
     entityType: "capture",
     entityId: capture.id,
-    summary: `Captured "${capture.body.slice(0, 60)}"`
+    summary: `Captured ${capture.imagePath ? "a photo" : `"${capture.body.slice(0, 60)}"`}${
+      input.source === "iphone" ? " from the iPhone" : ""
+    }`,
+    data: input.source === "iphone" ? { source: "iphone", photo: !!capture.imagePath } : undefined
   })
 });
 
