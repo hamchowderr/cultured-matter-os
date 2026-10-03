@@ -7,17 +7,19 @@
 import * as React from "react";
 import { ChevronDownIcon, ChevronLeft, ChevronRight, Ellipsis } from "lucide-react";
 import {
-  type ColumnDef,
   type ColumnFiltersState,
   type SortingState,
-  type VisibilityState,
-  flexRender,
+  type ColumnVisibilityState as VisibilityState,
+  flexRender
+} from "@tanstack/react-table";
+import {
+  type LegacyColumnDef as ColumnDef,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  useReactTable
-} from "@tanstack/react-table";
+  useLegacyTable as useReactTable
+} from "@tanstack/react-table/legacy";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -211,6 +213,7 @@ export function TableRecentProjects({
     },
     initialState: {
       pagination: {
+        pageIndex: 0,
         pageSize: 6
       }
     }

@@ -1,6 +1,11 @@
 "use client";
 
-import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
+import { flexRender } from "@tanstack/react-table";
+import {
+  getCoreRowModel,
+  useLegacyTable as useReactTable,
+  type LegacyColumnDef as ColumnDef
+} from "@tanstack/react-table/legacy";
 import {
   BookmarkPlusIcon,
   ExternalLinkIcon,

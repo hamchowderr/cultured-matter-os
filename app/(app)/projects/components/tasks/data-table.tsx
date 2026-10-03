@@ -5,18 +5,20 @@
 
 import * as React from "react";
 import {
-  ColumnFiltersState,
+  type ColumnFiltersState,
   flexRender,
+  type SortingState,
+  type ColumnVisibilityState as VisibilityState
+} from "@tanstack/react-table";
+import {
   getCoreRowModel,
   getFacetedRowModel,
   getFacetedUniqueValues,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  SortingState,
-  useReactTable,
-  VisibilityState
-} from "@tanstack/react-table";
+  useLegacyTable as useReactTable
+} from "@tanstack/react-table/legacy";
 
 import {
   Table,
@@ -68,6 +70,7 @@ export function DataTable({
     },
     initialState: {
       pagination: {
+        pageIndex: 0,
         pageSize: 25
       }
     },

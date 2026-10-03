@@ -1,5 +1,8 @@
 import * as React from "react";
-import { Column } from "@tanstack/react-table";
+import {
+  type LegacyColumn as Column
+} from "@tanstack/react-table/legacy";
+import type { RowData } from "@tanstack/react-table";
 import { Check, PlusCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -17,7 +20,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 
-interface DataTableFacetedFilterProps<TData, TValue> {
+interface DataTableFacetedFilterProps<TData extends RowData, TValue> {
   column?: Column<TData, TValue>;
   title?: string;
   options: {
@@ -29,7 +32,7 @@ interface DataTableFacetedFilterProps<TData, TValue> {
   counts?: Map<string, number>;
 }
 
-export function DataTableFacetedFilter<TData, TValue>({
+export function DataTableFacetedFilter<TData extends RowData, TValue>({
   column,
   title,
   options,

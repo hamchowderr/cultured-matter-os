@@ -3,7 +3,9 @@
 // Ported from the kit's apps/tasks/components/data-table-toolbar.tsx: Status and Priority
 // filters, plus Project and Due.
 
-import { Table } from "@tanstack/react-table";
+import {
+  type LegacyReactTable as Table
+} from "@tanstack/react-table/legacy";
 import { PlusIcon, X } from "lucide-react";
 import * as React from "react";
 

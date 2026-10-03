@@ -4,7 +4,7 @@
 // Tasks tabs. Overview holds the summary cards, reminders, chart and recent projects; Projects
 // is the kit's project list; Tasks is the kit's tasks data table.
 
-import type { ColumnFiltersState } from "@tanstack/react-table";
+import { type ColumnFiltersState } from "@tanstack/react-table";
 import { FolderKanbanIcon, PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";

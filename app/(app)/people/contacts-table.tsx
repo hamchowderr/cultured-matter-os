@@ -3,7 +3,12 @@
 // Adapted from the shadcn UI kit block tables13: paging, sorting and filtering run on the
 // server, so the table only renders the current page.
 
-import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
+import { flexRender } from "@tanstack/react-table";
+import {
+  getCoreRowModel,
+  useLegacyTable as useReactTable,
+  type LegacyColumnDef as ColumnDef
+} from "@tanstack/react-table/legacy";
 import {
   ArrowDownIcon,
   ArrowUpDownIcon,

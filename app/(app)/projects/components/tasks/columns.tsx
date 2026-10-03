@@ -3,7 +3,9 @@
 // Ported from the kit's apps/tasks/components/columns.tsx. Labels are gone (tasks have none);
 // project and due date take their place.
 
-import { ColumnDef } from "@tanstack/react-table";
+import {
+  type LegacyColumnDef as ColumnDef
+} from "@tanstack/react-table/legacy";
 
 import { Badge } from "@/components/ui/badge";
 import { formatDue } from "@/lib/format";
@@ -66,7 +68,7 @@ export function taskColumns({
           </div>
         );
       },
-      sortingFn: (a, b) => statusRank[a.original.status] - statusRank[b.original.status],
+      sortFn: (a, b) => statusRank[a.original.status] - statusRank[b.original.status],
       filterFn: (row, id, value) => value.includes(row.getValue(id))
     },
     {
@@ -84,7 +86,7 @@ export function taskColumns({
         );
       },
       // Low to urgent, not alphabetical.
-      sortingFn: (a, b) => priorityRank[a.original.priority] - priorityRank[b.original.priority],
+      sortFn: (a, b) => priorityRank[a.original.priority] - priorityRank[b.original.priority],
       filterFn: (row, id, value) => value.includes(row.getValue(id))
     },
     {
@@ -125,7 +127,7 @@ export function taskColumns({
         );
       },
       // By date; tasks without one sort after dated tasks.
-      sortingFn: (a, b) => {
+      sortFn: (a, b) => {
         const x = a.original.dueDate?.getTime() ?? Number.MAX_SAFE_INTEGER;
         const y = b.original.dueDate?.getTime() ?? Number.MAX_SAFE_INTEGER;
         return x === y ? 0 : x < y ? -1 : 1;

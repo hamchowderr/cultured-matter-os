@@ -1,4 +1,7 @@
-import { Table } from "@tanstack/react-table";
+import {
+  type LegacyReactTable as Table
+} from "@tanstack/react-table/legacy";
+import type { RowData } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -10,11 +13,11 @@ import {
   SelectValue
 } from "@/components/ui/select";
 
-interface DataTablePaginationProps<TData> {
+interface DataTablePaginationProps<TData extends RowData> {
   table: Table<TData>;
 }
 
-export function DataTablePagination<TData>({ table }: DataTablePaginationProps<TData>) {
+export function DataTablePagination<TData extends RowData>({ table }: DataTablePaginationProps<TData>) {
   return (
     <div className="flex items-center justify-between px-2">
       <div className="text-muted-foreground hidden flex-1 text-sm lg:inline">

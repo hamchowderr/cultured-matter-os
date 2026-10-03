@@ -1,11 +1,16 @@
 import {
-  createTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
+  aggregationFns,
+  constructTable,
+  createFilteredRowModel,
+  createSortedRowModel,
+  filterFns,
+  sortFns,
+  stockFeatures,
   type ColumnFiltersState,
   type SortingState
 } from "@tanstack/react-table";
+import type { LegacyFeatures } from "@tanstack/react-table/legacy";
+import { storeReactivityBindings } from "@tanstack/table-core/store-reactivity-bindings";
 import { describe, expect, it } from "vitest";
 
 import { taskColumns } from "@/app/(app)/projects/components/tasks/columns";
@@ -32,15 +37,22 @@ const data = [
 ];
 
 function titles(state: { sorting?: SortingState; columnFilters?: ColumnFiltersState }) {
-  const table = createTable<TaskRow>({
+  // The same features the app's useLegacyTable builds when filtering and sorting are on,
+  // with TanStack Store reactivity in place of React's (no component renders here).
+  const features = {
+    coreReactivityFeature: storeReactivityBindings(),
+    ...stockFeatures,
+    filterFns,
+    sortFns,
+    aggregationFns,
+    filteredRowModel: createFilteredRowModel(),
+    sortedRowModel: createSortedRowModel()
+  } as LegacyFeatures;
+  const table = constructTable<LegacyFeatures, TaskRow>({
+    features,
     data,
     columns: taskColumns({ onOpen: () => {}, onStatusChange: () => {} }),
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    state: { sorting: [], columnFilters: [], ...state },
-    onStateChange: () => {},
-    renderFallbackValue: null
+    state: { sorting: [], columnFilters: [], ...state }
   });
   return table.getRowModel().rows.map((r) => r.original.title);
 }
