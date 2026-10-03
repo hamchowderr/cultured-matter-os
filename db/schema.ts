@@ -259,6 +259,8 @@ export const captures = sqliteTable(
   {
     id: id(),
     body: text("body").notNull(),
+    // Pathname of a photo in the private Vercel Blob store (iPhone Shortcut captures).
+    imagePath: text("image_path"),
     kind: text("kind", { enum: ["task", "idea", "reference"] }),
     tier: integer("tier"),
     projectId: text("project_id").references(() => projects.id, { onDelete: "set null" }),
