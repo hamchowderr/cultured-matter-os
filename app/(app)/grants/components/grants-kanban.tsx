@@ -2,7 +2,14 @@
 
 import * as React from "react";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
-import { CheckIcon, Maximize2Icon, SearchIcon, SlidersHorizontalIcon } from "lucide-react";
+import {
+  CalendarDaysIcon,
+  CheckIcon,
+  CoinsIcon,
+  ListFilterIcon,
+  Maximize2Icon,
+  SearchIcon
+} from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
@@ -10,7 +17,7 @@ import { setGrantStatus } from "@/actions/server";
 import type { Grant } from "@/actions/schemas";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Command,
   CommandGroup,
@@ -22,16 +29,25 @@ import { Input } from "@/components/ui/input";
 import * as Kanban from "@/components/ui/kanban";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { daysUntil, formatAmount, formatDeadline } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-import { GrantDialog } from "./grant-dialog";
+import { GrantDrawer } from "./grant-drawer";
 import { GrantsCalendar, type CalendarTask } from "./grants-calendar";
 
 type Status = NonNullable<Grant["status"]>;
 type ColumnKey = Status | "new";
 type Columns = Record<ColumnKey, Grant[]>;
+export type View = "board" | "list" | "table" | "calendar";
 
 const COLUMNS: { key: ColumnKey; label: string; hint: string }[] = [
   { key: "new", label: "Found", hint: "Not on the board yet" },
@@ -71,7 +87,7 @@ export default function GrantsKanban({
   grants: Grant[];
   tasks: CalendarTask[];
   filters: { query?: string; closingSoon: boolean; includeNonprofit: boolean; showClosed: boolean };
-  view: "board" | "calendar";
+  view: View;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -201,7 +217,7 @@ export default function GrantsKanban({
       <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline">
-            <SlidersHorizontalIcon />
+            <ListFilterIcon />
             <span className="hidden lg:inline">
               {activeFilters > 0 ? <>Filters ({activeFilters})</> : "Filters"}
             </span>
@@ -223,7 +239,9 @@ export default function GrantsKanban({
                   <CheckIcon className={cn(!filters.includeNonprofit && "invisible")} />
                   <span>Include nonprofit-only</span>
                 </CommandItem>
-                <CommandItem onSelect={() => update({ closed: filters.showClosed ? undefined : "1" })}>
+                <CommandItem
+                  onSelect={() => update({ closed: filters.showClosed ? undefined : "1" })}
+                >
                   <CheckIcon className={cn(!filters.showClosed && "invisible")} />
                   <span>Show closed</span>
                 </CommandItem>
@@ -255,6 +273,8 @@ export default function GrantsKanban({
         <div className="mb-2 flex justify-between gap-2">
           <TabsList>
             <TabsTrigger value="board">Board</TabsTrigger>
+            <TabsTrigger value="list">List</TabsTrigger>
+            <TabsTrigger value="table">Table</TabsTrigger>
             <TabsTrigger value="calendar">Calendar</TabsTrigger>
           </TabsList>
 
@@ -302,11 +322,15 @@ export default function GrantsKanban({
             onDragEnd={onDragEnd}
             onDragCancel={onDragCancel}
           >
-            <Kanban.Board className="flex w-full gap-4 overflow-x-auto pb-4">
+            <Kanban.Board className="flex w-full gap-4 overflow-x-auto pb-4 max-sm:snap-x max-sm:snap-mandatory">
               {COLUMNS.map(({ key, label, hint }) => {
                 const items = columns[key];
                 return (
-                  <Kanban.Column key={key} value={key} className="w-[300px] min-w-[300px]">
+                  <Kanban.Column
+                    key={key}
+                    value={key}
+                    className="w-[340px] min-w-[340px] max-sm:w-full max-sm:min-w-full max-sm:snap-center"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold">{label}</span>
@@ -341,12 +365,18 @@ export default function GrantsKanban({
             </Kanban.Overlay>
           </Kanban.Root>
         </TabsContent>
+        <TabsContent value="list">
+          <GrantsList columns={columns} onOpen={setOpenGrant} />
+        </TabsContent>
+        <TabsContent value="table">
+          <GrantsTable columns={columns} onOpen={setOpenGrant} />
+        </TabsContent>
         <TabsContent value="calendar">
           <GrantsCalendar grants={grants} tasks={tasks} onOpenGrant={setOpenGrant} />
         </TabsContent>
       </Tabs>
 
-      <GrantDialog
+      <GrantDrawer
         grant={openGrant}
         onOpenChange={(open) => !open && setOpenGrant(null)}
         onStatusChange={moveFromDialog}
@@ -375,30 +405,35 @@ const GrantKanbanCard = React.forwardRef<
   return (
     <Card
       ref={ref}
-      className={cn("gap-4 border-0 py-4", className)}
+      className={cn("cursor-pointer border-0", className)}
       {...props}
       onClick={onOpen}
     >
-      <CardHeader className="px-4">
-        <CardTitle className="text-sm leading-snug font-semibold">{grant.title}</CardTitle>
-        {grant.agency && <CardDescription>{grant.agency}</CardDescription>}
-      </CardHeader>
-      <CardContent className="space-y-3 px-4">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Badge variant={urgent ? "warning" : "outline"}>{formatDeadline(grant.deadline)}</Badge>
-          {amount && <Badge variant="outline">{amount}</Badge>}
+      <CardContent className="space-y-3">
+        <div className="space-y-1">
+          <div className="text-base leading-snug font-semibold">{grant.title}</div>
+          {grant.agency && (
+            <p className="text-muted-foreground line-clamp-2 text-sm">{grant.agency}</p>
+          )}
+        </div>
+        <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
+          <Badge variant={urgent ? "warning" : "outline"}>
+            <CalendarDaysIcon />
+            {formatDeadline(grant.deadline)}
+          </Badge>
+          {amount && (
+            <span className="flex items-center gap-1 whitespace-nowrap">
+              <CoinsIcon className="size-3.5" />
+              {amount}
+            </span>
+          )}
         </div>
         <Separator />
         <div className="flex items-center justify-between">
-          {grant.forProfitEligible ? (
-            <Badge variant="success">For-profit eligible</Badge>
-          ) : (
-            <Badge variant="secondary">Nonprofit only</Badge>
-          )}
+          <EligibilityBadge grant={grant} />
           <Button
             variant="ghost"
-            size="icon"
-            className="size-7"
+            size="icon-sm"
             aria-label={`Open ${grant.title}`}
             onClick={(e) => {
               e.stopPropagation();
@@ -413,3 +448,149 @@ const GrantKanbanCard = React.forwardRef<
     </Card>
   );
 });
+
+function EligibilityBadge({ grant }: { grant: Grant }) {
+  return grant.forProfitEligible ? (
+    <Badge variant="success">For-profit eligible</Badge>
+  ) : (
+    <Badge variant="secondary">Nonprofit only</Badge>
+  );
+}
+
+function isUrgent(grant: Grant) {
+  const days = grant.deadline ? daysUntil(grant.deadline) : null;
+  return days != null && days >= 0 && days <= 14;
+}
+
+/** Every grant grouped by board column, one row each. Click a row to open the grant. */
+function GrantsList({ columns, onOpen }: { columns: Columns; onOpen: (grant: Grant) => void }) {
+  return (
+    <Card>
+      <CardContent className="p-0">
+        {COLUMNS.map(({ key, label }, index) => {
+          const items = columns[key];
+          return (
+            <div key={key}>
+              <div
+                className={cn(
+                  "bg-muted/50 flex items-center gap-2 border-b px-(--card-spacing) py-2",
+                  index > 0 && "border-t"
+                )}
+              >
+                <span className="text-sm font-semibold">{label}</span>
+                <Badge variant="outline">{items.length}</Badge>
+              </div>
+              {items.length > 0 ? (
+                <div className="divide-y">
+                  {items.map((grant) => {
+                    const amount = formatAmount(grant.amountMin, grant.amountMax);
+                    return (
+                      <button
+                        type="button"
+                        key={grant.id}
+                        className="hover:bg-muted/50 flex w-full cursor-pointer items-center gap-3 px-(--card-spacing) py-3 text-start transition-colors"
+                        onClick={() => onOpen(grant)}
+                      >
+                        <span
+                          className={cn(
+                            "size-2 shrink-0 rounded-full",
+                            grant.forProfitEligible ? "bg-emerald-500" : "bg-slate-400"
+                          )}
+                          aria-hidden
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate font-medium">{grant.title}</div>
+                          {grant.agency && (
+                            <div className="text-muted-foreground truncate text-xs">
+                              {grant.agency}
+                            </div>
+                          )}
+                        </div>
+                        {amount && (
+                          <span className="text-muted-foreground hidden text-xs whitespace-nowrap md:inline">
+                            {amount}
+                          </span>
+                        )}
+                        <span
+                          className={cn(
+                            "flex items-center gap-1 text-xs whitespace-nowrap",
+                            isUrgent(grant) ? "text-amber-600" : "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarDaysIcon className="size-3.5" />
+                          {formatDeadline(grant.deadline)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-muted-foreground px-(--card-spacing) py-6 text-center text-sm">
+                  {key === "new" ? "No new grants." : "No grants here."}
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** The same grants in one table: column, deadline, amount and eligibility. */
+function GrantsTable({ columns, onOpen }: { columns: Columns; onOpen: (grant: Grant) => void }) {
+  const rows = COLUMNS.flatMap(({ key, label }) => columns[key].map((grant) => ({ grant, label })));
+  return (
+    <Card>
+      <CardContent className="p-0">
+        <Table className="min-w-[860px] table-fixed [&_td:first-child]:ps-(--card-spacing) [&_td:last-child]:pe-(--card-spacing) [&_th:first-child]:ps-(--card-spacing) [&_th:last-child]:pe-(--card-spacing)">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Grant</TableHead>
+              <TableHead className="w-28">Board</TableHead>
+              <TableHead className="w-36">Deadline</TableHead>
+              <TableHead className="w-36">Amount</TableHead>
+              <TableHead className="w-40">Eligibility</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
+                  No grants match these filters.
+                </TableCell>
+              </TableRow>
+            ) : (
+              rows.map(({ grant, label }) => (
+                <TableRow key={grant.id} className="cursor-pointer" onClick={() => onOpen(grant)}>
+                  <TableCell>
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{grant.title}</div>
+                      {grant.agency && (
+                        <div className="text-muted-foreground truncate text-xs">{grant.agency}</div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{label}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={isUrgent(grant) ? "warning" : "outline"}>
+                      {formatDeadline(grant.deadline)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground whitespace-nowrap">
+                    {formatAmount(grant.amountMin, grant.amountMax) ?? "-"}
+                  </TableCell>
+                  <TableCell>
+                    <EligibilityBadge grant={grant} />
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
