@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { get, put } from "@vercel/blob";
+import busboy from "busboy";
 import { eq } from "drizzle-orm";
 
 import type { ActionContext } from "@/actions/define";
@@ -24,12 +25,16 @@ function keyMatches(given: string, expected: string) {
   return timingSafeEqual(a, b);
 }
 
-function authorized(request: Request) {
+// The key comes from the Authorization header or, more reliably from a Shortcut, a "key" field
+// in the Form or JSON body. Pasting into a header can carry hidden characters that make iOS drop
+// the request; a body field tolerates them. "Bearer " and surrounding whitespace are ignored.
+function authorized(request: Request, bodyKey?: string) {
   const expected = process.env.CAPTURE_TOKEN;
   if (!expected) return false;
   const header = request.headers.get("authorization") ?? "";
   const match = /^Bearer\s+(.+)$/i.exec(header.trim());
-  return !!match && keyMatches(match[1].trim(), expected);
+  const given = match?.[1] ?? bodyKey?.replace(/^\s*Bearer\s+/i, "");
+  return !!given?.trim() && keyMatches(given.trim(), expected);
 }
 
 const EXT: Record<string, string> = {
@@ -51,7 +56,7 @@ function sniffImage(b: Uint8Array): string | null {
   return null;
 }
 
-type Parsed = { body: string; photo: Blob | null; fields: FieldShape[] };
+type Parsed = { body: string; photo: Blob | null; key?: string; fields: FieldShape[] };
 // What arrived, without any content: logged when nothing usable was found.
 type FieldShape = { name: string; kind: "text" | "file"; type?: string; size: number };
 
@@ -68,6 +73,32 @@ async function fromFile(file: Blob): Promise<{ text?: string; photo?: Blob }> {
   return { text: new TextDecoder().decode(bytes) };
 }
 
+type FormEntry = [name: string, value: string | Blob];
+
+// Form bodies. Multipart goes through busboy: the platform's Request.formData() rejects the
+// multipart bodies iPhone Shortcuts sends with photos ("Failed to parse body as FormData").
+function readForm(type: string, raw: Uint8Array): Promise<FormEntry[]> {
+  if (!type.includes("multipart/form-data")) {
+    const params = new URLSearchParams(new TextDecoder().decode(raw));
+    return Promise.resolve([...params.entries()]);
+  }
+  return new Promise((resolve, reject) => {
+    const entries: FormEntry[] = [];
+    const parser = busboy({ headers: { "content-type": type } });
+    parser.on("field", (name, value) => entries.push([name, value]));
+    parser.on("file", (name, stream, info) => {
+      const chunks: Buffer[] = [];
+      stream.on("data", (chunk: Buffer) => chunks.push(chunk));
+      stream.on("end", () =>
+        entries.push([name, new Blob([Buffer.concat(chunks)], { type: info.mimeType })])
+      );
+    });
+    parser.on("close", () => resolve(entries));
+    parser.on("error", reject);
+    parser.end(Buffer.from(raw));
+  });
+}
+
 // The Shortcut can send JSON ({"text": "..."}), a Form (fields "text" and "photo"), plain text,
 // or the photo itself as the whole request body ("File"). The body is already read in full.
 async function parse(type: string, raw: Uint8Array): Promise<Parsed> {
@@ -79,36 +110,36 @@ async function parse(type: string, raw: Uint8Array): Promise<Parsed> {
       kind: "text" as const,
       size: String(v ?? "").length
     }));
-    return { body: value == null ? "" : String(value), photo: null, fields };
+    const key = typeof json?.key === "string" ? json.key : undefined;
+    return { body: value == null ? "" : String(value), photo: null, key, fields };
   }
   if (type.includes("multipart/form-data") || type.includes("application/x-www-form-urlencoded")) {
-    const form = await new Request("http://capture.local", {
-      method: "POST",
-      headers: { "content-type": type },
-      body: raw as BlobPart
-    }).formData();
     let body = "";
     let photo: Blob | null = null;
+    let key: string | undefined;
     const fields: FieldShape[] = [];
-    for (const [name, value] of form.entries()) {
-      const key = name.toLowerCase();
+    for (const [name, value] of await readForm(type, raw)) {
+      const field = name.toLowerCase();
       if (typeof value === "string") {
         fields.push({ name, kind: "text", size: value.length });
-        if (TEXT_FIELDS.includes(key) && !body) body = value;
+        if (name.toLowerCase() === "key") key = value;
+        else if (TEXT_FIELDS.includes(name.toLowerCase()) && !body) body = value;
         continue;
       }
       fields.push({ name, kind: "file", type: value.type, size: value.size });
       if (value.size === 0) continue;
-      if (TEXT_FIELDS.includes(key)) {
+      if (field === "key") {
+        key = new TextDecoder().decode(await value.arrayBuffer());
+      } else if (TEXT_FIELDS.includes(field)) {
         const read = await fromFile(value);
         if (read.photo && !photo) photo = read.photo;
         if (read.text && !body) body = read.text;
-      } else if (PHOTO_FIELDS.includes(key) && !photo) {
+      } else if (PHOTO_FIELDS.includes(field) && !photo) {
         // A non-image here stays as sent, so it is refused as "not a photo" below.
         photo = (await fromFile(value)).photo ?? value;
       }
     }
-    return { body, photo, fields };
+    return { body, photo, key, fields };
   }
   if (raw.length === 0) return { body: "", photo: null, fields: [] };
   const read = await fromFile(new Blob([raw as BlobPart], { type: type.split(";")[0] }));
@@ -123,14 +154,20 @@ export async function handleCapture(request: Request, deps: CaptureDeps = {}) {
   // Read the whole request before answering. Replying while the iPhone is still sending makes
   // iOS report "network connection lost" instead of showing the reply.
   const raw = new Uint8Array(await request.arrayBuffer().catch(() => new ArrayBuffer(0)));
-  if (!authorized(request)) return text("Unauthorized. Check the key in your Shortcut.", 401);
-
   const type = (request.headers.get("content-type") ?? "").toLowerCase();
-  let parsed: Parsed;
+  let parsed: Parsed | null = null;
+  let parseError: unknown;
   try {
     parsed = await parse(type, raw);
   } catch (e) {
-    console.warn("Capture: could not parse request", { type, bytes: raw.length, error: String(e) });
+    parseError = e;
+  }
+  if (!authorized(request, parsed?.key)) {
+    return text("Unauthorized. Check the key in your Shortcut.", 401);
+  }
+  if (!parsed) {
+    const error = String(parseError);
+    console.warn("Capture: could not parse request", { type, bytes: raw.length, error });
     return text("Couldn't read that. Send text or a photo.", 400);
   }
 

@@ -116,6 +116,25 @@ describe("iPhone capture endpoint", () => {
     expect((await latest()).body).toBe("Remind me to send the deck to Jordan on Friday");
   });
 
+  it("accepts the key as a Form or JSON field, ignoring Bearer and stray whitespace", async () => {
+    const form = new FormData();
+    form.set("key", `  ${KEY}\n`);
+    form.set("text", "Key in the form");
+    expect((await handleCapture(post(form), deps())).status).toBe(201);
+    expect((await latest()).body).toBe("Key in the form");
+
+    const json = { "Content-Type": "application/json" };
+    const body = JSON.stringify({ key: `Bearer ${KEY}`, text: "Key in JSON" });
+    expect((await handleCapture(post(body, json), deps())).status).toBe(201);
+
+    const wrong = new FormData();
+    wrong.set("key", "not-the-key");
+    wrong.set("text", "Should not land");
+    const before = await count();
+    expect((await handleCapture(post(wrong), deps())).status).toBe(401);
+    expect(await count()).toBe(before);
+  });
+
   it("reads dictated text that Shortcuts attached to the Form as a file", async () => {
     const form = new FormData();
     form.set("text", new Blob(["Call Kwaku about Soliome"], { type: "text/plain" }), "text.txt");
