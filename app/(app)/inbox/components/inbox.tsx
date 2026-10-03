@@ -32,7 +32,12 @@ const DEFAULT_LAYOUT: Layout = {
 
 function matches(c: Capture, q: string) {
   if (!q) return true;
-  const hay = [c.body, c.kind ? KIND_LABEL[c.kind] : "", c.projectName ?? "", c.tier ? `tier ${c.tier}` : ""]
+  const hay = [
+    c.body,
+    c.kind ? KIND_LABEL[c.kind] : "",
+    c.projectName ?? "",
+    c.tier ? `tier ${c.tier}` : ""
+  ]
     .join(" ")
     .toLowerCase();
   return q
@@ -167,9 +172,7 @@ export function Inbox({
         </ResizablePanel>
         <ResizableHandle hidden={isMobile} withHandle />
         <ResizablePanel id="display-panel" hidden={isMobile} minSize="30%">
-          {!isMobile && (
-            <CaptureDisplay capture={selected} projects={projects} onFiled={onFiled} />
-          )}
+          {!isMobile && <CaptureDisplay capture={selected} projects={projects} onFiled={onFiled} />}
         </ResizablePanel>
       </ResizablePanelGroup>
       {isMobile && (

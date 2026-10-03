@@ -34,9 +34,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
 
   if (!toSort.ok || !filed.ok) {
     const error = !toSort.ok ? toSort.error : !filed.ok ? filed.error : null;
-    return (
-      <p className="text-destructive text-sm">Couldn’t load the inbox: {error?.message}</p>
-    );
+    return <p className="text-destructive text-sm">Couldn’t load the inbox: {error?.message}</p>;
   }
 
   return (
