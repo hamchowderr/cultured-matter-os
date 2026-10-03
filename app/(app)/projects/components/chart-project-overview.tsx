@@ -82,7 +82,8 @@ export function ChartProjectOverview({ data: chartData }: { data: ActivityPoint[
             value={timeRange}
             onValueChange={(value) => value && setTimeRange(value)}
             variant="outline"
-            className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex">
+            className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
+          >
             <ToggleGroupItem value="90d">Last 3 months</ToggleGroupItem>
             <ToggleGroupItem value="30d">Last 30 days</ToggleGroupItem>
             <ToggleGroupItem value="7d">Last 7 days</ToggleGroupItem>
@@ -91,7 +92,8 @@ export function ChartProjectOverview({ data: chartData }: { data: ActivityPoint[
             <SelectTrigger
               className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
               size="sm"
-              aria-label="Time range">
+              aria-label="Time range"
+            >
               <SelectValue placeholder="Last 3 months" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
@@ -140,7 +142,8 @@ export function ChartProjectOverview({ data: chartData }: { data: ActivityPoint[
               content={
                 <ChartTooltipContent
                   labelFormatter={(value) => {
-                    return fromKey(value).toLocaleDateString("en-US", {
+                    // Recharts 3 passes the label as a ReactNode; here it is the date key.
+                    return fromKey(String(value)).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric"
                     });
