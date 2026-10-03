@@ -12,12 +12,14 @@ export const grantSchema = createSelectSchema(t.grants).omit({ raw: true });
 export const contactSchema = createSelectSchema(t.contacts, {
   sectors: z.array(z.string())
 });
+export const pairingSchema = createSelectSchema(t.pairings);
 export const captureSchema = createSelectSchema(t.captures);
 export const projectSchema = createSelectSchema(t.projects);
 export const taskSchema = createSelectSchema(t.tasks);
 export const approvalSchema = createSelectSchema(t.approvals);
 
 export type Company = z.infer<typeof companySchema>;
+export type Pairing = z.infer<typeof pairingSchema>;
 export type Grant = z.infer<typeof grantSchema>;
 export type Contact = z.infer<typeof contactSchema>;
 export type Capture = z.infer<typeof captureSchema>;

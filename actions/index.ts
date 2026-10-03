@@ -18,7 +18,18 @@ import {
   updateProject,
   updateTask
 } from "./projects";
-import { findWarmPath, importContacts, searchContacts, setContactSectors } from "./people";
+import {
+  addPairing,
+  countWarmPaths,
+  findWarmPath,
+  importContacts,
+  linkContact,
+  listPairings,
+  removePairing,
+  searchContacts,
+  setContactSectors,
+  unlinkContact
+} from "./people";
 import {
   classifyCapture,
   createCapture,
@@ -41,6 +52,12 @@ export {
   setGrantStatus,
   searchContacts,
   findWarmPath,
+  countWarmPaths,
+  listPairings,
+  addPairing,
+  removePairing,
+  linkContact,
+  unlinkContact,
   importContacts,
   setContactSectors,
   createCapture,
@@ -73,6 +90,12 @@ export const allActions = [
   setGrantStatus,
   searchContacts,
   findWarmPath,
+  countWarmPaths,
+  listPairings,
+  addPairing,
+  removePairing,
+  linkContact,
+  unlinkContact,
   importContacts,
   setContactSectors,
   createCapture,

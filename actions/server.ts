@@ -49,6 +49,24 @@ export async function setContactSectors(input: In<typeof A.setContactSectors>) {
 export async function findWarmPath(input: In<typeof A.findWarmPath>) {
   return toResult(() => A.findWarmPath.run(input));
 }
+export async function countWarmPaths(input: In<typeof A.countWarmPaths>) {
+  return toResult(() => A.countWarmPaths.run(input));
+}
+export async function listPairings(input: In<typeof A.listPairings>) {
+  return toResult(() => A.listPairings.run(input));
+}
+export async function addPairing(input: In<typeof A.addPairing>) {
+  return toResult(() => A.addPairing.run(input));
+}
+export async function removePairing(input: In<typeof A.removePairing>) {
+  return toResult(() => A.removePairing.run(input));
+}
+export async function linkContact(input: In<typeof A.linkContact>) {
+  return toResult(() => A.linkContact.run(input));
+}
+export async function unlinkContact(input: In<typeof A.unlinkContact>) {
+  return toResult(() => A.unlinkContact.run(input));
+}
 export async function createCapture(input: In<typeof A.createCapture>) {
   return toResult(() => A.createCapture.run(input));
 }
