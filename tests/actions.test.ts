@@ -249,6 +249,38 @@ describe("people", () => {
     const q = await A.searchContacts.run({ query: "Loom" }, ctx());
     expect(q.contacts.map((c) => c.fullName)).toEqual(["Fay Sector"]);
   });
+
+  it("sorts contacts by name, company or role, blanks last", async () => {
+    await db.insert(t.contacts).values([
+      {
+        fullName: "Sol A",
+        company: "Zeta",
+        position: "CEO",
+        sectors: ["sortme"],
+        source: "manual"
+      },
+      {
+        fullName: "Sol B",
+        company: "Alpha",
+        position: null,
+        sectors: ["sortme"],
+        source: "manual"
+      },
+      { fullName: "Sol C", company: null, position: "Buyer", sectors: ["sortme"], source: "manual" }
+    ]);
+    const names = async (input: Parameters<typeof A.searchContacts.run>[0]) =>
+      (await A.searchContacts.run({ sector: "sortme", ...input }, ctx())).contacts.map(
+        (c) => c.fullName
+      );
+    // Default stays alphabetical by name, as before.
+    expect(await names({})).toEqual(["Sol A", "Sol B", "Sol C"]);
+    expect(await names({ dir: "desc" })).toEqual(["Sol C", "Sol B", "Sol A"]);
+    expect(await names({ sort: "company" })).toEqual(["Sol B", "Sol A", "Sol C"]);
+    expect(await names({ sort: "company", dir: "desc" })).toEqual(["Sol A", "Sol B", "Sol C"]);
+    expect(await names({ sort: "role" })).toEqual(["Sol C", "Sol A", "Sol B"]);
+    // Paging follows the sort.
+    expect(await names({ sort: "company", limit: 1, offset: 1 })).toEqual(["Sol A"]);
+  });
 });
 
 describe("work", () => {

@@ -1,6 +1,7 @@
 import { newsletterStatus, outlookStatus, searchContacts } from "@/actions/server";
 import { PageHeader } from "@/components/layout/page-shell";
 import { generateMeta } from "@/lib/utils";
+import type { SortDir, SortKey } from "./contacts-table";
 import { PeopleView } from "./people-view";
 
 export async function generateMetadata() {
@@ -19,7 +20,11 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const sp = await searchParams;
   const query = one(sp.q)?.trim() || undefined;
   const sector = one(sp.sector) || undefined;
-  const newsletter = one(sp.newsletter) === "1" ? true : undefined;
+  const nl = one(sp.newsletter);
+  const newsletter = nl === "1" ? true : nl === "0" ? false : undefined;
+  const sortParam = one(sp.sort);
+  const sort: SortKey = sortParam === "company" || sortParam === "role" ? sortParam : "name";
+  const dir: SortDir = one(sp.dir) === "desc" ? "desc" : "asc";
   const page = Math.max(1, Number(one(sp.page)) || 1);
 
   const [result, status, outlook] = await Promise.all([
@@ -27,6 +32,8 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
       query,
       sector,
       newsletter,
+      sort,
+      dir,
       limit: PAGE_SIZE,
       offset: (page - 1) * PAGE_SIZE
     }),
@@ -47,6 +54,8 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
           page={page}
           pageSize={PAGE_SIZE}
           filters={{ query, sector, newsletter }}
+          sort={sort}
+          dir={dir}
           newsletter={status.ok ? status.data : null}
           outlookConnected={outlook.ok && outlook.data.connected}
         />

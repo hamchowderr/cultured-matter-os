@@ -1,4 +1,4 @@
-import { and, asc, count, eq, exists, inArray, like, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, inArray, like, or, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 
 import type { Executor } from "@/db";
@@ -8,6 +8,21 @@ import { ActionError, defineAction } from "./define";
 import { parseConnectionsCsv } from "@/lib/linkedin";
 import { contactSchema, id, limit, note, offset, pairingSchema, type Contact } from "./schemas";
 
+const sortColumns = {
+  name: contacts.fullName,
+  company: contacts.company,
+  role: contacts.position,
+  added: contacts.createdAt
+} as const;
+
+function contactOrder(sort: keyof typeof sortColumns, dir: "asc" | "desc") {
+  const col = sortColumns[sort];
+  const by = dir === "desc" ? desc : asc;
+  // Blank companies and roles go to the bottom, not the top.
+  const blanksLast = sql`coalesce(${col}, '') = ''`;
+  return [blanksLast, by(col), asc(contacts.fullName), asc(contacts.id)];
+}
+
 export const searchContacts = defineAction({
   name: "searchContacts",
   description: "Search contacts by name, company, position, sector tag or newsletter flag.",
@@ -16,6 +31,9 @@ export const searchContacts = defineAction({
     query: z.string().trim().optional(),
     sector: z.string().optional(),
     newsletter: z.boolean().optional(),
+    // Contacts with no company or role sort last either way; ties fall back to name.
+    sort: z.enum(["name", "company", "role", "added"]).default("name"),
+    dir: z.enum(["asc", "desc"]).default("asc"),
     limit,
     offset
   }),
@@ -44,7 +62,7 @@ export const searchContacts = defineAction({
         .select()
         .from(contacts)
         .where(where)
-        .orderBy(asc(contacts.fullName))
+        .orderBy(...contactOrder(input.sort, input.dir))
         .limit(input.limit)
         .offset(input.offset),
       db.select({ total: count() }).from(contacts).where(where)

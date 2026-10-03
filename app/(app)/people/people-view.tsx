@@ -1,32 +1,14 @@
 "use client";
 
-import {
-  CircleHelpIcon,
-  MailCheckIcon,
-  MailIcon,
-  SearchIcon,
-  TagIcon,
-  UploadIcon,
-  UsersIcon
-} from "lucide-react";
-import Link from "next/link";
+import { CircleHelpIcon, SearchIcon, UploadIcon, UsersIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { importContacts, setContactSectors, setNewsletter } from "@/actions/server";
 import type { Contact } from "@/actions/schemas";
-import { ContactCard } from "@/components/cards";
-import { ComingSoon } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
+import { ButtonGroup } from "@/components/ui/button-group";
 import {
   Empty,
   EmptyContent,
@@ -35,14 +17,28 @@ import {
   EmptyMedia,
   EmptyTitle
 } from "@/components/ui/empty";
-import { Input } from "@/components/ui/input";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { CATEGORIES } from "@/lib/categories";
 import { cn } from "@/lib/utils";
+import { ContactSheet } from "./contact-sheet";
+import { ContactsTable, type SortDir, type SortKey } from "./contacts-table";
 import { LinkedInSteps } from "./linkedin-steps";
 import { NewsletterBar, type NewsletterStatus } from "./newsletter-bar";
-import { ContactOutlookButton, OutlookSync } from "./outlook";
+import { OutlookSync } from "./outlook";
+
+const NEWSLETTER_CHIPS = [
+  { value: undefined, label: "Everyone" },
+  { value: "1", label: "On the newsletter" },
+  { value: "0", label: "Not on it" }
+] as const;
 
 export function PeopleView({
   contacts,
@@ -50,6 +46,8 @@ export function PeopleView({
   page,
   pageSize,
   filters,
+  sort,
+  dir,
   newsletter,
   outlookConnected
 }: {
@@ -58,6 +56,8 @@ export function PeopleView({
   page: number;
   pageSize: number;
   filters: { query?: string; sector?: string; newsletter?: boolean };
+  sort: SortKey;
+  dir: SortDir;
   newsletter: NewsletterStatus | null;
   outlookConnected: boolean;
 }) {
@@ -68,18 +68,38 @@ export function PeopleView({
   const [query, setQuery] = useState(filters.query ?? "");
   const [importing, setImporting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  // Tag edits show instantly; the server copy catches up on refresh.
+  // Tag and newsletter edits show instantly; the server copy catches up on refresh.
   const [tags, setTags] = useState<Record<string, string[]>>({});
   const [onList, setOnList] = useState<Record<string, boolean>>({});
+  const [selected, setSelected] = useState<Contact | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const withEdits = (c: Contact): Contact => ({
+    ...c,
+    sectors: tags[c.id] ?? c.sectors,
+    newsletter: onList[c.id] ?? c.newsletter
+  });
+  const rows = contacts.map(withEdits);
+  // Keep the open contact fresh after a refresh, even if it left the current page.
+  const open = selected ? withEdits(contacts.find((c) => c.id === selected.id) ?? selected) : null;
+
+  const href = useCallback(
+    (patch: Record<string, string | undefined>) => {
+      const next = new URLSearchParams(params.toString());
+      for (const [k, v] of Object.entries(patch)) {
+        if (v) next.set(k, v);
+        else next.delete(k);
+      }
+      // Any change other than paging starts again from page 1.
+      if (!("page" in patch)) next.delete("page");
+      const qs = next.toString();
+      return qs ? `${pathname}?${qs}` : pathname;
+    },
+    [params, pathname]
+  );
 
   function update(patch: Record<string, string | undefined>) {
-    const next = new URLSearchParams(params.toString());
-    for (const [k, v] of Object.entries(patch)) {
-      if (v) next.set(k, v);
-      else next.delete(k);
-    }
-    next.delete("page");
-    startTransition(() => router.replace(`${pathname}?${next.toString()}`, { scroll: false }));
+    startTransition(() => router.replace(href(patch), { scroll: false }));
   }
 
   useEffect(() => {
@@ -87,6 +107,16 @@ export function PeopleView({
     const t = setTimeout(() => update({ q: query.trim() || undefined }), 300);
     return () => clearTimeout(t);
   }, [query]);
+
+  const pageHref = useCallback(
+    (p: number) => href({ page: p > 1 ? String(p) : undefined }),
+    [href]
+  );
+  const sortHref = useCallback(
+    (s: SortKey, d: SortDir) =>
+      href({ sort: s === "name" ? undefined : s, dir: d === "asc" ? undefined : d }),
+    [href]
+  );
 
   async function onFile(file: File | undefined) {
     if (!file) return;
@@ -132,14 +162,9 @@ export function PeopleView({
     startTransition(() => router.refresh());
   }
 
-  const pageHref = (p: number) => {
-    const next = new URLSearchParams(params.toString());
-    if (p > 1) next.set("page", String(p));
-    else next.delete("page");
-    return `${pathname}?${next.toString()}`;
-  };
-  const pages = Math.max(1, Math.ceil(total / pageSize));
-  const filtered = !!(filters.query || filters.sector || filters.newsletter);
+  const filtered = !!(filters.query || filters.sector || filters.newsletter !== undefined);
+  const newsletterParam =
+    filters.newsletter === undefined ? undefined : filters.newsletter ? "1" : "0";
 
   const importButton = (
     <>
@@ -190,34 +215,21 @@ export function PeopleView({
   return (
     <div className={cn("space-y-4 transition-opacity", pending && "opacity-70")}>
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative w-full sm:w-64">
-          <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-          <Input
+        <InputGroup className="h-8 w-full sm:w-64">
+          <InputGroupInput
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search name, company or role"
-            className="h-8 pl-9"
             aria-label="Search contacts"
           />
-        </div>
-        <NativeSelect
-          size="sm"
-          className="w-auto"
-          value={filters.sector ?? ""}
-          onChange={(e) => update({ sector: e.target.value || undefined })}
-          aria-label="Sector"
-        >
-          <NativeSelectOption value="">All sectors</NativeSelectOption>
-          {CATEGORIES.map((c) => (
-            <NativeSelectOption key={c} value={c}>
-              {c}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
+          <InputGroupAddon>
+            <SearchIcon />
+          </InputGroupAddon>
+        </InputGroup>
         <span className="text-muted-foreground text-sm">
           {total.toLocaleString()} {total === 1 ? "contact" : "contacts"}
         </span>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
           <Popover>
             <PopoverTrigger asChild>
               <Button size="sm" variant="ghost">
@@ -234,101 +246,93 @@ export function PeopleView({
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div className="max-w-full overflow-x-auto">
+          <ButtonGroup aria-label="Newsletter">
+            {NEWSLETTER_CHIPS.map((chip) => (
+              <Button
+                key={chip.label}
+                size="sm"
+                variant="outline"
+                aria-pressed={newsletterParam === chip.value}
+                onClick={() => update({ newsletter: chip.value })}
+                className={cn(
+                  newsletterParam === chip.value &&
+                    "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary"
+                )}
+              >
+                {chip.label}
+              </Button>
+            ))}
+          </ButtonGroup>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Sector</span>
+          <Select
+            value={filters.sector ?? "all"}
+            onValueChange={(v) => update({ sector: v === "all" ? undefined : v })}
+          >
+            <SelectTrigger size="sm" className="w-fit gap-1" aria-label="Sector">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All sectors</SelectItem>
+              {CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {newsletter && (
         <NewsletterBar
           status={newsletter}
-          showingOnly={!!filters.newsletter}
-          onToggleOnly={() => update({ newsletter: filters.newsletter ? undefined : "1" })}
+          showingOnly={filters.newsletter === true}
+          onToggleOnly={() => update({ newsletter: filters.newsletter === true ? undefined : "1" })}
         />
       )}
 
-      {contacts.length === 0 ? (
-        <ComingSoon
-          icon={UsersIcon}
-          title="No one matches"
-          description="Try another search or sector."
-        />
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
-          {contacts.map((c) => {
-            const sectors = tags[c.id] ?? c.sectors;
-            const subscribed = onList[c.id] ?? c.newsletter;
-            return (
-              <ContactCard
-                key={c.id}
-                contact={{ ...c, sectors }}
-                actions={
-                  <div className="flex shrink-0 items-center gap-0.5">
-                    <ContactOutlookButton contact={c} />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className={cn("size-7", subscribed && "text-primary")}
-                      disabled={!c.email && !subscribed}
-                      aria-pressed={subscribed}
-                      aria-label={
-                        subscribed
-                          ? `Take ${c.fullName} off the newsletter`
-                          : `Add ${c.fullName} to the newsletter`
-                      }
-                      title={
-                        !c.email
-                          ? "No email address, so no newsletter"
-                          : subscribed
-                            ? "On the newsletter (click to take off)"
-                            : "Add to the newsletter"
-                      }
-                      onClick={() => toggleNewsletter(c, !subscribed)}
-                    >
-                      {subscribed ? <MailCheckIcon /> : <MailIcon />}
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="size-7"
-                          aria-label={`Tag ${c.fullName}`}
-                        >
-                          <TagIcon />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="max-h-80 w-60 overflow-y-auto">
-                        <DropdownMenuLabel>Sectors</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {CATEGORIES.map((cat) => (
-                          <DropdownMenuCheckboxItem
-                            key={cat}
-                            checked={sectors.includes(cat)}
-                            onSelect={(e) => e.preventDefault()}
-                            onCheckedChange={(on) => toggleSector(c, cat, !!on)}
-                          >
-                            {cat}
-                          </DropdownMenuCheckboxItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                }
-              />
-            );
-          })}
-        </div>
-      )}
+      <ContactsTable
+        contacts={rows}
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        sort={sort}
+        dir={dir}
+        sortHref={sortHref}
+        pageHref={pageHref}
+        onOpen={(c) => {
+          setSelected(c);
+          setSheetOpen(true);
+        }}
+        empty={
+          <div className="space-y-3">
+            <p className="font-medium">No one matches</p>
+            <p className="text-muted-foreground text-sm">Try another search or sector.</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setQuery("");
+                update({ q: undefined, sector: undefined, newsletter: undefined });
+              }}
+            >
+              Clear filters
+            </Button>
+          </div>
+        }
+      />
 
-      {pages > 1 && (
-        <nav className="flex items-center justify-center gap-2" aria-label="Pages">
-          <Button size="sm" variant="outline" disabled={page <= 1} asChild={page > 1}>
-            {page > 1 ? <Link href={pageHref(page - 1)}>Previous</Link> : <span>Previous</span>}
-          </Button>
-          <span className="text-muted-foreground text-sm tabular-nums">
-            {page} / {pages}
-          </span>
-          <Button size="sm" variant="outline" disabled={page >= pages} asChild={page < pages}>
-            {page < pages ? <Link href={pageHref(page + 1)}>Next</Link> : <span>Next</span>}
-          </Button>
-        </nav>
-      )}
+      <ContactSheet
+        contact={open}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        onToggleSector={toggleSector}
+        onToggleNewsletter={toggleNewsletter}
+      />
     </div>
   );
 }
