@@ -14,7 +14,7 @@ type LogEntry = {
 
 export class ActionError extends Error {
   constructor(
-    public code: "not_found" | "invalid" | "conflict",
+    public code: "not_found" | "invalid" | "conflict" | "unauthorized",
     message: string
   ) {
     super(message);
@@ -39,10 +39,10 @@ type ActionConfig<I extends z.ZodType, O extends z.ZodType> = {
     }
 );
 
-export type Action<
-  I extends z.ZodType = z.ZodType,
-  O extends z.ZodType = z.ZodType
-> = ActionConfig<I, O> & {
+export type Action<I extends z.ZodType = z.ZodType, O extends z.ZodType = z.ZodType> = ActionConfig<
+  I,
+  O
+> & {
   run: (input: z.input<I>, ctx?: ActionContext) => Promise<z.output<O>>;
 };
 
@@ -83,9 +83,19 @@ export type ActionResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: { code: string; message: string } };
 
-// Server-action boundary: turn thrown errors into a plain result the UI can render.
+// Every server action in actions/server.ts passes through toResult, so this is the one place
+// that refuses anonymous calls. Imported lazily so tests and scripts that call `.run` directly
+// never load the auth stack.
+async function requireSession() {
+  const { getSession } = await import("@/lib/session");
+  if (!(await getSession())) throw new ActionError("unauthorized", "Please sign in again.");
+}
+
+// Server-action boundary: check the session, then turn thrown errors into a plain result the
+// UI can render.
 export async function toResult<T>(fn: () => Promise<T>): Promise<ActionResult<T>> {
   try {
+    await requireSession();
     return { ok: true, data: await fn() };
   } catch (e) {
     if (e instanceof ActionError) return { ok: false, error: { code: e.code, message: e.message } };

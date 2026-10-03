@@ -5,10 +5,11 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import Search from "@/components/layout/header/search";
 import ThemeSwitch from "@/components/layout/header/theme-switch";
+import { type HeaderUser, UserMenu } from "@/components/layout/header/user-menu";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
 
-export function SiteHeader() {
+export function SiteHeader({ user }: { user: HeaderUser }) {
   const { toggleSidebar, open } = useSidebar();
 
   return (
@@ -22,6 +23,7 @@ export function SiteHeader() {
 
         <div className="ml-auto flex items-center gap-2">
           <ThemeSwitch />
+          <UserMenu user={user} />
         </div>
       </div>
     </header>
