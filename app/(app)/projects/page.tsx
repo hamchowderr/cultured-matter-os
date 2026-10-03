@@ -1,7 +1,7 @@
-import { getProject, listProjects } from "@/actions/server";
-import { PageHeader } from "@/components/layout/page-shell";
+import { dueTasks, listProjects, listTasks } from "@/actions/server";
+import { projectStats, taskActivity } from "@/lib/project-stats";
 import { generateMeta } from "@/lib/utils";
-import { ProjectsView } from "./projects-view";
+import { ProjectsView, type View } from "./projects-view";
 
 export async function generateMetadata() {
   return generateMeta({
@@ -12,30 +12,41 @@ export async function generateMetadata() {
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+const VIEWS: View[] = ["overview", "projects", "tasks"];
 
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
-  const showDone = one(sp.done) === "1";
-  const list = await listProjects({ includeDone: showDone });
-  if (!list.ok) {
-    return <p className="text-destructive text-sm">Couldn’t load projects: {list.error.message}</p>;
+  const [projectList, taskList, due] = await Promise.all([
+    listProjects({ includeDone: true }),
+    listTasks({}),
+    dueTasks({})
+  ]);
+  if (!projectList.ok || !taskList.ok || !due.ok) {
+    const error = [projectList, taskList, due].find((r) => !r.ok);
+    return (
+      <p className="text-destructive text-sm">
+        Couldn’t load projects: {error && !error.ok ? error.error.message : "unknown error"}
+      </p>
+    );
   }
 
-  const projects = list.data.projects;
-  const selectedId = projects.find((p) => p.id === one(sp.p))?.id ?? projects[0]?.id;
-  const detail = selectedId ? await getProject({ projectId: selectedId }) : null;
+  const projects = projectList.data.projects;
+  const tasks = taskList.data.tasks;
+  const projectId = projects.find((p) => p.id === one(sp.p))?.id ?? null;
+  const requested = one(sp.view) as View | undefined;
+  const view: View = projectId ? "tasks" : VIEWS.includes(requested!) ? requested! : "overview";
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Projects"
-        description="Businesses, their projects, and the tasks in each. A task can show up in more than one project."
-      />
-      <ProjectsView
-        projects={projects}
-        selected={detail?.ok ? detail.data : null}
-        showDone={showDone}
-      />
-    </div>
+    <ProjectsView
+      view={view}
+      projectId={projectId}
+      dueSoon={one(sp.due) === "soon"}
+      showDone={one(sp.done) === "1"}
+      projects={projects}
+      tasks={tasks}
+      due={due.data}
+      stats={projectStats(projects, tasks, due.data)}
+      activity={taskActivity(tasks)}
+    />
   );
 }

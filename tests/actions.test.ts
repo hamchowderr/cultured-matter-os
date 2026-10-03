@@ -59,6 +59,7 @@ describe("registry", () => {
         "createTask",
         "setTaskStatus",
         "listProjects",
+        "listTasks",
         "getProject",
         "createProject",
         "updateProject",

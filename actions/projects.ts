@@ -326,3 +326,58 @@ export const dueTasks = defineAction({
     };
   }
 });
+
+const taskRowSchema = taskSchema.extend({
+  projectName: z.string().nullable(),
+  business: z.string().nullable(),
+  // Projects the task is linked into besides its home project.
+  alsoIn: z.array(z.object({ id: z.string(), name: z.string() })),
+  subtasks: z.array(taskSchema)
+});
+
+export const listTasks = defineAction({
+  name: "listTasks",
+  description:
+    "Every top-level task across all projects, with its home project and business, the other projects it is linked into, and its subtasks.",
+  kind: "read",
+  input: z.object({ includeDone: z.boolean().default(true) }),
+  output: z.object({ tasks: z.array(taskRowSchema) }),
+  async handler(input, db) {
+    const top = await db
+      .select({ task: tasks, projectName: projects.name, business: projects.business })
+      .from(tasks)
+      .leftJoin(projects, eq(tasks.projectId, projects.id))
+      .where(
+        and(isNull(tasks.parentTaskId), input.includeDone ? undefined : ne(tasks.status, "done"))
+      )
+      .orderBy(
+        sql`${tasks.status} = 'done'`,
+        sql`${tasks.dueDate} is null`,
+        asc(tasks.dueDate),
+        asc(tasks.createdAt)
+      );
+    if (top.length === 0) return { tasks: [] };
+
+    const ids = top.map((r) => r.task.id);
+    const [subs, links] = await Promise.all([
+      db.select().from(tasks).where(inArray(tasks.parentTaskId, ids)).orderBy(asc(tasks.createdAt)),
+      db
+        .select({ taskId: taskProjects.taskId, id: projects.id, name: projects.name })
+        .from(taskProjects)
+        .innerJoin(projects, eq(taskProjects.projectId, projects.id))
+        .where(inArray(taskProjects.taskId, ids))
+    ]);
+
+    return {
+      tasks: top.map((r) => ({
+        ...r.task,
+        projectName: r.projectName,
+        business: r.business,
+        alsoIn: links
+          .filter((l) => l.taskId === r.task.id && l.id !== r.task.projectId)
+          .map(({ id, name }) => ({ id, name })),
+        subtasks: subs.filter((s) => s.parentTaskId === r.task.id)
+      }))
+    };
+  }
+});

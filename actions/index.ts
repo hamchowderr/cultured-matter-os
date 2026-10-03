@@ -15,6 +15,7 @@ import {
   getProject,
   linkTaskToProject,
   listProjects,
+  listTasks,
   unlinkTaskFromProject,
   updateProject,
   updateTask
@@ -85,6 +86,7 @@ export {
   createTask,
   setTaskStatus,
   listProjects,
+  listTasks,
   getProject,
   createProject,
   updateProject,
@@ -137,6 +139,7 @@ export const allActions = [
   createTask,
   setTaskStatus,
   listProjects,
+  listTasks,
   getProject,
   createProject,
   updateProject,
