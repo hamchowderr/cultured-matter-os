@@ -39,8 +39,7 @@ export function IphonePanel() {
               Tap <strong className="text-foreground">Add Shortcut</strong>.
             </li>
             <li>
-              When it asks for your key, paste the key exactly as it was sent to you (it starts with{" "}
-              <code className="bg-muted rounded px-1">Bearer</code>), then tap{" "}
+              When it asks for your key, paste the key exactly as it was sent to you, then tap{" "}
               <strong className="text-foreground">Add</strong>.
             </li>
             <li>Do the same with the second link.</li>
@@ -62,9 +61,8 @@ export function IphonePanel() {
             </li>
           </ol>
           <p className="text-muted-foreground">
-            If it says “Unauthorized”, the key is wrong: open the Shortcut, tap the{" "}
-            <code className="bg-muted rounded px-1">Authorization</code> value and paste the key
-            again, starting with <code className="bg-muted rounded px-1">Bearer</code>. Both
+            If it says “Unauthorized”, the key is wrong: open the Shortcut, tap the value of the{" "}
+            <code className="bg-muted rounded px-1">key</code> field and paste the key again. Both
             Shortcuts send to <code className="bg-muted rounded px-1 break-all">{CAPTURE_URL}</code>
             .
           </p>
