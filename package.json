@@ -84,6 +84,7 @@
     "@uidotdev/usehooks": "^2.4.1",
     "@vercel/blob": "^2.8.0",
     "better-auth": "^1.7.7",
+    "busboy": "^1.6.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -128,6 +129,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
+    "@types/busboy": "^1.5.4",
     "@types/node": "^24.10.4",
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19.2.7",
