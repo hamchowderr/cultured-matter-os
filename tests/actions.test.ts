@@ -42,6 +42,7 @@ describe("registry", () => {
         "passCompany",
         "searchGrants",
         "setGrantStatus",
+        "listActivity",
         "searchContacts",
         "findWarmPath",
         "countWarmPaths",
