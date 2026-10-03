@@ -1,10 +1,11 @@
-// Adapted from the shadcn UI kit crm dashboard: the category card follows sales-pipeline.tsx,
+// Adapted from the shadcn UI kit crm dashboard: the category card follows sales-pipeline.tsx (v2.0.0),
 // fed by radarFacets. Status counts live on the tabs and the "new" count on its filter button,
 // so they are not repeated here as stat cards.
 
+import { InfoIcon } from "lucide-react";
 import Link from "next/link";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -45,11 +46,18 @@ function TopCategories({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Top categories</CardTitle>
-        <CardDescription>
-          Across {total.toLocaleString()} {total === 1 ? "company" : "companies"} on Radar, not
-          counting passed.
-        </CardDescription>
+        <CardTitle className="flex items-center gap-1.5">
+          Top categories
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <InfoIcon className="text-muted-foreground size-3.5" aria-label="About this card" />
+            </TooltipTrigger>
+            <TooltipContent>
+              Across {total.toLocaleString("en-US")} {total === 1 ? "company" : "companies"} on
+              Radar, not counting passed.
+            </TooltipContent>
+          </Tooltip>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {top.length === 0 ? (

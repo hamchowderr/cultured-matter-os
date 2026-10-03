@@ -1,11 +1,11 @@
 "use client";
 
-import { SearchIcon, SparklesIcon } from "lucide-react";
+import { SearchIcon, SparklesIcon, XIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CATEGORIES } from "@/lib/categories";
@@ -29,20 +29,18 @@ export type RadarFilterState = {
   newOnly: boolean;
 };
 
-export function RadarFilters({
-  filters,
-  facets,
-  hasBaseline
-}: {
+type Props = {
   filters: RadarFilterState;
   facets: Facets | null;
   hasBaseline: boolean;
-}) {
+};
+
+// Both halves write the same URL; a filter change always goes back to page one.
+function useUpdate() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const [pending, startTransition] = useTransition();
-  const [query, setQuery] = useState(filters.query ?? "");
 
   function update(patch: Record<string, string | undefined>) {
     const next = new URLSearchParams(params.toString());
@@ -53,6 +51,45 @@ export function RadarFilters({
     next.delete("page");
     startTransition(() => router.replace(`${pathname}?${next.toString()}`, { scroll: false }));
   }
+  return { update, pending };
+}
+
+/** The status views (To review, Starred, ...) with their counts. */
+export function RadarTabs({ filters, facets }: Omit<Props, "hasBaseline">) {
+  const { update, pending } = useUpdate();
+
+  const count = (statuses: readonly string[] | undefined) =>
+    facets
+      ? statuses
+        ? statuses.reduce((s, st) => s + (facets.statuses[st] ?? 0), 0)
+        : facets.total
+      : null;
+
+  return (
+    <Tabs
+      value={filters.view}
+      onValueChange={(v) => update({ view: v === "review" ? undefined : v })}
+      className={cn("transition-opacity", pending && "opacity-60")}
+    >
+      <TabsList className="flex-wrap">
+        {RADAR_VIEWS.map((v) => {
+          const n = count(v.statuses);
+          return (
+            <TabsTrigger key={v.value} value={v.value}>
+              {v.label}
+              {n != null && <span className="text-muted-foreground ml-1 tabular-nums">{n}</span>}
+            </TabsTrigger>
+          );
+        })}
+      </TabsList>
+    </Tabs>
+  );
+}
+
+/** Search and filters, laid out as the toolbar row of the kit's v2 leads card. */
+export function RadarToolbar({ filters, facets, hasBaseline }: Props) {
+  const { update, pending } = useUpdate();
+  const [query, setQuery] = useState(filters.query ?? "");
 
   // Follow the URL when a link elsewhere on the page (a summary card, Clear filters) changes it.
   useEffect(() => setQuery(filters.query ?? ""), [filters.query]);
@@ -64,118 +101,99 @@ export function RadarFilters({
     return () => clearTimeout(t);
   }, [query]);
 
-  const count = (statuses: readonly string[] | undefined) =>
-    facets
-      ? statuses
-        ? statuses.reduce((s, st) => s + (facets.statuses[st] ?? 0), 0)
-        : facets.total
-      : null;
-
   const anyFilter =
     filters.category || filters.stage || filters.source || filters.query || filters.newOnly;
 
   return (
-    <div className={cn("space-y-3 transition-opacity", pending && "opacity-60")}>
-      <Tabs
-        value={filters.view}
-        onValueChange={(v) => update({ view: v === "review" ? undefined : v })}
+    <div
+      className={cn(
+        "flex min-h-14 flex-wrap items-center gap-2 border-b px-(--card-spacing) py-3 transition-opacity",
+        pending && "opacity-60"
+      )}
+    >
+      <InputGroup className="w-full max-w-64 shrink-0 @max-md/card:max-w-none">
+        <InputGroupInput
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search name or description"
+          aria-label="Search companies"
+        />
+        <InputGroupAddon>
+          <SearchIcon />
+        </InputGroupAddon>
+      </InputGroup>
+      <NativeSelect
+        size="sm"
+        className="w-auto"
+        value={filters.category ?? ""}
+        onChange={(e) => update({ category: e.target.value || undefined })}
+        aria-label="Category"
       >
-        <TabsList className="flex-wrap">
-          {RADAR_VIEWS.map((v) => {
-            const n = count(v.statuses);
-            return (
-              <TabsTrigger key={v.value} value={v.value}>
-                {v.label}
-                {n != null && <span className="text-muted-foreground ml-1 tabular-nums">{n}</span>}
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
-      </Tabs>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative w-full sm:w-64">
-          <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search name or description"
-            className="h-8 pl-9"
-            aria-label="Search companies"
-          />
-        </div>
-        <NativeSelect
-          size="sm"
-          className="w-auto"
-          value={filters.category ?? ""}
-          onChange={(e) => update({ category: e.target.value || undefined })}
-          aria-label="Category"
-        >
-          <NativeSelectOption value="">All categories</NativeSelectOption>
-          {CATEGORIES.map((c) => (
-            <NativeSelectOption key={c} value={c}>
-              {c}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-        <NativeSelect
-          size="sm"
-          className="w-auto"
-          value={filters.stage ?? ""}
-          onChange={(e) => update({ stage: e.target.value || undefined })}
-          aria-label="Stage"
-        >
-          <NativeSelectOption value="">Any stage</NativeSelectOption>
-          {STAGE_GROUPS.map((s) => (
-            <NativeSelectOption key={s} value={s}>
-              {s}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-        <NativeSelect
-          size="sm"
-          className="w-auto"
-          value={filters.source ?? ""}
-          onChange={(e) => update({ source: e.target.value || undefined })}
-          aria-label="Source"
-        >
-          <NativeSelectOption value="">All sources</NativeSelectOption>
-          {facets?.sources.map((s) => (
-            <NativeSelectOption key={s.slug} value={s.slug}>
-              {s.name} ({s.count})
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
+        <NativeSelectOption value="">All categories</NativeSelectOption>
+        {CATEGORIES.map((c) => (
+          <NativeSelectOption key={c} value={c}>
+            {c}
+          </NativeSelectOption>
+        ))}
+      </NativeSelect>
+      <NativeSelect
+        size="sm"
+        className="w-auto"
+        value={filters.stage ?? ""}
+        onChange={(e) => update({ stage: e.target.value || undefined })}
+        aria-label="Stage"
+      >
+        <NativeSelectOption value="">Any stage</NativeSelectOption>
+        {STAGE_GROUPS.map((s) => (
+          <NativeSelectOption key={s} value={s}>
+            {s}
+          </NativeSelectOption>
+        ))}
+      </NativeSelect>
+      <NativeSelect
+        size="sm"
+        className="w-auto"
+        value={filters.source ?? ""}
+        onChange={(e) => update({ source: e.target.value || undefined })}
+        aria-label="Source"
+      >
+        <NativeSelectOption value="">All sources</NativeSelectOption>
+        {facets?.sources.map((s) => (
+          <NativeSelectOption key={s.slug} value={s.slug}>
+            {s.name} ({s.count})
+          </NativeSelectOption>
+        ))}
+      </NativeSelect>
+      <Button
+        size="sm"
+        variant={filters.newOnly ? "default" : "outline"}
+        disabled={!hasBaseline}
+        onClick={() => update({ new: filters.newOnly ? undefined : "1" })}
+        title={hasBaseline ? undefined : "Available after your first visit"}
+      >
+        <SparklesIcon />
+        New since last visit
+        {facets && hasBaseline && <span className="tabular-nums">{facets.newCount}</span>}
+      </Button>
+      {anyFilter && (
         <Button
           size="sm"
-          variant={filters.newOnly ? "default" : "outline"}
-          disabled={!hasBaseline}
-          onClick={() => update({ new: filters.newOnly ? undefined : "1" })}
-          title={hasBaseline ? undefined : "Available after your first visit"}
+          variant="ghost"
+          onClick={() => {
+            setQuery("");
+            update({
+              category: undefined,
+              stage: undefined,
+              source: undefined,
+              q: undefined,
+              new: undefined
+            });
+          }}
         >
-          <SparklesIcon />
-          New since last visit
-          {facets && hasBaseline && <span className="tabular-nums">{facets.newCount}</span>}
+          Clear filters
+          <XIcon />
         </Button>
-        {anyFilter && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              setQuery("");
-              update({
-                category: undefined,
-                stage: undefined,
-                source: undefined,
-                q: undefined,
-                new: undefined
-              });
-            }}
-          >
-            Clear filters
-          </Button>
-        )}
-      </div>
+      )}
     </div>
   );
 }
