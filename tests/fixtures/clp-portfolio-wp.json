@@ -1,0 +1,117 @@
+[
+ {
+  "id": 9392,
+  "link": "https://www.closedlooppartners.com/portfolio-listing/balcones-recycling-san-antonio/",
+  "title": {
+   "rendered": "Balcones Recycling San Antonio"
+  },
+  "portfoliofund": [
+   13
+  ],
+  "portfoliosector": [],
+  "portfolioarea": [],
+  "portfolioother": []
+ },
+ {
+  "id": 1044,
+  "link": "https://www.closedlooppartners.com/portfolio-listing/algramo/",
+  "title": {
+   "rendered": "Algramo"
+  },
+  "portfoliofund": [
+   14
+  ],
+  "portfoliosector": [
+   85
+  ],
+  "portfolioarea": [
+   77
+  ],
+  "portfolioother": []
+ },
+ {
+  "id": 1046,
+  "link": "https://www.closedlooppartners.com/portfolio-listing/amp-robotics/",
+  "title": {
+   "rendered": "AMP Robotics"
+  },
+  "portfoliofund": [
+   14
+  ],
+  "portfoliosector": [
+   83
+  ],
+  "portfolioarea": [
+   70
+  ],
+  "portfolioother": []
+ },
+ {
+  "id": 1106,
+  "link": "https://www.closedlooppartners.com/portfolio-listing/balcones-resources/",
+  "title": {
+   "rendered": "Balcones Resources"
+  },
+  "portfoliofund": [
+   16
+  ],
+  "portfoliosector": [
+   83
+  ],
+  "portfolioarea": [
+   73,
+   70
+  ],
+  "portfolioother": []
+ },
+ {
+  "id": 4480,
+  "link": "https://www.closedlooppartners.com/portfolio-listing/city-of-baltimore/",
+  "title": {
+   "rendered": "City of Baltimore"
+  },
+  "portfoliofund": [
+   12
+  ],
+  "portfoliosector": [
+   83
+  ],
+  "portfolioarea": [
+   73
+  ],
+  "portfolioother": []
+ },
+ {
+  "id": 5784,
+  "link": "https://www.closedlooppartners.com/portfolio-listing/grey-parrot/",
+  "title": {
+   "rendered": "Greyparrot"
+  },
+  "portfoliofund": [
+   159
+  ],
+  "portfoliosector": [
+   86
+  ],
+  "portfolioarea": [
+   160
+  ],
+  "portfolioother": []
+ },
+ {
+  "id": 8674,
+  "link": "https://www.closedlooppartners.com/portfolio-listing/supersede/",
+  "title": {
+   "rendered": "Supersede"
+  },
+  "portfoliofund": [
+   159,
+   14
+  ],
+  "portfoliosector": [],
+  "portfolioarea": [],
+  "portfolioother": [
+   149
+  ]
+ }
+]
