@@ -116,6 +116,14 @@ describe("iPhone capture endpoint", () => {
     expect((await latest()).body).toBe("Remind me to send the deck to Jordan on Friday");
   });
 
+  it("reads dictated text that Shortcuts attached to the Form as a file", async () => {
+    const form = new FormData();
+    form.set("text", new Blob(["Call Kwaku about Soliome"], { type: "text/plain" }), "text.txt");
+    const res = await handleCapture(post(form, auth), deps());
+    expect(res.status).toBe(201);
+    expect((await latest()).body).toBe("Call Kwaku about Soliome");
+  });
+
   it("captures plain text sent as the whole body", async () => {
     const res = await handleCapture(
       post("Idea: packaging episode", { ...auth, "Content-Type": "text/plain" }),

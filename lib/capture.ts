@@ -51,53 +51,95 @@ function sniffImage(b: Uint8Array): string | null {
   return null;
 }
 
-type Parsed = { body: string; photo: Blob | null };
+type Parsed = { body: string; photo: Blob | null; fields: FieldShape[] };
+// What arrived, without any content: logged when nothing usable was found.
+type FieldShape = { name: string; kind: "text" | "file"; type?: string; size: number };
+
+const TEXT_FIELDS = ["text", "body"];
+const PHOTO_FIELDS = ["photo", "file", "image"];
+
+// A file part becomes the photo when it is an image; otherwise it is read as text, because
+// Shortcuts sometimes sends a text variable as a small file inside a Form.
+async function fromFile(file: Blob): Promise<{ text?: string; photo?: Blob }> {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const type = (file.type || "").toLowerCase();
+  const sniffed = type.startsWith("image/") ? type : sniffImage(bytes);
+  if (sniffed) return { photo: new Blob([bytes], { type: sniffed }) };
+  return { text: new TextDecoder().decode(bytes) };
+}
 
 // The Shortcut can send JSON ({"text": "..."}), a Form (fields "text" and "photo"), plain text,
-// or the photo itself as the whole request body ("File").
-async function parse(request: Request): Promise<Parsed> {
-  const type = (request.headers.get("content-type") ?? "").toLowerCase();
-
+// or the photo itself as the whole request body ("File"). The body is already read in full.
+async function parse(type: string, raw: Uint8Array): Promise<Parsed> {
   if (type.includes("application/json")) {
-    const json = (await request.json().catch(() => null)) as Record<string, unknown> | null;
-    const value = json?.text ?? json?.body;
-    return { body: typeof value === "string" ? value : "", photo: null };
+    const json = JSON.parse(new TextDecoder().decode(raw)) as Record<string, unknown> | null;
+    const value = TEXT_FIELDS.map((k) => json?.[k]).find((v) => v != null);
+    const fields = Object.entries(json ?? {}).map(([name, v]) => ({
+      name,
+      kind: "text" as const,
+      size: String(v ?? "").length
+    }));
+    return { body: value == null ? "" : String(value), photo: null, fields };
   }
   if (type.includes("multipart/form-data") || type.includes("application/x-www-form-urlencoded")) {
-    const form = await request.formData();
-    const value = form.get("text") ?? form.get("body");
-    const photo = form.get("photo") ?? form.get("file") ?? form.get("image");
-    return {
-      body: typeof value === "string" ? value : "",
-      photo: photo instanceof Blob && photo.size > 0 ? photo : null
-    };
+    const form = await new Request("http://capture.local", {
+      method: "POST",
+      headers: { "content-type": type },
+      body: raw as BlobPart
+    }).formData();
+    let body = "";
+    let photo: Blob | null = null;
+    const fields: FieldShape[] = [];
+    for (const [name, value] of form.entries()) {
+      const key = name.toLowerCase();
+      if (typeof value === "string") {
+        fields.push({ name, kind: "text", size: value.length });
+        if (TEXT_FIELDS.includes(key) && !body) body = value;
+        continue;
+      }
+      fields.push({ name, kind: "file", type: value.type, size: value.size });
+      if (value.size === 0) continue;
+      if (TEXT_FIELDS.includes(key)) {
+        const read = await fromFile(value);
+        if (read.photo && !photo) photo = read.photo;
+        if (read.text && !body) body = read.text;
+      } else if (PHOTO_FIELDS.includes(key) && !photo) {
+        // A non-image here stays as sent, so it is refused as "not a photo" below.
+        photo = (await fromFile(value)).photo ?? value;
+      }
+    }
+    return { body, photo, fields };
   }
-  if (type.startsWith("image/")) {
-    const photo = await request.blob();
-    return { body: "", photo: photo.size > 0 ? photo : null };
-  }
-  if (type.includes("application/octet-stream")) {
-    const bytes = new Uint8Array(await request.arrayBuffer());
-    const sniffed = sniffImage(bytes);
-    if (sniffed) return { body: "", photo: new Blob([bytes], { type: sniffed }) };
-    return { body: new TextDecoder().decode(bytes), photo: null };
-  }
-  return { body: await request.text(), photo: null };
+  if (raw.length === 0) return { body: "", photo: null, fields: [] };
+  const read = await fromFile(new Blob([raw as BlobPart], { type: type.split(";")[0] }));
+  return {
+    body: read.text ?? "",
+    photo: read.photo ?? null,
+    fields: [{ name: "(whole body)", kind: "file", type, size: raw.length }]
+  };
 }
 
 export async function handleCapture(request: Request, deps: CaptureDeps = {}) {
+  // Read the whole request before answering. Replying while the iPhone is still sending makes
+  // iOS report "network connection lost" instead of showing the reply.
+  const raw = new Uint8Array(await request.arrayBuffer().catch(() => new ArrayBuffer(0)));
   if (!authorized(request)) return text("Unauthorized. Check the key in your Shortcut.", 401);
 
+  const type = (request.headers.get("content-type") ?? "").toLowerCase();
   let parsed: Parsed;
   try {
-    parsed = await parse(request);
-  } catch {
+    parsed = await parse(type, raw);
+  } catch (e) {
+    console.warn("Capture: could not parse request", { type, bytes: raw.length, error: String(e) });
     return text("Couldn't read that. Send text or a photo.", 400);
   }
 
   const body = parsed.body.trim();
   const photo = parsed.photo;
-  if (!body && !photo) return text("Nothing to capture. Send text or a photo.", 400);
+  if (!body && !photo) {
+    console.warn("Capture: nothing to capture", { type, bytes: raw.length, fields: parsed.fields });
+    return text("Nothing to capture. Send text or a photo.", 400);
+  }
 
   let imagePath: string | undefined;
   if (photo) {
