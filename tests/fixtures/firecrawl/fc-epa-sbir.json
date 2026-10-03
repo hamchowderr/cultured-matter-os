@@ -1,0 +1,75 @@
+{
+  "handBuilt": "Built from the page HTML on 2026-10-03 because the live call failed on the concurrency limit; same shape as a Firecrawl JSON-format response.",
+  "json": {
+    "entries": [
+      {
+        "name": "PAGE Technologies, INC",
+        "website": null,
+        "description": "Real-time, Low-cost Nitrate Sensor Platform for Water Quality Monitoring",
+        "year": 2026,
+        "category": "SBIR Phase II"
+      },
+      {
+        "name": "AxNano, Inc",
+        "website": null,
+        "description": "Reclaiming Beneficial Biosolids: A PFAS Removal and Destruction Approach",
+        "year": 2026,
+        "category": "SBIR Phase II"
+      },
+      {
+        "name": "ENF Products, LLC",
+        "website": null,
+        "description": "Advanced Nanofiber Filter Kit for Mitigating Air Toxics",
+        "year": 2026,
+        "category": "SBIR Phase II"
+      },
+      {
+        "name": "EcoaTEX, LLC",
+        "website": null,
+        "description": "Transforming Agricultural Waste into High-Performance, PFAS-Free, and Biodegradable Fibers and Yarns",
+        "year": 2026,
+        "category": "SBIR Phase II"
+      },
+      {
+        "name": "Green Options PBC, dba Bold Reuse",
+        "website": null,
+        "description": "Development of Enhanced Inventory Management for Scalable Reuse Systems at Bold Reuse",
+        "year": 2026,
+        "category": "SBIR Phase II"
+      },
+      {
+        "name": "Pacific Reclaimed Lumber & Supply, SPC",
+        "website": null,
+        "description": "Scaling Reclaimed Lumber Sales & Procurement Through Web, SI and App-Based Specialized Solution",
+        "year": 2026,
+        "category": "SBIR Phase II"
+      },
+      {
+        "name": "Acadian Research & Development, LLC",
+        "website": null,
+        "description": "Biochar-derived graphene products for increased concrete strength and sustainability",
+        "year": 2026,
+        "category": "SBIR Phase II"
+      },
+      {
+        "name": "KLAW Industries, LLC",
+        "website": null,
+        "description": "Low Embodied Carbon Alternative for Stabilization and Full Depth Reclamation Utilizing Waste Glass",
+        "year": 2026,
+        "category": "SBIR Phase II"
+      },
+      {
+        "name": "Prospect Growth, INC",
+        "website": null,
+        "description": "Nanoparticle Phosphorus Fertilizer Commercialization: Product Scale-Up and Multi-Season Grower Integration Trials",
+        "year": 2026,
+        "category": "SBIR Phase II"
+      }
+    ]
+  },
+  "metadata": {
+    "statusCode": 200,
+    "sourceURL": "https://www.epa.gov/sbir/2025-2026-small-business-innovation-research-sbir-phase-ii-awardees",
+    "title": "2025-2026 Small Business Innovation Research (SBIR) Phase II Awardees | US EPA"
+  }
+}

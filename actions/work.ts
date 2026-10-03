@@ -3,10 +3,12 @@ import { z } from "zod/v4";
 
 import { approvals, captures, projects, tasks } from "@/db/schema";
 import type { Executor } from "@/db";
+import { graphSession } from "@/lib/graph";
 import { ActionError, defineAction } from "./define";
+import { OUTLOOK_DRAFT, saveOutlookDraft } from "./outlook";
 import { approvalSchema, captureSchema, id, taskSchema } from "./schemas";
 
-const taskStatus = z.enum(["todo", "in_progress", "waiting", "done"]);
+const taskStatus = z.enum(["todo", "in_progress", "waiting", "replied", "done"]);
 
 const newTask = z.object({
   title: z.string().trim().min(1).max(300),
@@ -45,16 +47,27 @@ export const createCapture = defineAction({
   name: "createCapture",
   description: "Capture a note into the Inbox to sort later.",
   kind: "write",
-  input: z.object({ body: z.string().trim().min(1).max(10_000) }),
+  input: z.object({
+    body: z.string().trim().min(1).max(10_000),
+    // Blob pathname of an attached photo; set by the iPhone capture endpoint.
+    imagePath: z.string().min(1).max(500).optional(),
+    source: z.enum(["web", "iphone"]).default("web")
+  }),
   output: captureSchema,
   async handler(input, db) {
-    const [row] = await db.insert(captures).values({ body: input.body }).returning();
+    const [row] = await db
+      .insert(captures)
+      .values({ body: input.body, imagePath: input.imagePath ?? null })
+      .returning();
     return row;
   },
-  log: (_input, capture) => ({
+  log: (input, capture) => ({
     entityType: "capture",
     entityId: capture.id,
-    summary: `Captured "${capture.body.slice(0, 60)}"`
+    summary: `Captured ${capture.imagePath ? "a photo" : `"${capture.body.slice(0, 60)}"`}${
+      input.source === "iphone" ? " from the iPhone" : ""
+    }`,
+    data: input.source === "iphone" ? { source: "iphone", photo: !!capture.imagePath } : undefined
   })
 });
 
@@ -127,7 +140,7 @@ export const createTask = defineAction({
 
 export const setTaskStatus = defineAction({
   name: "setTaskStatus",
-  description: "Set a task's status: todo, in progress, waiting for response, or done.",
+  description: "Set a task's status: todo, in progress, waiting for response, replied, or done.",
   kind: "write",
   input: z.object({ taskId: id, status: taskStatus }),
   output: taskSchema,
@@ -180,7 +193,16 @@ export const decideApproval = defineAction({
     note: z.string().trim().max(500).optional()
   }),
   output: approvalSchema,
-  async handler(input, db) {
+  // Kinds that call Microsoft get their token before the transaction opens.
+  async prepare(input, db) {
+    if (input.decision !== "approve") return undefined;
+    const [pending] = await db
+      .select({ action: approvals.action })
+      .from(approvals)
+      .where(and(eq(approvals.id, input.approvalId), eq(approvals.status, "pending")));
+    return pending?.action === OUTLOOK_DRAFT ? { graph: await graphSession(db) } : undefined;
+  },
+  async handler(input, db, prepared) {
     // Only a pending row matches, so two decisions on the same item cannot both win.
     const [row] = await db
       .update(approvals)
@@ -191,7 +213,18 @@ export const decideApproval = defineAction({
       .where(and(eq(approvals.id, input.approvalId), eq(approvals.status, "pending")))
       .returning();
     if (row) {
-      // Later: carry out the approved action per kind (row.action), e.g. Outlook drafts or chat.
+      // Carry out the approved action per kind (row.action). A failure throws and the
+      // approval stays pending.
+      if (row.status === "approved" && row.action === OUTLOOK_DRAFT) {
+        if (!prepared) throw new ActionError("conflict", "Try approving again");
+        const result = await saveOutlookDraft(db, prepared.graph, row.payload);
+        const [done] = await db
+          .update(approvals)
+          .set({ result })
+          .where(eq(approvals.id, row.id))
+          .returning();
+        return done;
+      }
       return row;
     }
     const [existing] = await db

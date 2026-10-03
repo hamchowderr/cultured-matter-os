@@ -41,6 +41,21 @@ import {
   requestApproval,
   setTaskStatus
 } from "./work";
+import {
+  newsletterQueue,
+  newsletterSignup,
+  newsletterStatus,
+  newsletterUnsubscribe,
+  recordNewsletterSync,
+  setNewsletter
+} from "./newsletter";
+import {
+  checkOutlookReplies,
+  draftFollowUp,
+  listContactEmails,
+  outlookStatus,
+  syncOutlook
+} from "./outlook";
 
 export {
   searchCompanies,
@@ -78,7 +93,18 @@ export {
   requestApproval,
   listApprovals,
   decideApproval,
-  dueTasks
+  dueTasks,
+  setNewsletter,
+  newsletterStatus,
+  newsletterQueue,
+  recordNewsletterSync,
+  newsletterSignup,
+  newsletterUnsubscribe,
+  outlookStatus,
+  syncOutlook,
+  listContactEmails,
+  draftFollowUp,
+  checkOutlookReplies
 };
 
 // Every named action, for the phase-2 agent to wrap as tools.
@@ -118,7 +144,14 @@ export const allActions = [
   requestApproval,
   listApprovals,
   decideApproval,
-  dueTasks
+  dueTasks,
+  setNewsletter,
+  newsletterStatus,
+  outlookStatus,
+  syncOutlook,
+  listContactEmails,
+  draftFollowUp,
+  checkOutlookReplies
 ] as const;
 
 export { ActionError, type Action, type ActionResult } from "./define";

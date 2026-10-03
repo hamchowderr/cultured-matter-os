@@ -33,7 +33,7 @@ export const sources = sqliteTable("sources", {
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
   kind: text("kind", {
-    enum: ["wp_json", "yc_tag", "rss", "grants_gov", "ca_grants"]
+    enum: ["wp_json", "yc_tag", "rss", "grants_gov", "ca_grants", "nsf_awards", "firecrawl"]
   }).notNull(),
   url: text("url").notNull(),
   lastCheckedAt: integer("last_checked_at", { mode: "timestamp_ms" }),
@@ -141,7 +141,14 @@ export const contacts = sqliteTable(
     position: text("position"),
     connectedOn: text("connected_on"),
     sectors: text("sectors", { mode: "json" }).$type<string[]>().notNull().default([]),
-    source: text("source", { enum: ["linkedin_csv", "manual", "sample"] }).notNull(),
+    source: text("source", {
+      enum: ["linkedin_csv", "manual", "sample", "newsletter_signup", "outlook"]
+    }).notNull(),
+    // Newsletter: the flag is ours; FluentCRM is told on the next sync.
+    newsletter: integer("newsletter", { mode: "boolean" }).notNull().default(false),
+    newsletterChangedAt: integer("newsletter_changed_at", { mode: "timestamp_ms" }),
+    newsletterSyncedAt: integer("newsletter_synced_at", { mode: "timestamp_ms" }),
+    fluentcrmId: integer("fluentcrm_id"),
     createdAt: createdAt(),
     updatedAt: updatedAt()
   },
@@ -170,6 +177,29 @@ export const contactLinks = sqliteTable(
   (t) => [
     index("contact_links_contact_idx").on(t.contactId),
     index("contact_links_company_idx").on(t.companyId)
+  ]
+);
+
+// Recent Outlook emails with a contact: metadata and a link only, never the body.
+export const contactEmails = sqliteTable(
+  "contact_emails",
+  {
+    id: id(),
+    contactId: text("contact_id")
+      .notNull()
+      .references(() => contacts.id, { onDelete: "cascade" }),
+    // Graph immutable message id.
+    messageId: text("message_id").notNull(),
+    conversationId: text("conversation_id"),
+    subject: text("subject"),
+    direction: text("direction", { enum: ["in", "out"] }).notNull(),
+    at: integer("at", { mode: "timestamp_ms" }).notNull(),
+    webLink: text("web_link"),
+    createdAt: createdAt()
+  },
+  (t) => [
+    uniqueIndex("contact_emails_contact_message_unique").on(t.contactId, t.messageId),
+    index("contact_emails_contact_at_idx").on(t.contactId, t.at)
   ]
 );
 
@@ -229,6 +259,8 @@ export const captures = sqliteTable(
   {
     id: id(),
     body: text("body").notNull(),
+    // Pathname of a photo in the private Vercel Blob store (iPhone Shortcut captures).
+    imagePath: text("image_path"),
     kind: text("kind", { enum: ["task", "idea", "reference"] }),
     tier: integer("tier"),
     projectId: text("project_id").references(() => projects.id, { onDelete: "set null" }),
@@ -249,10 +281,12 @@ export const tasks = sqliteTable(
     captureId: text("capture_id").references(() => captures.id, { onDelete: "set null" }),
     title: text("title").notNull(),
     notes: text("notes"),
-    status: text("status", { enum: ["todo", "in_progress", "waiting", "done"] })
+    status: text("status", { enum: ["todo", "in_progress", "waiting", "replied", "done"] })
       .notNull()
       .default("todo"),
     dueDate: integer("due_date", { mode: "timestamp_ms" }),
+    // The Outlook thread of a follow-up drafted from this task; the daily reply check watches it.
+    outlookConversationId: text("outlook_conversation_id"),
     completedAt: integer("completed_at", { mode: "timestamp_ms" }),
     createdAt: createdAt(),
     updatedAt: updatedAt()

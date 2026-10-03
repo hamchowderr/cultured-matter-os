@@ -2,14 +2,27 @@ import { eq } from "drizzle-orm";
 
 import type { Database } from "@/db";
 import { activityLog, sources } from "@/db/schema";
+import { agfundernews } from "./agfundernews";
+import { closedLoop } from "./closed-loop";
 import { ctvc } from "./ctvc";
+import { gca } from "./gca";
 import { greentown } from "./greentown";
+import { nsf } from "./nsf";
 import { sosv } from "./sosv";
 import type { Fetch, RadarSource } from "./types";
 import { upsertRecords, type UpsertStats } from "./upsert";
 import { yc } from "./yc";
 
-export const RADAR_SOURCES: RadarSource[] = [sosv, greentown, yc, ctvc];
+export const RADAR_SOURCES: RadarSource[] = [
+  sosv,
+  greentown,
+  yc,
+  ctvc,
+  nsf,
+  agfundernews,
+  gca,
+  closedLoop
+];
 
 export type SourceResult =
   | ({ slug: string; ok: true } & UpsertStats)

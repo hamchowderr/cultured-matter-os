@@ -1,0 +1,1013 @@
+{
+  "json": {
+    "entries": [
+      {
+        "name": "Actionfigure",
+        "website": "https://elementalimpact.com/companies/#actionfigure",
+        "description": "Real-time transportation information",
+        "year": null,
+        "category": "Transportation"
+      },
+      {
+        "name": "Allume Energy",
+        "website": "https://elementalimpact.com/companies/#allume-energy",
+        "description": "Shared solar for multifamily homes",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Ampaire",
+        "website": "https://elementalimpact.com/companies/#ampaire",
+        "description": "Electric commercial aircraft ",
+        "year": null,
+        "category": "Transportation"
+      },
+      {
+        "name": "Amply Power",
+        "website": "https://elementalimpact.com/companies/#amply-power",
+        "description": "Fleet charging, simplified ",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Applied Carbon",
+        "website": "https://elementalimpact.com/companies/#applied-carbon",
+        "description": "Advanced robotics to sequester carbon and improve soils",
+        "year": null,
+        "category": "Nature-Based Solutions"
+      },
+      {
+        "name": "Artyc",
+        "website": "https://elementalimpact.com/companies/#artyc",
+        "description": "Battery-powered thermal fridges for cold chain logistics",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Aspiring Materials",
+        "website": "https://elementalimpact.com/companies/#aspiring-materials",
+        "description": "Delivering industrial decarbonization and vital mineral resources",
+        "year": null,
+        "category": "Industry"
+      },
+      {
+        "name": "Banyan Infrastructure",
+        "website": "https://elementalimpact.com/companies/#banyan-infrastructure",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Bedrock Energy",
+        "website": "https://elementalimpact.com/companies/#bedrock-energy",
+        "description": null,
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Bikeshare Hawaii",
+        "website": "https://elementalimpact.com/companies/#bikeshare-hawaii",
+        "description": "Honolulu's bike share program",
+        "year": null,
+        "category": "Transportation"
+      },
+      {
+        "name": "Blue Ocean Barns",
+        "website": "https://elementalimpact.com/companies/#blue-ocean-barns",
+        "description": "The seaweed solution to livestock methane emissions",
+        "year": null,
+        "category": "Agriculture"
+      },
+      {
+        "name": "Blue Planet Energy Systems",
+        "website": "https://elementalimpact.com/companies/#blue-planet-energy-systems",
+        "description": "Grid Optional™ Energy Solutions",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Blyncsy",
+        "website": "https://elementalimpact.com/companies/#blyncsy",
+        "description": "Big data meets location analytics for the transportation grid",
+        "year": null,
+        "category": "Transportation"
+      },
+      {
+        "name": "Buoy Labs",
+        "website": "https://elementalimpact.com/companies/#buoy-labs",
+        "description": "Smart water leak detection & control for homes; Acquired by Resideo in 2019",
+        "year": null,
+        "category": "Water"
+      },
+      {
+        "name": "BurnBot",
+        "website": "https://elementalimpact.com/companies/#burnbot",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "C16 Biosciences",
+        "website": "https://elementalimpact.com/companies/#c16-biosciences",
+        "description": null,
+        "year": null,
+        "category": "Industry"
+      },
+      {
+        "name": "Cambrian Innovation",
+        "website": "https://elementalimpact.com/companies/#cambrian-innovation",
+        "description": "Recovering sustainable resources from wastewater",
+        "year": null,
+        "category": "Water"
+      },
+      {
+        "name": "Capture6",
+        "website": "https://elementalimpact.com/companies/#capture6",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "CarbonCure",
+        "website": "https://elementalimpact.com/companies/#carboncure",
+        "description": "CarbonCure is pioneering CO2 utilization technologies for the cement and concrete sector. ",
+        "year": null,
+        "category": "Industry"
+      },
+      {
+        "name": "CareDaily",
+        "website": "https://elementalimpact.com/companies/#caredaily",
+        "description": "Caring daily for people, places, and things",
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Centinel",
+        "website": "https://elementalimpact.com/companies/#centinel",
+        "description": "10x cheaper, whole-building energy efficiency",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Ceres AI",
+        "website": "https://elementalimpact.com/companies/#ceres-ai",
+        "description": "Aerial imagery solutions for farmers",
+        "year": null,
+        "category": "Agriculture"
+      },
+      {
+        "name": "ChargerHelp!",
+        "website": "https://elementalimpact.com/companies/#chargerhelp",
+        "description": "On-demand repair of electric vehicle charging stations",
+        "year": null,
+        "category": "Transportation"
+      },
+      {
+        "name": "Chargetrip",
+        "website": "https://elementalimpact.com/companies/#chargetrip",
+        "description": "Smart navigation for electric mobility",
+        "year": null,
+        "category": "Transportation"
+      },
+      {
+        "name": "Community Energy Labs",
+        "website": "https://elementalimpact.com/companies/#community-energy-labs",
+        "description": null,
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "ConnectDER",
+        "website": "https://elementalimpact.com/companies/#connectder",
+        "description": "Plug-and-play solar connection",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Courial",
+        "website": "https://elementalimpact.com/companies/#courial",
+        "description": "A community of on-demand gig workers delivering anything locally.",
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Creative Food Labs",
+        "website": "https://elementalimpact.com/companies/#creative-food-labs",
+        "description": null,
+        "year": null,
+        "category": "Food & Agriculture"
+      },
+      {
+        "name": "DigitalPaani",
+        "website": "https://elementalimpact.com/companies/#digitalpaani",
+        "description": null,
+        "year": null,
+        "category": "Water"
+      },
+      {
+        "name": "Dimensional Energy",
+        "website": "https://elementalimpact.com/companies/#dimensional-energy",
+        "description": "Transforming CO2 from waste to resource ",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Dollaride",
+        "website": "https://elementalimpact.com/companies/#dollaride",
+        "description": "Digital rails for transit-starved communities",
+        "year": null,
+        "category": "Transportation"
+      },
+      {
+        "name": "Ebb Carbon",
+        "website": "https://elementalimpact.com/companies/#ebb-carbon",
+        "description": null,
+        "year": null,
+        "category": "Industry"
+      },
+      {
+        "name": "Edacious",
+        "website": "https://elementalimpact.com/companies/#edacious",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "eMotorWerks",
+        "website": "https://elementalimpact.com/companies/#emotorwerks",
+        "description": "Acquired by Enel in 2017; Smart(grid) EV charging",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Energy Dome",
+        "website": "https://elementalimpact.com/companies/#energy-dome",
+        "description": null,
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "EnergyRM",
+        "website": "https://elementalimpact.com/companies/#energyrm",
+        "description": "A platform to monetize energy efficiency in buildings ",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "enVerid Systems",
+        "website": "https://elementalimpact.com/companies/#enverid-systems",
+        "description": "Air cleaning technology for healthy and efficient buildings",
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Evrnu",
+        "website": "https://elementalimpact.com/companies/#evrnu",
+        "description": "Reshaping the future of the textile industry.",
+        "year": null,
+        "category": "Industry"
+      },
+      {
+        "name": "Farm Link Hawaiʻi",
+        "website": "https://elementalimpact.com/companies/#farm-link-hawaii",
+        "description": "Farms at your fingertips",
+        "year": null,
+        "category": "Food & Agriculture"
+      },
+      {
+        "name": "Fervo Energy",
+        "website": "https://elementalimpact.com/companies/#fervo-energy",
+        "description": "Scalable and affordable geothermal power for 100% clean energy",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Fleet Robotics",
+        "website": "https://elementalimpact.com/companies/#fleet-robotics",
+        "description": "Autonomous maintenance and data collection for maritime vessels",
+        "year": null,
+        "category": "Transportation"
+      },
+      {
+        "name": "FlyWire Cameras",
+        "website": "https://elementalimpact.com/companies/#flywire-cameras",
+        "description": "Electronic monitoring for sustainable fisheries",
+        "year": null,
+        "category": "Water"
+      },
+      {
+        "name": "Foray Bioscience",
+        "website": "https://elementalimpact.com/companies/#foray-bioscience",
+        "description": "Unlocking biomanufacturing for ecosystem regeneration",
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Forum Mobility",
+        "website": "https://elementalimpact.com/companies/#forum-mobility",
+        "description": null,
+        "year": null,
+        "category": "Transportation"
+      },
+      {
+        "name": "Found Industries",
+        "website": "https://elementalimpact.com/companies/#found-industries",
+        "description": "Transforming waste aluminum into industrial heat",
+        "year": null,
+        "category": "Industry"
+      },
+      {
+        "name": "FREDsense",
+        "website": "https://elementalimpact.com/companies/#fredsense",
+        "description": "Portable water quality sensors for rapid contaminant analysis",
+        "year": null,
+        "category": "Water"
+      },
+      {
+        "name": "FreeWire Technologies",
+        "website": "https://elementalimpact.com/companies/#freewire-technologies",
+        "description": "Clean electrification beyond the grid",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Full Harvest",
+        "website": "https://elementalimpact.com/companies/#full-harvest",
+        "description": "The business marketplace for ugly & surplus produce",
+        "year": null,
+        "category": "Food & Agriculture"
+      },
+      {
+        "name": "Gather",
+        "website": "https://elementalimpact.com/companies/#gather",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Geli",
+        "website": "https://elementalimpact.com/companies/#geli",
+        "description": "Software and business solutions for energy storage systems",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Genomines",
+        "website": "https://elementalimpact.com/companies/#genomines",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Glacier",
+        "website": "https://elementalimpact.com/companies/#glacier",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Go Electric",
+        "website": "https://elementalimpact.com/companies/#go-electric",
+        "description": "Uninterruptible power supply for microgrids; Acquired by Saft in 2019",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Goodr",
+        "website": "https://elementalimpact.com/companies/#goodr",
+        "description": "Feed more. Waste less.",
+        "year": null,
+        "category": "Food & Agriculture"
+      },
+      {
+        "name": "Gradient",
+        "website": "https://elementalimpact.com/companies/#gradient",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Hawai‘i ‘Ulu Cooperative",
+        "website": "https://elementalimpact.com/companies/#hawaii-ulu-cooperative",
+        "description": "Revitalizing Hawaiʻi's indigenous food systems",
+        "year": null,
+        "category": "Food & Agriculture"
+      },
+      {
+        "name": "Heliogen",
+        "website": "https://elementalimpact.com/companies/#heliogen",
+        "description": "Replacing fuels with sunlight",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Hephae",
+        "website": "https://elementalimpact.com/companies/#hephae",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "HIVED",
+        "website": "https://elementalimpact.com/companies/#hived",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Hohonu",
+        "website": "https://elementalimpact.com/companies/#hohonu",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "HST",
+        "website": "https://elementalimpact.com/companies/#hst",
+        "description": "The clean energy contract and project siting platform",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Inevitable Technology",
+        "website": "https://elementalimpact.com/companies/#inevitable-technology",
+        "description": "Advancing plant propagation technology to give plants the best possible start to life",
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Jupiter Intelligence",
+        "website": "https://elementalimpact.com/companies/#jupiter-intelligence",
+        "description": "Data analytics platform to predict and assess asset-level climate risks",
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Kando",
+        "website": "https://elementalimpact.com/companies/#kando",
+        "description": "Situational awareness for the wastewater network",
+        "year": null,
+        "category": "Water"
+      },
+      {
+        "name": "Kelvin",
+        "website": "https://elementalimpact.com/companies/#kelvin",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Kevala",
+        "website": "https://elementalimpact.com/companies/#kevala",
+        "description": "Mapping the grid to enable data-driven decision making",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Klim",
+        "website": "https://elementalimpact.com/companies/#klim",
+        "description": "Transforming food supply chains towards regenerative agriculture",
+        "year": null,
+        "category": "Food & Agriculture"
+      },
+      {
+        "name": "kWh Analytics",
+        "website": "https://elementalimpact.com/companies/#kwh-analytics",
+        "description": "Reduced financial risk for solar",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Lastwall",
+        "website": "https://elementalimpact.com/companies/#lastwall",
+        "description": "Cloud‐based platform protecting companies against cyber‐crime",
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Leap",
+        "website": "https://elementalimpact.com/companies/#leap",
+        "description": "Universal distributed energy exchange",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Liminal",
+        "website": "https://elementalimpact.com/companies/#liminal",
+        "description": "Ultrasound and data analytics for better batteries",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Made of Air",
+        "website": "https://elementalimpact.com/companies/#made-of-air",
+        "description": "Carbon negative materials",
+        "year": null,
+        "category": "Industry"
+      },
+      {
+        "name": "Mast Reforestation",
+        "website": "https://elementalimpact.com/companies/#mast-reforestation",
+        "description": "Making reforestation scalable",
+        "year": null,
+        "category": "Nature-Based Solutions"
+      },
+      {
+        "name": "Matter.",
+        "website": "https://elementalimpact.com/companies/#matter",
+        "description": "Scalable solutions for microplastic waste in water",
+        "year": null,
+        "category": "Water"
+      },
+      {
+        "name": "Maui Nui Venison",
+        "website": "https://elementalimpact.com/companies/#maui-nui-venison",
+        "description": null,
+        "year": null,
+        "category": "Food & Agriculture"
+      },
+      {
+        "name": "MetOx",
+        "website": "https://elementalimpact.com/companies/#metox",
+        "description": "Revolutionizing the grid with high-temperature superconducting wire",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Microvi",
+        "website": "https://elementalimpact.com/companies/#microvi",
+        "description": "Biotechnologies for safe drinking water, wastewater treatment, and renewable chemicals",
+        "year": null,
+        "category": "Water"
+      },
+      {
+        "name": "Molg",
+        "website": "https://elementalimpact.com/companies/#molg",
+        "description": "Molg tackles the growing e-waste problem by making manufacturing circular.",
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Mythos AI",
+        "website": "https://elementalimpact.com/companies/#mythos-ai",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "NEER",
+        "website": "https://elementalimpact.com/companies/#neer",
+        "description": "Redefining water infrastructure through machine learning",
+        "year": null,
+        "category": "Water"
+      },
+      {
+        "name": "Nitricity",
+        "website": "https://elementalimpact.com/companies/#nitricity",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Nnergix",
+        "website": "https://elementalimpact.com/companies/#nnergix",
+        "description": "Weather analytics for the energy industry",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Noon Energy",
+        "website": "https://elementalimpact.com/companies/#noon-energy",
+        "description": "100% reliable renewables with a new kind of battery",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Novoloop",
+        "website": "https://elementalimpact.com/companies/#novoloop",
+        "description": "Sustainable Materials For A Changing Planet",
+        "year": null,
+        "category": "Industry"
+      },
+      {
+        "name": "Nth Cycle Inc.",
+        "website": "https://elementalimpact.com/companies/#nth-cycle-inc",
+        "description": "Rare metals extraction and recycling for the clean energy economy",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Nuventura",
+        "website": "https://elementalimpact.com/companies/#nuventura",
+        "description": "Helping to eliminate the use of the world's strongest greenhouse gas from the energy industry",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "NUWIEL",
+        "website": "https://elementalimpact.com/companies/#nuwiel",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "OhmConnect",
+        "website": "https://elementalimpact.com/companies/#ohmconnect",
+        "description": "Making saving energy fun — and rewarding",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Oonee",
+        "website": "https://elementalimpact.com/companies/#oonee",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Opus One",
+        "website": "https://elementalimpact.com/companies/#opus-one",
+        "description": "Real-time management for a distributed energy network",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Origen",
+        "website": "https://elementalimpact.com/companies/#origen",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "PastureMap",
+        "website": "https://elementalimpact.com/companies/#pasturemap",
+        "description": "Manage your ranch from your pocket",
+        "year": null,
+        "category": "Agriculture"
+      },
+      {
+        "name": "Planet FWD",
+        "website": "https://elementalimpact.com/companies/#planet-fwd",
+        "description": "Ingredient platform for climate-friendly foods",
+        "year": null,
+        "category": "Food & Agriculture"
+      },
+      {
+        "name": "Plantible",
+        "website": "https://elementalimpact.com/companies/#plantible",
+        "description": "A better plant-based protein for consumer products",
+        "year": null,
+        "category": "Food & Agriculture"
+      },
+      {
+        "name": "Pono Energy",
+        "website": "https://elementalimpact.com/companies/#pono-energy",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Pono Home",
+        "website": "https://elementalimpact.com/companies/#pono-home",
+        "description": "Customized home efficiency and maintenance",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Propagate",
+        "website": "https://elementalimpact.com/companies/#propagate",
+        "description": "Agroforestry simplified",
+        "year": null,
+        "category": "Agriculture"
+      },
+      {
+        "name": "Proterra",
+        "website": "https://elementalimpact.com/companies/#proterra",
+        "description": "The battery electric bus for the masses",
+        "year": null,
+        "category": "Transportation"
+      },
+      {
+        "name": "Rally",
+        "website": "https://elementalimpact.com/companies/#rally",
+        "description": "Bus rideshare for mass mobility",
+        "year": null,
+        "category": "Transportation"
+      },
+      {
+        "name": "RatedPower",
+        "website": "https://elementalimpact.com/companies/#ratedpower",
+        "description": "Software to optimize the design of utility-scale photovoltaic plants ",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Reath Technology",
+        "website": "https://elementalimpact.com/companies/#reath-technology",
+        "description": "Digital infrastructure for the circular economy",
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Rebound Technologies",
+        "website": "https://elementalimpact.com/companies/#rebound-technologies",
+        "description": "Delivering superior control and efficiency to industrial freezers",
+        "year": null,
+        "category": "Industry"
+      },
+      {
+        "name": "Remix",
+        "website": "https://elementalimpact.com/companies/#remix",
+        "description": "The leading platform for shaping urban mobility",
+        "year": null,
+        "category": "Transportation"
+      },
+      {
+        "name": "Scoot",
+        "website": "https://elementalimpact.com/companies/#scoot",
+        "description": "Shared electric mobility; Acquired by Bird in 2019",
+        "year": null,
+        "category": "Transportation"
+      },
+      {
+        "name": "Seabound",
+        "website": "https://elementalimpact.com/companies/#seabound",
+        "description": "Carbon capture for ships",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "SENTRY",
+        "website": "https://elementalimpact.com/companies/#sentry",
+        "description": "Real-time water quality monitoring at the treatment plant",
+        "year": null,
+        "category": "Water"
+      },
+      {
+        "name": "Shifted Energy",
+        "website": "https://elementalimpact.com/companies/#shifted-energy",
+        "description": "Creating virtual power plants from existing infrastructure",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "SHYFT Power Solutions",
+        "website": "https://elementalimpact.com/companies/#shyft-power-solutions",
+        "description": "A smart platform to monitor, manage and control distributed energy systems and services",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Sighten",
+        "website": "https://elementalimpact.com/companies/#sighten",
+        "description": "Software platform that supports the entire solar workflow, from lead to financing",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Signol",
+        "website": "https://elementalimpact.com/companies/#signol",
+        "description": "Behavioral science to save aviation fuel",
+        "year": null,
+        "category": "Transportation"
+      },
+      {
+        "name": "SIMPLi",
+        "website": "https://elementalimpact.com/companies/#simpli",
+        "description": "Empowering smallholder farmers to grow regenerative organic pantry staples",
+        "year": null,
+        "category": "Food & Agriculture"
+      },
+      {
+        "name": "Solar Analytics",
+        "website": "https://elementalimpact.com/companies/#solar-analytics",
+        "description": "Intelligent energy monitoring for solar customers",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Solstice",
+        "website": "https://elementalimpact.com/companies/#solstice",
+        "description": "Shared solar for every American",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "SOURCE",
+        "website": "https://elementalimpact.com/companies/#source",
+        "description": "Making drinking water from sunlight and air",
+        "year": null,
+        "category": "Water"
+      },
+      {
+        "name": "Span",
+        "website": "https://elementalimpact.com/companies/#span",
+        "description": "Advancing clean energy adoption for the distributed grid",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "SparkCharge",
+        "website": "https://elementalimpact.com/companies/#sparkcharge",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "SparkMeter",
+        "website": "https://elementalimpact.com/companies/#sparkmeter",
+        "description": "Smart meters for emerging markets",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Stem",
+        "website": "https://elementalimpact.com/companies/#stem",
+        "description": "Predictive analytics and energy storage",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "SunFi",
+        "website": "https://elementalimpact.com/companies/#sunfi",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "SuperCircle",
+        "website": "https://elementalimpact.com/companies/#supercircle",
+        "description": "Powering textile recycling for a circular fashion economy",
+        "year": null,
+        "category": "Industry"
+      },
+      {
+        "name": "Swiftly",
+        "website": "https://elementalimpact.com/companies/#swiftly",
+        "description": "A big data platform for public transportation",
+        "year": null,
+        "category": "Transportation"
+      },
+      {
+        "name": "Symbium",
+        "website": "https://elementalimpact.com/companies/#symbium",
+        "description": "Instant permitting for home energy and electrification projects",
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "T-REX",
+        "website": "https://elementalimpact.com/companies/#t-rex",
+        "description": "Valuation and risk analysis tools to unlock investment into renewable energy assets",
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Terviva",
+        "website": "https://elementalimpact.com/companies/#terviva",
+        "description": "Producing carbon negative plant protein and vegetable oil on distressed agricultural lands.",
+        "year": null,
+        "category": "Food & Agriculture"
+      },
+      {
+        "name": "The Better Packaging Co.",
+        "website": "https://elementalimpact.com/companies/#the-better-packaging-co",
+        "description": "Packed for impact",
+        "year": null,
+        "category": "Industry"
+      },
+      {
+        "name": "TradeLanes",
+        "website": "https://elementalimpact.com/companies/#tradelanes",
+        "description": "A digital supply chain platform for the future of global trade",
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Transaera",
+        "website": "https://elementalimpact.com/companies/#transaera",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Transcend",
+        "website": "https://elementalimpact.com/companies/#transcend",
+        "description": "Automated design software for water treatment facilities",
+        "year": null,
+        "category": "Water"
+      },
+      {
+        "name": "Trove",
+        "website": "https://elementalimpact.com/companies/#trove",
+        "description": "Powering resale for leading brands",
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Twelve",
+        "website": "https://elementalimpact.com/companies/#twelve",
+        "description": "Twelve: carbon transformation for a climate positive world",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "UtilityAPI",
+        "website": "https://elementalimpact.com/companies/#utilityapi",
+        "description": "Universal application programming interface for energy data",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Vence",
+        "website": "https://elementalimpact.com/companies/#vence",
+        "description": "Virtual livestock management",
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Verdi",
+        "website": "https://elementalimpact.com/companies/#verdi",
+        "description": "Automation tools for climate-smart agriculture",
+        "year": null,
+        "category": "Agriculture"
+      },
+      {
+        "name": "Vesta",
+        "website": "https://elementalimpact.com/companies/#vesta",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "VIA",
+        "website": "https://elementalimpact.com/companies/#via",
+        "description": "Artificial intelligence and blockchain for critical grid infrastructure",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "Vibrant Planet",
+        "website": "https://elementalimpact.com/companies/#vibrant-planet",
+        "description": "Restoring natural systems through adaptive planning and market incentives",
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "WaterSmart",
+        "website": "https://elementalimpact.com/companies/#watersmart",
+        "description": "Customer engagement for water utilities",
+        "year": null,
+        "category": "Water"
+      },
+      {
+        "name": "WeaveGrid",
+        "website": "https://elementalimpact.com/companies/#weavegrid",
+        "description": "Enabling widescale electric vehicle adoption on the grid",
+        "year": null,
+        "category": "Energy"
+      },
+      {
+        "name": "WEEE Centre",
+        "website": "https://elementalimpact.com/companies/#weee-centre",
+        "description": "A responsible recovery and reuse system for electronic waste",
+        "year": null,
+        "category": "Industry"
+      },
+      {
+        "name": "Xos Trucks",
+        "website": "https://elementalimpact.com/companies/#xos-trucks",
+        "description": "Electric mobility solutions for fleets",
+        "year": null,
+        "category": "Transportation"
+      },
+      {
+        "name": "Xplorobot",
+        "website": "https://elementalimpact.com/companies/#xplorobot",
+        "description": "AI-powered methane detection",
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "Yard Stick PBC",
+        "website": "https://elementalimpact.com/companies/#yard-stick-pbc",
+        "description": null,
+        "year": null,
+        "category": "Other"
+      },
+      {
+        "name": "ZeroAvia",
+        "website": "https://elementalimpact.com/companies/#zeroavia",
+        "description": "Hydrogen-electric aviation",
+        "year": null,
+        "category": "Transportation"
+      }
+    ]
+  },
+  "metadata": {
+    "statusCode": 200,
+    "sourceURL": "https://elementalimpact.com/companies/",
+    "title": "Elemental Portfolio"
+  },
+  "warning": "This scrape job was throttled at your current concurrency limit. If you'd like to scrape faster, you can upgrade your plan."
+}

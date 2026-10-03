@@ -55,6 +55,10 @@ export const contactFixture: Contact = {
   connectedOn: "2024-03-11",
   sectors: ["Beauty", "Retail"],
   source: "sample",
+  newsletter: false,
+  newsletterChangedAt: null,
+  newsletterSyncedAt: null,
+  fluentcrmId: null,
   createdAt: days(-30),
   updatedAt: days(-30)
 };
@@ -68,6 +72,7 @@ export const taskFixture: Task = {
   notes: null,
   status: "waiting",
   dueDate: days(3),
+  outlookConversationId: null,
   completedAt: null,
   createdAt: days(-1),
   updatedAt: days(-1)

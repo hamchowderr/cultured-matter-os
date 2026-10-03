@@ -7,6 +7,7 @@ import type { z } from "zod/v4";
 
 import * as A from "./index";
 import { toResult } from "./define";
+import { runNewsletterSync } from "@/lib/newsletter-sync";
 
 type In<T extends { input: z.ZodType }> = z.input<T["input"]>;
 
@@ -117,4 +118,25 @@ export async function listApprovals(input: In<typeof A.listApprovals>) {
 }
 export async function decideApproval(input: In<typeof A.decideApproval>) {
   return toResult(() => A.decideApproval.run(input));
+}
+export async function setNewsletter(input: In<typeof A.setNewsletter>) {
+  return toResult(() => A.setNewsletter.run(input));
+}
+export async function newsletterStatus(input: In<typeof A.newsletterStatus>) {
+  return toResult(() => A.newsletterStatus.run(input));
+}
+export async function syncNewsletter() {
+  return toResult(() => runNewsletterSync());
+}
+export async function outlookStatus(input: In<typeof A.outlookStatus>) {
+  return toResult(() => A.outlookStatus.run(input));
+}
+export async function syncOutlook(input: In<typeof A.syncOutlook>) {
+  return toResult(() => A.syncOutlook.run(input));
+}
+export async function listContactEmails(input: In<typeof A.listContactEmails>) {
+  return toResult(() => A.listContactEmails.run(input));
+}
+export async function draftFollowUp(input: In<typeof A.draftFollowUp>) {
+  return toResult(() => A.draftFollowUp.run(input));
 }

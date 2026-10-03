@@ -1,6 +1,6 @@
 "use client";
 
-import { XIcon } from "lucide-react";
+import { MailIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -12,6 +12,7 @@ import {
   updateTask
 } from "@/actions/server";
 import { taskStatusLabel } from "@/components/cards";
+import { FollowUpDialog } from "@/components/outlook/follow-up-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,7 @@ export function TaskSheet({
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [subtask, setSubtask] = useState("");
+  const [drafting, setDrafting] = useState(false);
 
   useEffect(() => {
     setTitle(task?.title ?? "");
@@ -158,6 +160,28 @@ export function TaskSheet({
                 placeholder="Anything worth remembering"
               />
             </div>
+
+            <section className="space-y-2">
+              <h3 className="text-sm font-medium">Follow-up email</h3>
+              <p className="text-muted-foreground text-sm">
+                {task.outlookConversationId
+                  ? task.status === "waiting"
+                    ? "Saved in your Outlook Drafts. Once you send it, the task moves to Replied when they write back."
+                    : "A follow-up for this task was saved in your Outlook Drafts."
+                  : "Write an email for this task. After you approve it, it waits in your Outlook Drafts."}
+              </p>
+              <Button size="sm" variant="outline" onClick={() => setDrafting(true)}>
+                <MailIcon />
+                Draft follow-up
+              </Button>
+              <FollowUpDialog
+                open={drafting}
+                onOpenChange={setDrafting}
+                taskId={task.id}
+                defaultSubject={task.title}
+                onQueued={onChanged}
+              />
+            </section>
 
             <section className="space-y-2">
               <h3 className="text-sm font-medium">Subtasks</h3>

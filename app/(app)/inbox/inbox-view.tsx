@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { IphonePanel } from "./iphone-panel";
 
 type Capture = Extract<
   Awaited<ReturnType<typeof listCaptures>>,
@@ -95,6 +96,8 @@ export function InboxView({
         </div>
       </form>
 
+      <IphonePanel />
+
       <div className="flex flex-wrap items-center gap-2">
         <Tabs
           value={filters.filed ? "filed" : "sort"}
@@ -157,7 +160,10 @@ export function InboxView({
         <ul className="divide-y rounded-lg border">
           {captures.map((c) => (
             <li key={c.id} className="flex flex-wrap items-start justify-between gap-3 p-4">
-              <p className="min-w-0 flex-1 text-sm whitespace-pre-wrap">{c.body}</p>
+              <div className="min-w-0 flex-1 space-y-2">
+                <p className="text-sm whitespace-pre-wrap">{c.body}</p>
+                {c.imagePath && <CapturePhoto captureId={c.id} />}
+              </div>
               <div className="flex flex-wrap items-center gap-1.5">
                 {c.kind && <Badge variant="secondary">{KIND_LABEL[c.kind]}</Badge>}
                 {c.tier && <Badge variant="outline">Tier {c.tier}</Badge>}
@@ -228,6 +234,7 @@ function SortRow({
           {formatDate(capture.createdAt)}
         </span>
       </div>
+      {capture.imagePath && <CapturePhoto captureId={capture.id} />}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex gap-1" role="group" aria-label="Kind">
           {(Object.keys(KIND_LABEL) as Kind[]).map((k) => (
@@ -293,5 +300,20 @@ function SortRow({
         </p>
       )}
     </li>
+  );
+}
+
+// Photos sent from the iPhone Shortcut, served from private Blob storage to the signed-in user.
+function CapturePhoto({ captureId }: { captureId: string }) {
+  const src = `/api/photos/${captureId}`;
+  return (
+    <a href={src} target="_blank" rel="noreferrer" className="block w-fit">
+      <img
+        src={src}
+        alt="Photo sent from the iPhone"
+        loading="lazy"
+        className="bg-muted max-h-64 max-w-full rounded-md border object-contain"
+      />
+    </a>
   );
 }
