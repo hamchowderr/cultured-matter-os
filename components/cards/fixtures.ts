@@ -55,6 +55,10 @@ export const contactFixture: Contact = {
   connectedOn: "2024-03-11",
   sectors: ["Beauty", "Retail"],
   source: "sample",
+  newsletter: false,
+  newsletterChangedAt: null,
+  newsletterSyncedAt: null,
+  fluentcrmId: null,
   createdAt: days(-30),
   updatedAt: days(-30)
 };

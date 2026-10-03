@@ -10,11 +10,12 @@ import { contactSchema, id, limit, note, offset, pairingSchema, type Contact } f
 
 export const searchContacts = defineAction({
   name: "searchContacts",
-  description: "Search contacts by name, company, position or sector tag.",
+  description: "Search contacts by name, company, position, sector tag or newsletter flag.",
   kind: "read",
   input: z.object({
     query: z.string().trim().optional(),
     sector: z.string().optional(),
+    newsletter: z.boolean().optional(),
     limit,
     offset
   }),
@@ -35,7 +36,8 @@ export const searchContacts = defineAction({
               .from(sql`json_each(${contacts.sectors})`)
               .where(sql`value = ${input.sector}`)
           )
-        : undefined
+        : undefined,
+      input.newsletter !== undefined ? eq(contacts.newsletter, input.newsletter) : undefined
     );
     const [rows, [{ total }]] = await Promise.all([
       db
