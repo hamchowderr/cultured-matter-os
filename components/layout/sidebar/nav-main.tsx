@@ -20,7 +20,6 @@ import {
   InboxIcon,
   LandmarkIcon,
   RadarIcon,
-  SettingsIcon,
   SunIcon,
   UsersIcon,
   type LucideIcon
@@ -62,8 +61,7 @@ export const navItems: NavGroup[] = [
       { title: "Grants", href: "/grants", icon: LandmarkIcon },
       { title: "People", href: "/people", icon: UsersIcon },
       { title: "Projects", href: "/projects", icon: FolderKanbanIcon },
-      { title: "Archive", href: "/archive", icon: ArchiveIcon },
-      { title: "Settings", href: "/settings", icon: SettingsIcon }
+      { title: "Archive", href: "/archive", icon: ArchiveIcon }
     ]
   }
 ];
@@ -95,13 +93,15 @@ export function NavMain() {
                           <DropdownMenuContent
                             side={isMobile ? "bottom" : "right"}
                             align={isMobile ? "end" : "start"}
-                            className="min-w-48 rounded-lg">
+                            className="min-w-48 rounded-lg"
+                          >
                             <DropdownMenuLabel>{item.title}</DropdownMenuLabel>
                             {item.items?.map((item) => (
                               <DropdownMenuItem
                                 className="hover:text-foreground active:text-foreground hover:bg-sidebar-accent! active:bg-sidebar-accent!"
                                 asChild
-                                key={item.title}>
+                                key={item.title}
+                              >
                                 <a href={item.href}>{item.title}</a>
                               </DropdownMenuItem>
                             ))}
@@ -110,11 +110,13 @@ export function NavMain() {
                       </div>
                       <Collapsible
                         className="group/collapsible block group-data-[collapsible=icon]:hidden"
-                        defaultOpen={!!item.items.find((s) => s.href === pathname)}>
+                        defaultOpen={!!item.items.find((s) => s.href === pathname)}
+                      >
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton
                             className="hover:text-foreground active:text-foreground hover:bg-sidebar-accent active:bg-sidebar-accent"
-                            tooltip={item.title}>
+                            tooltip={item.title}
+                          >
                             {item.icon && <item.icon />}
                             <span>{item.title}</span>
                             <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -127,7 +129,8 @@ export function NavMain() {
                                 <SidebarMenuSubButton
                                   className="hover:text-foreground active:text-foreground hover:bg-sidebar-accent active:bg-sidebar-accent"
                                   isActive={pathname === subItem.href}
-                                  asChild>
+                                  asChild
+                                >
                                   <Link href={subItem.href} target={subItem.newTab ? "_blank" : ""}>
                                     <span>{subItem.title}</span>
                                   </Link>
@@ -143,7 +146,8 @@ export function NavMain() {
                       className="hover:text-foreground active:text-foreground hover:bg-sidebar-accent active:bg-sidebar-accent"
                       isActive={pathname === item.href}
                       tooltip={item.title}
-                      asChild>
+                      asChild
+                    >
                       <Link href={item.href} target={item.newTab ? "_blank" : ""}>
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
