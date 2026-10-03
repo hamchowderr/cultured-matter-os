@@ -17,6 +17,6 @@ export const config = {
     // the public newsletter signup and webhook (they guard themselves), the iPhone capture
     // endpoint (it checks CAPTURE_TOKEN), the sign-in page, Next.js internals and static files
     // (any path with a file extension).
-    "/((?!api/auth|api/cron|api/newsletter/signup|api/newsletter/webhook|api/capture|sign-in|_next/static|_next/image|favicon.ico|.*\.[\w]+$).*)"
+    "/((?!api/auth|api/cron|api/newsletter/signup|api/newsletter/webhook|api/capture|sign-in|_next/static|_next/image|favicon.ico|.*\\.[\\w]+$).*)"
   ]
 };
