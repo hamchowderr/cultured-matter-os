@@ -14,7 +14,8 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // Everything except: Better Auth's own routes, cron routes (they check CRON_SECRET),
-    // the sign-in page, Next.js internals and static files (any path with a file extension).
-    "/((?!api/auth|api/cron|sign-in|_next/static|_next/image|favicon.ico|.*\\.[\\w]+$).*)"
+    // the public newsletter signup and webhook (they guard themselves), the sign-in page,
+    // Next.js internals and static files (any path with a file extension).
+    "/((?!api/auth|api/cron|api/newsletter/signup|api/newsletter/webhook|sign-in|_next/static|_next/image|favicon.ico|.*\\.[\\w]+$).*)"
   ]
 };

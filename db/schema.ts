@@ -141,7 +141,14 @@ export const contacts = sqliteTable(
     position: text("position"),
     connectedOn: text("connected_on"),
     sectors: text("sectors", { mode: "json" }).$type<string[]>().notNull().default([]),
-    source: text("source", { enum: ["linkedin_csv", "manual", "sample"] }).notNull(),
+    source: text("source", {
+      enum: ["linkedin_csv", "manual", "sample", "newsletter_signup"]
+    }).notNull(),
+    // Newsletter: the flag is ours; FluentCRM is told on the next sync.
+    newsletter: integer("newsletter", { mode: "boolean" }).notNull().default(false),
+    newsletterChangedAt: integer("newsletter_changed_at", { mode: "timestamp_ms" }),
+    newsletterSyncedAt: integer("newsletter_synced_at", { mode: "timestamp_ms" }),
+    fluentcrmId: integer("fluentcrm_id"),
     createdAt: createdAt(),
     updatedAt: updatedAt()
   },

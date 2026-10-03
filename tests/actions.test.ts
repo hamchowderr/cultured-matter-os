@@ -68,7 +68,9 @@ describe("registry", () => {
         "requestApproval",
         "listApprovals",
         "decideApproval",
-        "dueTasks"
+        "dueTasks",
+        "setNewsletter",
+        "newsletterStatus"
       ].sort()
     );
     for (const a of A.allActions) {

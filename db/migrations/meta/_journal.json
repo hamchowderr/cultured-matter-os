@@ -22,6 +22,13 @@
       "when": 1791004761944,
       "tag": "0002_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1791040341680,
+      "tag": "0003_loose_lady_ursula",
+      "breakpoints": true
     }
   ]
 }

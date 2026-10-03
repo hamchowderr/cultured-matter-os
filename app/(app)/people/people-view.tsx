@@ -1,12 +1,20 @@
 "use client";
 
-import { CircleHelpIcon, SearchIcon, TagIcon, UploadIcon, UsersIcon } from "lucide-react";
+import {
+  CircleHelpIcon,
+  MailCheckIcon,
+  MailIcon,
+  SearchIcon,
+  TagIcon,
+  UploadIcon,
+  UsersIcon
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { importContacts, setContactSectors } from "@/actions/server";
+import { importContacts, setContactSectors, setNewsletter } from "@/actions/server";
 import type { Contact } from "@/actions/schemas";
 import { ContactCard } from "@/components/cards";
 import { ComingSoon } from "@/components/layout/page-shell";
@@ -33,19 +41,22 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CATEGORIES } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { LinkedInSteps } from "./linkedin-steps";
+import { NewsletterBar, type NewsletterStatus } from "./newsletter-bar";
 
 export function PeopleView({
   contacts,
   total,
   page,
   pageSize,
-  filters
+  filters,
+  newsletter
 }: {
   contacts: Contact[];
   total: number;
   page: number;
   pageSize: number;
-  filters: { query?: string; sector?: string };
+  filters: { query?: string; sector?: string; newsletter?: boolean };
+  newsletter: NewsletterStatus | null;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -56,6 +67,7 @@ export function PeopleView({
   const fileRef = useRef<HTMLInputElement>(null);
   // Tag edits show instantly; the server copy catches up on refresh.
   const [tags, setTags] = useState<Record<string, string[]>>({});
+  const [onList, setOnList] = useState<Record<string, boolean>>({});
 
   function update(patch: Record<string, string | undefined>) {
     const next = new URLSearchParams(params.toString());
@@ -103,6 +115,20 @@ export function PeopleView({
     startTransition(() => router.refresh());
   }
 
+  async function toggleNewsletter(contact: Contact, on: boolean) {
+    setOnList((m) => ({ ...m, [contact.id]: on }));
+    const result = await setNewsletter({ contactId: contact.id, on });
+    if (!result.ok) {
+      setOnList(({ [contact.id]: _, ...rest }) => rest);
+      toast.error(result.error.message);
+      return;
+    }
+    toast.success(
+      on ? `${contact.fullName} is on the newsletter` : `${contact.fullName} is off the newsletter`
+    );
+    startTransition(() => router.refresh());
+  }
+
   const pageHref = (p: number) => {
     const next = new URLSearchParams(params.toString());
     if (p > 1) next.set("page", String(p));
@@ -110,7 +136,7 @@ export function PeopleView({
     return `${pathname}?${next.toString()}`;
   };
   const pages = Math.max(1, Math.ceil(total / pageSize));
-  const filtered = !!(filters.query || filters.sector);
+  const filtered = !!(filters.query || filters.sector || filters.newsletter);
 
   const importButton = (
     <>
@@ -192,6 +218,14 @@ export function PeopleView({
         </div>
       </div>
 
+      {newsletter && (
+        <NewsletterBar
+          status={newsletter}
+          showingOnly={!!filters.newsletter}
+          onToggleOnly={() => update({ newsletter: filters.newsletter ? undefined : "1" })}
+        />
+      )}
+
       {contacts.length === 0 ? (
         <ComingSoon
           icon={UsersIcon}
@@ -202,37 +236,62 @@ export function PeopleView({
         <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
           {contacts.map((c) => {
             const sectors = tags[c.id] ?? c.sectors;
+            const subscribed = onList[c.id] ?? c.newsletter;
             return (
               <ContactCard
                 key={c.id}
                 contact={{ ...c, sectors }}
                 actions={
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="size-7"
-                        aria-label={`Tag ${c.fullName}`}
-                      >
-                        <TagIcon />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="max-h-80 w-60 overflow-y-auto">
-                      <DropdownMenuLabel>Sectors</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {CATEGORIES.map((cat) => (
-                        <DropdownMenuCheckboxItem
-                          key={cat}
-                          checked={sectors.includes(cat)}
-                          onSelect={(e) => e.preventDefault()}
-                          onCheckedChange={(on) => toggleSector(c, cat, !!on)}
+                  <div className="flex items-center gap-0.5">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className={cn("size-7", subscribed && "text-primary")}
+                      disabled={!c.email && !subscribed}
+                      aria-pressed={subscribed}
+                      aria-label={
+                        subscribed
+                          ? `Take ${c.fullName} off the newsletter`
+                          : `Add ${c.fullName} to the newsletter`
+                      }
+                      title={
+                        !c.email
+                          ? "No email address, so no newsletter"
+                          : subscribed
+                            ? "On the newsletter (click to take off)"
+                            : "Add to the newsletter"
+                      }
+                      onClick={() => toggleNewsletter(c, !subscribed)}
+                    >
+                      {subscribed ? <MailCheckIcon /> : <MailIcon />}
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-7"
+                          aria-label={`Tag ${c.fullName}`}
                         >
-                          {cat}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                          <TagIcon />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="max-h-80 w-60 overflow-y-auto">
+                        <DropdownMenuLabel>Sectors</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {CATEGORIES.map((cat) => (
+                          <DropdownMenuCheckboxItem
+                            key={cat}
+                            checked={sectors.includes(cat)}
+                            onSelect={(e) => e.preventDefault()}
+                            onCheckedChange={(on) => toggleSector(c, cat, !!on)}
+                          >
+                            {cat}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 }
               />
             );
