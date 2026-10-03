@@ -49,6 +49,13 @@ import {
   recordNewsletterSync,
   setNewsletter
 } from "./newsletter";
+import {
+  checkOutlookReplies,
+  draftFollowUp,
+  listContactEmails,
+  outlookStatus,
+  syncOutlook
+} from "./outlook";
 
 export {
   searchCompanies,
@@ -92,7 +99,12 @@ export {
   newsletterQueue,
   recordNewsletterSync,
   newsletterSignup,
-  newsletterUnsubscribe
+  newsletterUnsubscribe,
+  outlookStatus,
+  syncOutlook,
+  listContactEmails,
+  draftFollowUp,
+  checkOutlookReplies
 };
 
 // Every named action, for the phase-2 agent to wrap as tools.
@@ -134,7 +146,12 @@ export const allActions = [
   decideApproval,
   dueTasks,
   setNewsletter,
-  newsletterStatus
+  newsletterStatus,
+  outlookStatus,
+  syncOutlook,
+  listContactEmails,
+  draftFollowUp,
+  checkOutlookReplies
 ] as const;
 
 export { ActionError, type Action, type ActionResult } from "./define";

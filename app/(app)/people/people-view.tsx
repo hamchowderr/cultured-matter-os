@@ -42,6 +42,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { LinkedInSteps } from "./linkedin-steps";
 import { NewsletterBar, type NewsletterStatus } from "./newsletter-bar";
+import { ContactOutlookButton, OutlookSync } from "./outlook";
 
 export function PeopleView({
   contacts,
@@ -49,7 +50,8 @@ export function PeopleView({
   page,
   pageSize,
   filters,
-  newsletter
+  newsletter,
+  outlookConnected
 }: {
   contacts: Contact[];
   total: number;
@@ -57,6 +59,7 @@ export function PeopleView({
   pageSize: number;
   filters: { query?: string; sector?: string; newsletter?: boolean };
   newsletter: NewsletterStatus | null;
+  outlookConnected: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -154,6 +157,13 @@ export function PeopleView({
     </>
   );
 
+  const outlookButton = (
+    <OutlookSync
+      connected={outlookConnected}
+      onSynced={() => startTransition(() => router.refresh())}
+    />
+  );
+
   if (total === 0 && !filtered) {
     return (
       <Empty className="border border-dashed">
@@ -162,11 +172,16 @@ export function PeopleView({
             <UsersIcon />
           </EmptyMedia>
           <EmptyTitle>No contacts yet</EmptyTitle>
-          <EmptyDescription>Bring in your LinkedIn connections in five steps.</EmptyDescription>
+          <EmptyDescription>
+            Bring in your LinkedIn connections in five steps, or your Outlook contacts in one.
+          </EmptyDescription>
         </EmptyHeader>
         <EmptyContent className="max-w-md">
           <LinkedInSteps />
-          {importButton}
+          <div className="flex flex-wrap justify-center gap-2">
+            {importButton}
+            {outlookButton}
+          </div>
         </EmptyContent>
       </Empty>
     );
@@ -214,6 +229,7 @@ export function PeopleView({
               <LinkedInSteps />
             </PopoverContent>
           </Popover>
+          {outlookButton}
           {importButton}
         </div>
       </div>
@@ -242,7 +258,8 @@ export function PeopleView({
                 key={c.id}
                 contact={{ ...c, sectors }}
                 actions={
-                  <div className="flex items-center gap-0.5">
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    <ContactOutlookButton contact={c} />
                     <Button
                       size="icon"
                       variant="ghost"
