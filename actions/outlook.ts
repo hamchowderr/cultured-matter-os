@@ -6,59 +6,61 @@ import type { Executor } from "@/db";
 import { approvals, contactEmails, contacts, tasks } from "@/db/schema";
 import { domainFromEmail } from "@/ingest/radar/types";
 import {
-  graph,
-  graphAll,
-  graphSession,
-  type GraphSession,
-  microsoftAccount,
-  missingGraphScopes,
-  odata,
-  odataString
-} from "@/lib/graph";
+  gmail,
+  gmailDraftLink,
+  gmailMessageLink,
+  gmailOptional,
+  googleAccount,
+  googleSession,
+  type GoogleSession,
+  mapLimit,
+  missingGoogleScopes,
+  pageAll,
+  parseAddressList,
+  people as peopleApi,
+  rawMessage
+} from "@/lib/google";
 import { ActionError, defineAction } from "./define";
 import { approvalSchema, id } from "./schemas";
 
-// ---------------------------------------------------------------- Graph shapes
+// Gmail and Google Contacts for People. The action names (outlookStatus, syncOutlook,
+// checkOutlookReplies) are kept from the Outlook version so screens built in parallel keep
+// compiling; everything behind them talks to Google.
 
-type GraphRecipient = { emailAddress?: { name?: string | null; address?: string | null } };
+// ---------------------------------------------------------------- Google shapes
 
-type GraphContact = {
-  givenName?: string | null;
-  surname?: string | null;
-  displayName?: string | null;
-  emailAddresses?: { name?: string | null; address?: string | null }[];
-  companyName?: string | null;
-  jobTitle?: string | null;
+type GooglePerson = {
+  names?: { displayName?: string | null; givenName?: string | null; familyName?: string | null }[];
+  emailAddresses?: { value?: string | null }[];
+  organizations?: { name?: string | null; title?: string | null }[];
 };
 
-export type GraphMessage = {
+type GmailHeader = { name: string; value: string };
+
+export type GmailMessage = {
   id: string;
-  conversationId?: string | null;
-  subject?: string | null;
-  from?: GraphRecipient | null;
-  toRecipients?: GraphRecipient[];
-  ccRecipients?: GraphRecipient[];
-  receivedDateTime?: string | null;
-  sentDateTime?: string | null;
-  webLink?: string | null;
-  isDraft?: boolean;
+  threadId?: string | null;
+  labelIds?: string[];
+  // Milliseconds since the epoch, as a string.
+  internalDate?: string | null;
+  payload?: { headers?: GmailHeader[] };
 };
 
-const MESSAGE_FIELDS =
-  "id,conversationId,subject,from,toRecipients,ccRecipients,receivedDateTime,sentDateTime,webLink,isDraft";
-const CONTACT_FIELDS = "givenName,surname,displayName,emailAddresses,companyName,jobTitle";
 const MAX_CONTACTS = 2000;
-const MAX_MESSAGES_PER_FOLDER = 500;
+const MAX_MESSAGES = 500;
+const HEADERS = ["From", "To", "Cc", "Subject"];
 
 const clean = (v: string | null | undefined) => v?.trim() || null;
-const address = (r: GraphRecipient | null | undefined) =>
-  clean(r?.emailAddress?.address)?.toLowerCase() ?? null;
+const header = (m: GmailMessage, name: string) =>
+  m.payload?.headers?.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ?? null;
+const isDraft = (m: GmailMessage) => m.labelIds?.includes("DRAFT") ?? false;
+const sentAt = (m: GmailMessage) => Number(m.internalDate) || 0;
 
 // Mail from systems, not people; never turned into contacts.
 const AUTOMATED =
   /^(no-?reply|do-?not-?reply|notifications?|notify|mailer-daemon|postmaster|bounces?|newsletters?|alerts?|updates?)([+._-].*)?@/i;
 
-// ---------------------------------------------------------------- Sync Outlook
+// ---------------------------------------------------------------- Sync Gmail
 
 type Person = {
   email: string;
@@ -75,113 +77,141 @@ type LoggedMessage = {
   subject: string | null;
   direction: "in" | "out";
   at: Date;
-  webLink: string | null;
+  webLink: string;
   // Inbound: the sender. Outbound: To and Cc.
   participants: string[];
 };
 
 type Snapshot = { people: Person[]; messages: LoggedMessage[] };
 
-export async function fetchOutlookSnapshot(session: GraphSession, days: number) {
-  const since = new Date(Date.now() - days * 86_400_000).toISOString();
-  const [outlookContacts, inbox, sent] = await Promise.all([
-    graphAll<GraphContact>(
-      session,
-      odata("/me/contacts", { select: CONTACT_FIELDS, top: 100 }),
+export async function fetchGmailSnapshot(session: GoogleSession, days: number) {
+  const [connections, otherContacts, messages] = await Promise.all([
+    pageAll<GooglePerson, "connections">(
+      (pageToken) =>
+        peopleApi(session, "/people/me/connections", {
+          personFields: "names,emailAddresses,organizations",
+          pageSize: 1000,
+          pageToken
+        }),
+      "connections",
       MAX_CONTACTS
     ),
-    // Properties in $orderby must also lead $filter, or Graph rejects the query.
-    graphAll<GraphMessage>(
-      session,
-      odata("/me/mailFolders/inbox/messages", {
-        filter: `receivedDateTime ge ${since}`,
-        orderby: "receivedDateTime desc",
-        select: MESSAGE_FIELDS,
-        top: 100
-      }),
-      MAX_MESSAGES_PER_FOLDER
+    // People she has emailed that Gmail saved on its own; only used for their names.
+    pageAll<GooglePerson, "otherContacts">(
+      (pageToken) =>
+        peopleApi(session, "/otherContacts", {
+          readMask: "names,emailAddresses",
+          pageSize: 1000,
+          pageToken
+        }),
+      "otherContacts",
+      MAX_CONTACTS
     ),
-    graphAll<GraphMessage>(
-      session,
-      odata("/me/mailFolders/sentitems/messages", {
-        filter: `sentDateTime ge ${since}`,
-        orderby: "sentDateTime desc",
-        select: MESSAGE_FIELDS,
-        top: 100
-      }),
-      MAX_MESSAGES_PER_FOLDER
-    )
+    fetchRecentMessages(session, days)
   ]);
-  return toSnapshot(session.me, outlookContacts, inbox, sent);
+  return toSnapshot(session, connections, otherContacts, messages);
+}
+
+async function fetchRecentMessages(session: GoogleSession, days: number) {
+  const ids = await pageAll<{ id: string }, "messages">(
+    (pageToken) =>
+      gmail(session, "/messages", {
+        query: { q: `newer_than:${days}d -in:drafts -in:chats`, maxResults: 100, pageToken }
+      }),
+    "messages",
+    MAX_MESSAGES
+  );
+  return mapLimit(ids, 8, (m) =>
+    gmail<GmailMessage>(session, `/messages/${encodeURIComponent(m.id)}`, {
+      query: { format: "metadata", metadataHeaders: HEADERS }
+    })
+  );
+}
+
+function personFrom(email: string, name: string | null): Person {
+  const fullName = name && name.toLowerCase() !== email ? name : email;
+  const [firstName, ...rest] = fullName === email ? [null] : fullName.split(/\s+/);
+  return {
+    email,
+    fullName,
+    firstName: firstName ?? null,
+    lastName: rest.length ? rest.join(" ") : null,
+    company: null,
+    position: null
+  };
 }
 
 function toSnapshot(
-  me: Set<string>,
-  outlookContacts: GraphContact[],
-  inbox: GraphMessage[],
-  sent: GraphMessage[]
+  session: GoogleSession,
+  connections: GooglePerson[],
+  otherContacts: GooglePerson[],
+  list: GmailMessage[]
 ): Snapshot {
+  const { me } = session;
+  const firstEmail = (p: GooglePerson) =>
+    p.emailAddresses
+      ?.map((e) => clean(e.value)?.toLowerCase())
+      .find((e): e is string => !!e && e.includes("@"));
+
   const people = new Map<string, Person>();
-  // Outlook contacts first: they carry company and job title.
-  for (const c of outlookContacts) {
-    const email = c.emailAddresses
-      ?.map((a) => clean(a.address)?.toLowerCase())
-      .find((a) => a && a.includes("@"));
+  // Her Google contacts first: they carry company and job title.
+  for (const c of connections) {
+    const email = firstEmail(c);
     if (!email || me.has(email) || people.has(email)) continue;
-    const firstName = clean(c.givenName);
-    const lastName = clean(c.surname);
+    const name = c.names?.[0];
+    const org = c.organizations?.[0];
+    const firstName = clean(name?.givenName);
+    const lastName = clean(name?.familyName);
     people.set(email, {
       email,
-      fullName: clean(c.displayName) || [firstName, lastName].filter(Boolean).join(" ") || email,
+      fullName:
+        clean(name?.displayName) || [firstName, lastName].filter(Boolean).join(" ") || email,
       firstName,
       lastName,
-      company: clean(c.companyName),
-      position: clean(c.jobTitle)
+      company: clean(org?.name),
+      position: clean(org?.title)
     });
   }
-  // Then people who wrote to her recently.
-  for (const m of inbox) {
-    const email = address(m.from);
-    if (!email || m.isDraft || me.has(email) || people.has(email) || AUTOMATED.test(email)) {
-      continue;
-    }
-    const name = clean(m.from?.emailAddress?.name);
-    const fullName = name && name.toLowerCase() !== email ? name : email;
-    const [firstName, ...rest] = fullName === email ? [null] : fullName.split(/\s+/);
-    people.set(email, {
-      email,
-      fullName,
-      firstName: firstName ?? null,
-      lastName: rest.length ? rest.join(" ") : null,
-      company: null,
-      position: null
-    });
+  const otherNames = new Map<string, string>();
+  for (const c of otherContacts) {
+    const email = firstEmail(c);
+    const name = clean(c.names?.[0]?.displayName);
+    if (email && name) otherNames.set(email, name);
   }
 
   const messages: LoggedMessage[] = [];
-  for (const [direction, list] of [
-    ["in", inbox],
-    ["out", sent]
-  ] as const) {
-    for (const m of list) {
-      if (m.isDraft) continue;
-      const when = direction === "in" ? m.receivedDateTime : (m.sentDateTime ?? m.receivedDateTime);
-      const at = when ? new Date(when) : null;
-      if (!at || Number.isNaN(at.getTime())) continue;
-      const participants =
-        direction === "in"
-          ? [address(m.from)]
-          : [...(m.toRecipients ?? []), ...(m.ccRecipients ?? [])].map(address);
-      messages.push({
-        id: m.id,
-        conversationId: clean(m.conversationId),
-        subject: clean(m.subject),
-        direction,
-        at,
-        webLink: clean(m.webLink),
-        participants: participants.filter((a): a is string => !!a && !me.has(a))
-      });
+  const seen = new Set<string>();
+  for (const m of list) {
+    if (!m || isDraft(m) || seen.has(m.id)) continue;
+    seen.add(m.id);
+    const at = new Date(sentAt(m));
+    if (!sentAt(m)) continue;
+    const from = parseAddressList(header(m, "From"))[0];
+    const direction = m.labelIds?.includes("SENT") || (from && me.has(from.address)) ? "out" : "in";
+    const mailboxes =
+      direction === "in"
+        ? from
+          ? [from]
+          : []
+        : [...parseAddressList(header(m, "To")), ...parseAddressList(header(m, "Cc"))];
+    const others = mailboxes.filter((b) => !me.has(b.address));
+    // Then people who wrote to her, or she wrote to, recently.
+    for (const b of others) {
+      if (people.has(b.address) || AUTOMATED.test(b.address)) continue;
+      people.set(
+        b.address,
+        personFrom(b.address, clean(b.name) ?? otherNames.get(b.address) ?? null)
+      );
     }
+    messages.push({
+      id: m.id,
+      conversationId: clean(m.threadId),
+      subject: clean(header(m, "Subject")),
+      direction,
+      at,
+      webLink: gmailMessageLink(session.mailbox, m.id),
+      participants: [...new Set(others.map((b) => b.address))]
+    });
   }
   return { people: [...people.values()], messages };
 }
@@ -199,12 +229,12 @@ async function contactsByEmail(db: Executor) {
 export const syncOutlook = defineAction({
   name: "syncOutlook",
   description:
-    "Import Outlook contacts and people who emailed recently into People (matched by email, never duplicated), and log recent emails with each contact. One-way: nothing is changed in Outlook.",
+    "Import Google contacts and people she emailed with recently in Gmail into People (matched by email, never duplicated), and log recent emails with each contact. One-way: nothing is changed in Gmail or Google Contacts.",
   kind: "write",
   input: z.object({ days: z.number().int().min(1).max(365).default(60) }),
   output: z.object({ created: z.number(), matched: z.number(), emailsLogged: z.number() }),
   async prepare(input, db) {
-    return fetchOutlookSnapshot(await graphSession(db), input.days);
+    return fetchGmailSnapshot(await googleSession(db), input.days);
   },
   async handler(_input, db, snapshot) {
     const known = await contactsByEmail(db);
@@ -218,12 +248,12 @@ export const syncOutlook = defineAction({
           fresh.slice(i, i + CHUNK).map((p) => ({
             ...p,
             companyDomain: domainFromEmail(p.email),
-            source: "outlook" as const
+            source: "google" as const
           }))
         )
         .onConflictDoNothing();
     }
-    // Existing contacts keep their LinkedIn data; Outlook only fills what is blank.
+    // Existing contacts keep their LinkedIn data; Google only fills what is blank.
     for (const p of matched) {
       if (!p.company && !p.position && !p.firstName && !p.lastName) continue;
       await db
@@ -265,7 +295,7 @@ export const syncOutlook = defineAction({
   },
   log: (_input, r) => ({
     entityType: "contact",
-    summary: `Synced Outlook: ${r.created} new ${r.created === 1 ? "person" : "people"}, ${r.emailsLogged} emails logged`,
+    summary: `Synced Gmail: ${r.created} new ${r.created === 1 ? "person" : "people"}, ${r.emailsLogged} emails logged`,
     data: r
   })
 });
@@ -278,7 +308,7 @@ export type ContactEmail = z.infer<typeof contactEmailSchema>;
 export const listContactEmails = defineAction({
   name: "listContactEmails",
   description:
-    "A contact's recent Outlook emails, newest first: subject, date, direction and a link to open it in Outlook.",
+    "A contact's recent Gmail emails, newest first: subject, date, direction and a link to open it in Gmail.",
   kind: "read",
   input: z.object({ contactId: id, limit: z.number().int().min(1).max(100).default(10) }),
   output: z.object({ emails: z.array(contactEmailSchema) }),
@@ -296,22 +326,22 @@ export const listContactEmails = defineAction({
 export const outlookStatus = defineAction({
   name: "outlookStatus",
   description:
-    "Whether Outlook is connected, i.e. Microsoft granted the contacts and mail permissions.",
+    "Whether Google is connected, i.e. Google granted the Gmail and Contacts permissions.",
   kind: "read",
   input: z.object({}),
   output: z.object({ connected: z.boolean(), missingScopes: z.array(z.string()) }),
   async handler(_input, db) {
-    const row = await microsoftAccount(db);
-    const missingScopes = row ? missingGraphScopes(row.account.scope) : missingGraphScopes(null);
+    const row = await googleAccount(db);
+    const missingScopes = missingGoogleScopes(row?.account.scope);
     return { connected: missingScopes.length === 0, missingScopes };
   }
 });
 
 // ---------------------------------------------------------------- Follow-up drafts
 
-export const OUTLOOK_DRAFT = "outlook_draft";
+export const GMAIL_DRAFT = "gmail_draft";
 
-export const outlookDraftPayload = z.object({
+export const gmailDraftPayload = z.object({
   contactId: id,
   taskId: id.nullable(),
   to: z.string().email(),
@@ -323,7 +353,7 @@ export const outlookDraftPayload = z.object({
 export const draftFollowUp = defineAction({
   name: "draftFollowUp",
   description:
-    "Write a follow-up email to a contact, optionally for a task. It goes to the approval queue; approving saves it in Outlook Drafts for Simone to send herself, and the task then waits for a reply.",
+    "Write a follow-up email to a contact, optionally for a task. It goes to the approval queue; approving saves it in Gmail Drafts for Simone to send herself, and the task then waits for a reply.",
   kind: "write",
   input: z.object({
     contactId: id,
@@ -347,7 +377,7 @@ export const draftFollowUp = defineAction({
       if (!task) throw new ActionError("not_found", "Task not found");
       taskTitle = task.title;
     }
-    const payload: z.input<typeof outlookDraftPayload> = {
+    const payload: z.input<typeof gmailDraftPayload> = {
       contactId: contact.id,
       taskId: input.taskId ?? null,
       to: contact.email,
@@ -359,9 +389,9 @@ export const draftFollowUp = defineAction({
     const [row] = await db
       .insert(approvals)
       .values({
-        action: OUTLOOK_DRAFT,
+        action: GMAIL_DRAFT,
         payload,
-        summary: `Save an Outlook draft to ${contact.fullName}: "${input.subject.slice(0, 80)}"${
+        summary: `Save a Gmail draft to ${contact.fullName}: "${input.subject.slice(0, 80)}"${
           taskTitle ? ` (task: ${taskTitle.slice(0, 60)})` : ""
         }`
       })
@@ -375,30 +405,27 @@ export const draftFollowUp = defineAction({
   })
 });
 
-type CreatedDraft = { id: string; webLink?: string | null; conversationId?: string | null };
+type CreatedDraft = { id: string; message?: { id?: string; threadId?: string | null } };
 
-// Runs inside decideApproval's transaction once an outlook_draft is approved. A Graph failure
+// Runs inside decideApproval's transaction once a gmail_draft is approved. A Google failure
 // throws, which rolls the approval back to pending so it can be approved again.
-export async function saveOutlookDraft(db: Executor, session: GraphSession, payload: unknown) {
-  const p = outlookDraftPayload.parse(payload);
-  const draft = await graph<CreatedDraft>(session, "/me/messages", {
+export async function saveGmailDraft(db: Executor, session: GoogleSession, payload: unknown) {
+  const p = gmailDraftPayload.parse(payload);
+  const draft = await gmail<CreatedDraft>(session, "/drafts", {
     method: "POST",
-    body: {
-      subject: p.subject,
-      body: { contentType: "Text", content: p.body },
-      toRecipients: [{ emailAddress: { address: p.to, name: p.toName } }]
-    }
+    body: { message: { raw: rawMessage(p) } }
   });
-  if (p.taskId && draft.conversationId) {
+  const threadId = draft.message?.threadId ?? null;
+  if (p.taskId && threadId) {
     await db
       .update(tasks)
-      .set({ outlookConversationId: draft.conversationId, status: "waiting", completedAt: null })
+      .set({ emailThreadId: threadId, status: "waiting", completedAt: null })
       .where(eq(tasks.id, p.taskId));
   }
   return {
     draftId: draft.id,
-    webLink: draft.webLink ?? null,
-    conversationId: draft.conversationId ?? null,
+    webLink: draft.message?.id ? gmailDraftLink(session.mailbox, draft.message.id) : null,
+    threadId,
     taskId: p.taskId
   };
 }
@@ -406,18 +433,15 @@ export async function saveOutlookDraft(db: Executor, session: GraphSession, payl
 // ---------------------------------------------------------------- Reply check
 
 // Replied when someone else wrote in the thread after her last sent message.
-export function threadHasReply(messages: GraphMessage[], me: Set<string>) {
+export function threadHasReply(messages: GmailMessage[], me: Set<string>) {
   let lastOut = 0;
   let lastIn = 0;
   for (const m of messages) {
-    if (m.isDraft) continue;
-    const from = address(m.from);
+    if (isDraft(m)) continue;
+    const from = parseAddressList(header(m, "From"))[0]?.address;
     if (!from) continue;
-    if (me.has(from)) {
-      lastOut = Math.max(lastOut, Date.parse(m.sentDateTime ?? m.receivedDateTime ?? "") || 0);
-    } else {
-      lastIn = Math.max(lastIn, Date.parse(m.receivedDateTime ?? "") || 0);
-    }
+    if (me.has(from) || m.labelIds?.includes("SENT")) lastOut = Math.max(lastOut, sentAt(m));
+    else lastIn = Math.max(lastIn, sentAt(m));
   }
   return lastOut > 0 && lastIn > lastOut;
 }
@@ -425,7 +449,7 @@ export function threadHasReply(messages: GraphMessage[], me: Set<string>) {
 export const checkOutlookReplies = defineAction({
   name: "checkOutlookReplies",
   description:
-    "Look at the Outlook thread of every task waiting for a response and move it to replied when a reply has arrived.",
+    "Look at the Gmail thread of every task waiting for a response and move it to replied when a reply has arrived.",
   kind: "write",
   input: z.object({}),
   output: z.object({
@@ -434,23 +458,20 @@ export const checkOutlookReplies = defineAction({
   }),
   async prepare(_input, db) {
     const waiting = await db
-      .select({ id: tasks.id, conversationId: tasks.outlookConversationId })
+      .select({ id: tasks.id, threadId: tasks.emailThreadId })
       .from(tasks)
-      .where(and(eq(tasks.status, "waiting"), isNotNull(tasks.outlookConversationId)));
+      .where(and(eq(tasks.status, "waiting"), isNotNull(tasks.emailThreadId)));
     if (waiting.length === 0) return { checked: 0, repliedIds: [] as string[] };
-    const session = await graphSession(db);
+    const session = await googleSession(db);
     const repliedIds: string[] = [];
     for (const t of waiting) {
-      const thread = await graphAll<GraphMessage>(
+      // A deleted draft takes its thread with it: nothing to watch.
+      const thread = await gmailOptional<{ messages?: GmailMessage[] }>(
         session,
-        odata("/me/messages", {
-          filter: `conversationId eq ${odataString(t.conversationId!)}`,
-          select: "from,receivedDateTime,sentDateTime,isDraft",
-          top: 50
-        }),
-        200
+        `/threads/${encodeURIComponent(t.threadId!)}`,
+        { format: "metadata", metadataHeaders: ["From"] }
       );
-      if (threadHasReply(thread, session.me)) repliedIds.push(t.id);
+      if (thread && threadHasReply(thread.messages ?? [], session.me)) repliedIds.push(t.id);
     }
     return { checked: waiting.length, repliedIds };
   },
@@ -469,7 +490,7 @@ export const checkOutlookReplies = defineAction({
     entityType: "task",
     summary: r.replied.length
       ? `Replies arrived: ${r.replied.map((t) => `"${t.title}"`).join(", ")}`
-      : `Checked ${r.checked} waiting ${r.checked === 1 ? "task" : "tasks"} for Outlook replies`,
+      : `Checked ${r.checked} waiting ${r.checked === 1 ? "task" : "tasks"} for Gmail replies`,
     data: { replied: r.replied.map((t) => t.id) }
   })
 });

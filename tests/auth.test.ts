@@ -102,6 +102,17 @@ describe("auth database hooks", () => {
   const createUser = (email: string) =>
     hooks.user!.create!.before!({ email, name: "", emailVerified: true } as never);
 
+  it("signs in with Google only, asking for offline access and the Gmail and Contacts scopes", async () => {
+    const { auth } = await import("@/lib/auth");
+    const { GOOGLE_SCOPES } = await import("@/lib/google-scopes");
+    expect(Object.keys(auth.options.socialProviders!)).toEqual(["google"]);
+    expect(auth.options.socialProviders!.google).toMatchObject({
+      accessType: "offline",
+      prompt: "select_account consent",
+      scope: [...GOOGLE_SCOPES]
+    });
+  });
+
   it("refuses to create a user outside ALLOWED_EMAILS", async () => {
     await expect(createUser("someone@else.com")).rejects.toMatchObject({
       body: { code: ACCOUNT_NOT_ALLOWED }
