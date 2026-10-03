@@ -9,6 +9,7 @@ import {
   starCompany
 } from "./radar";
 import { searchGrants, setGrantStatus } from "./grants";
+import { tasksDueBetween } from "./grants";
 import { listActivity } from "./activity";
 import {
   createProject,
@@ -71,6 +72,7 @@ export {
   resetCompany,
   searchGrants,
   setGrantStatus,
+  tasksDueBetween,
   listActivity,
   searchContacts,
   findWarmPath,
@@ -125,6 +127,7 @@ export const allActions = [
   resetCompany,
   searchGrants,
   setGrantStatus,
+  tasksDueBetween,
   listActivity,
   searchContacts,
   findWarmPath,

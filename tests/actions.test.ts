@@ -43,6 +43,7 @@ describe("registry", () => {
         "passCompany",
         "searchGrants",
         "setGrantStatus",
+        "tasksDueBetween",
         "listActivity",
         "searchContacts",
         "findWarmPath",
@@ -214,6 +215,26 @@ describe("grants", () => {
     );
     expect(moved.status).toBe("applying");
     expect((await logFor(moved.id))[0].summary).toBe("Moved Soon to applying");
+  });
+
+  it("lists open tasks due inside a window for the deadline calendar", async () => {
+    const day = 86_400_000;
+    const now = Date.now();
+    await db
+      .insert(t.tasks)
+      .values([
+        { title: "Cal in window", dueDate: new Date(now + 3 * day) },
+        { title: "Cal done", dueDate: new Date(now + 3 * day), status: "done" },
+        { title: "Cal outside", dueDate: new Date(now + 90 * day) },
+        { title: "Cal undated" }
+      ]);
+    const { tasks } = await A.tasksDueBetween.run(
+      { from: new Date(now), to: new Date(now + 30 * day) },
+      ctx()
+    );
+    const titles = tasks.map((x) => x.title).filter((x) => x.startsWith("Cal "));
+    expect(titles).toEqual(["Cal in window"]);
+    expect(tasks[0]).toHaveProperty("projectName");
   });
 });
 
