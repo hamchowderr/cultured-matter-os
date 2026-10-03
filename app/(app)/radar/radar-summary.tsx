@@ -1,29 +1,15 @@
-// Adapted from the shadcn UI kit crm dashboard: the stat cards follow total-customers.tsx
-// and the category card follows sales-pipeline.tsx, fed by radarFacets.
+// Adapted from the shadcn UI kit crm dashboard: the category card follows sales-pipeline.tsx,
+// fed by radarFacets. Status counts live on the tabs and the "new" count on its filter button,
+// so they are not repeated here as stat cards.
 
-import {
-  BookmarkCheckIcon,
-  InboxIcon,
-  SparklesIcon,
-  StarIcon,
-  type LucideIcon
-} from "lucide-react";
 import Link from "next/link";
 
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type Facets = {
   total: number;
-  newCount: number;
   statuses: Record<string, number>;
   categories: { name: string; count: number }[];
 };
@@ -37,85 +23,12 @@ const BAR_COLORS = [
 ];
 const TOP = 5;
 
-export function RadarSummary({ facets, hasBaseline }: { facets: Facets; hasBaseline: boolean }) {
-  const s = facets.statuses;
+export function RadarSummary({ facets }: { facets: Facets }) {
   return (
-    <div className="grid gap-4 xl:grid-cols-3">
-      <div className="grid gap-4 sm:grid-cols-2 xl:col-span-2">
-        <StatCard
-          label="New since last visit"
-          value={hasBaseline ? facets.newCount : null}
-          note={hasBaseline ? "Arrived since you last looked" : "Counted from your next visit"}
-          icon={SparklesIcon}
-          href={hasBaseline ? "/radar?view=all&new=1" : undefined}
-        />
-        <StatCard
-          label="To review"
-          value={(s.new ?? 0) + (s.starred ?? 0)}
-          note="Not yet shortlisted or passed"
-          icon={InboxIcon}
-          href="/radar"
-        />
-        <StatCard
-          label="Shortlisted"
-          value={s.shortlisted ?? 0}
-          note="Worth a closer look"
-          icon={BookmarkCheckIcon}
-          href="/radar?view=shortlisted"
-        />
-        <StatCard
-          label="Starred"
-          value={s.starred ?? 0}
-          note="Saved to look at later"
-          icon={StarIcon}
-          href="/radar?view=starred"
-        />
-      </div>
-      <TopCategories
-        categories={facets.categories}
-        total={facets.total - (s.passed ?? 0)}
-      />
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  note,
-  icon: Icon,
-  href
-}: {
-  label: string;
-  value: number | null;
-  note: string;
-  icon: LucideIcon;
-  href?: string;
-}) {
-  const card = (
-    <Card className={href ? "hover:bg-muted/50 h-full transition-colors" : "h-full"}>
-      <CardHeader>
-        <CardDescription>{label}</CardDescription>
-        <div className="flex flex-col gap-2">
-          <h4 className="font-display text-2xl tabular-nums lg:text-3xl">
-            {value == null ? "–" : value.toLocaleString()}
-          </h4>
-          <div className="text-muted-foreground text-sm">{note}</div>
-        </div>
-        <CardAction>
-          <div className="bg-muted flex size-12 items-center justify-center rounded-full border">
-            <Icon className="size-5" />
-          </div>
-        </CardAction>
-      </CardHeader>
-    </Card>
-  );
-  return href ? (
-    <Link href={href} className="rounded-xl">
-      {card}
-    </Link>
-  ) : (
-    card
+    <TopCategories
+      categories={facets.categories}
+      total={facets.total - (facets.statuses.passed ?? 0)}
+    />
   );
 }
 

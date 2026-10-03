@@ -11,6 +11,7 @@ import {
   grantFixture,
   taskFixture
 } from "@/components/cards/fixtures";
+import { formatAmount } from "@/lib/format";
 
 const html = (el: React.ReactElement) => renderToStaticMarkup(el);
 const day = 86_400_000;
@@ -45,6 +46,15 @@ describe("cards render in isolation from props", () => {
     expect(out).toContain("Closes in 14 days");
     expect(out).toContain("Up to $100K");
     expect(out).toContain("For-profit eligible");
+    // Placeholder figures ($1 and $2 on a Request for Information) show no amount.
+    const placeholder = html(
+      <GrantCard grant={{ ...grantFixture, amountMin: 1, amountMax: 2 }} now={fixtureNow} />
+    );
+    expect(placeholder).not.toContain("$1");
+    expect(placeholder).not.toContain("$2");
+    expect(formatAmount(1, 2)).toBeNull();
+    expect(formatAmount(1, 50_000)).toBe("Up to $50K");
+    expect(formatAmount(25_000, 50_000)).toBe("$25K–$50K");
     const rolling = html(
       <GrantCard grant={{ ...grantFixture, deadline: null }} now={fixtureNow} />
     );

@@ -223,6 +223,34 @@ describe("grants", () => {
     expect((await logFor(moved.id))[0].summary).toBe("Moved Soon to applying");
   });
 
+  it("hides closed grants that are not on the board when asked", async () => {
+    const [src] = await db.select().from(t.sources).where(eq(t.sources.slug, "grants-gov"));
+    const day = 86_400_000;
+    const past = new Date(Date.now() - 5 * day);
+    const base = { sourceId: src.id, raw: {}, firstSeenAt: new Date(), forProfitEligible: true };
+    await db.insert(t.grants).values([
+      { ...base, externalId: "closed-found", title: "Closed found", deadline: past },
+      {
+        ...base,
+        externalId: "closed-submitted",
+        title: "Closed submitted",
+        deadline: past,
+        status: "submitted"
+      }
+    ]);
+    const titles = async (hideClosed: boolean) =>
+      (await A.searchGrants.run({ query: "Closed", hideClosed }, ctx())).grants.map((g) => g.title);
+    expect(await titles(false)).toEqual(
+      expect.arrayContaining(["Closed found", "Closed submitted"])
+    );
+    expect(await titles(true)).toEqual(["Closed submitted"]);
+    // Open and rolling grants stay.
+    const open = await A.searchGrants.run({ hideClosed: true }, ctx());
+    expect(open.grants.map((g) => g.title)).toEqual(
+      expect.arrayContaining(["Soon", "Late", "Rolling fund"])
+    );
+  });
+
   it("lists open tasks due inside a window for the deadline calendar", async () => {
     const day = 86_400_000;
     const now = Date.now();

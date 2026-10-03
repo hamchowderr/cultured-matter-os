@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { radarFindsByWeek } from "@/actions/radar";
 import type { Database } from "@/db";
 import * as t from "@/db/schema";
 import { parseDeals } from "@/ingest/radar/ctvc";
@@ -178,5 +179,35 @@ describe("runRadarIngestion", () => {
     expect((await db.select().from(t.sightings)).length).toBe(before.sightings);
     const [soliome] = await db.select().from(t.companies).where(eq(t.companies.name, "Soliome"));
     expect(soliome.firstSeenAt).toEqual(day1);
+  });
+});
+
+describe("radarFindsByWeek", () => {
+  it("leaves out each source's first import and counts later new finds", async () => {
+    const day = 86_400_000;
+    const start = new Date("2031-03-01T12:00:00Z");
+    const at = (d: number) => new Date(start.getTime() + d * day);
+    // A failed run is not the first import.
+    await runRadarIngestion({
+      db,
+      radarSources: [fakeSource("weekly-first", new Error("down"))],
+      now: at(0)
+    });
+    const bulk = fakeSource("weekly-first", [
+      rec({ externalId: "1", name: "Bulk One" }),
+      rec({ externalId: "2", name: "Bulk Two" })
+    ]);
+    await runRadarIngestion({ db, radarSources: [bulk], now: at(1) });
+    const later = fakeSource("weekly-first", [
+      rec({ externalId: "1", name: "Bulk One" }),
+      rec({ externalId: "3", name: "Fresh Find" })
+    ]);
+    await runRadarIngestion({ db, radarSources: [later], now: at(10) });
+    // A source added later: its own first import is left out too.
+    const added = fakeSource("weekly-added", [rec({ externalId: "9", name: "Old Listing" })]);
+    await runRadarIngestion({ db, radarSources: [added], now: at(11) });
+
+    const { weeks } = await radarFindsByWeek.run({ weeks: 3, now: at(14) }, { db });
+    expect(weeks.map((w) => w.count)).toEqual([0, 0, 1]);
   });
 });

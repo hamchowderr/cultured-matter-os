@@ -1,7 +1,22 @@
-import { and, asc, eq, getTableColumns, gte, like, lt, lte, ne, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  getTableColumns,
+  gte,
+  isNotNull,
+  isNull,
+  like,
+  lt,
+  lte,
+  ne,
+  or,
+  sql
+} from "drizzle-orm";
 import { z } from "zod/v4";
 
 import { grants, projects, tasks } from "@/db/schema";
+import { HOME_TIME_ZONE, startOfDayIn } from "@/lib/time";
 import { ActionError, defineAction } from "./define";
 import { grantSchema, id, limit, taskSchema } from "./schemas";
 
@@ -11,13 +26,14 @@ const { raw: _raw, ...grantColumns } = getTableColumns(grants);
 export const searchGrants = defineAction({
   name: "searchGrants",
   description:
-    "Search grants by text, board status, for-profit eligibility, or deadline window. Soonest deadline first; rolling grants last.",
+    "Search grants by text, board status, for-profit eligibility, or deadline window. Soonest deadline first; rolling grants last. hideClosed leaves out grants whose deadline has passed unless they are on the board (have a status).",
   kind: "read",
   input: z.object({
     query: z.string().trim().optional(),
     status: grantStatus.optional(),
     forProfitOnly: z.boolean().default(false),
     closingWithinDays: z.number().int().min(1).max(365).optional(),
+    hideClosed: z.boolean().default(false),
     limit
   }),
   output: z.object({ grants: z.array(grantSchema) }),
@@ -41,6 +57,14 @@ export const searchGrants = defineAction({
             ? and(
                 gte(grants.deadline, now),
                 lte(grants.deadline, new Date(now.getTime() + input.closingWithinDays * 86_400_000))
+              )
+            : undefined,
+          // "Closed" on a card means the deadline was before today, so the cut is start of today.
+          input.hideClosed
+            ? or(
+                isNotNull(grants.status),
+                isNull(grants.deadline),
+                gte(grants.deadline, startOfDayIn(HOME_TIME_ZONE, now))
               )
             : undefined
         )

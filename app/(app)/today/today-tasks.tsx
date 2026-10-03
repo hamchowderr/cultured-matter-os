@@ -33,7 +33,7 @@ export function TodayTasks({ groups }: { groups: Groups }) {
       {LABELS.filter(({ key }) => groups[key].length > 0).map(({ key, label }) => (
         <div key={key} className="space-y-2">
           <h3 className={cn("text-sm font-medium", key === "overdue" && "text-destructive")}>
-            {label} <span className="text-muted-foreground tabular-nums">{groups[key].length}</span>
+            {label}
           </h3>
           {groups[key].map((t) => (
             <TaskCard

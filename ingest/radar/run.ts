@@ -73,6 +73,8 @@ export async function runRadarIngestion({
       })
       .where(eq(sources.id, row.id));
     await db.insert(activityLog).values({
+      // Stamped with the run time, the same time new companies get as firstSeenAt.
+      at: now,
       action: "ingestRadar",
       entityType: "source",
       entityId: row.id,

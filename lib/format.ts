@@ -36,7 +36,14 @@ const money = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1
 });
 
-export function formatAmount(min: number | null, max: number | null) {
+// Sources put placeholder figures like $1 or $2 in award fields (for example a Request for
+// Information that pays nothing). No real grant is that small, so those read as "no amount".
+export const MIN_REAL_AMOUNT = 1_000;
+
+export function formatAmount(rawMin: number | null, rawMax: number | null) {
+  const real = (n: number | null) => (n != null && n >= MIN_REAL_AMOUNT ? n : null);
+  const min = real(rawMin);
+  const max = real(rawMax);
   if (min == null && max == null) return null;
   if (min != null && max != null && min !== max) return `${money.format(min)}–${money.format(max)}`;
   return `Up to ${money.format((max ?? min)!)}`;

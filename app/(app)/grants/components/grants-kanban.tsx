@@ -70,7 +70,7 @@ export default function GrantsKanban({
 }: {
   grants: Grant[];
   tasks: CalendarTask[];
-  filters: { query?: string; closingSoon: boolean; includeNonprofit: boolean };
+  filters: { query?: string; closingSoon: boolean; includeNonprofit: boolean; showClosed: boolean };
   view: "board" | "calendar";
 }) {
   const router = useRouter();
@@ -121,7 +121,9 @@ export default function GrantsKanban({
     window.history.replaceState(null, "", qs ? `${pathname}?${qs}` : pathname);
   }
 
-  const activeFilters = [filters.closingSoon, filters.includeNonprofit].filter(Boolean).length;
+  const activeFilters = [filters.closingSoon, filters.includeNonprofit, filters.showClosed].filter(
+    Boolean
+  ).length;
 
   // Saves a move that is already on screen; puts the board back if the save fails.
   async function save(grant: Grant, status: Status, snapshot: Columns) {
@@ -221,6 +223,10 @@ export default function GrantsKanban({
                   <CheckIcon className={cn(!filters.includeNonprofit && "invisible")} />
                   <span>Include nonprofit-only</span>
                 </CommandItem>
+                <CommandItem onSelect={() => update({ closed: filters.showClosed ? undefined : "1" })}>
+                  <CheckIcon className={cn(!filters.showClosed && "invisible")} />
+                  <span>Show closed</span>
+                </CommandItem>
               </CommandGroup>
 
               <CommandSeparator />
@@ -228,7 +234,7 @@ export default function GrantsKanban({
               <CommandGroup>
                 <CommandItem
                   onSelect={() => {
-                    update({ soon: undefined, all: undefined });
+                    update({ soon: undefined, all: undefined, closed: undefined });
                     setFiltersOpen(false);
                   }}
                   className="justify-center text-center"

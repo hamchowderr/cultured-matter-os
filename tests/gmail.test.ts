@@ -451,3 +451,49 @@ describe("Reply check", () => {
     expect(calls).toHaveLength(0);
   });
 });
+
+describe("syncOutlook skips her own addresses", () => {
+  const OTHER_OWN = "admin@otherown.io";
+
+  beforeEach(() => {
+    vi.stubEnv("ALLOWED_EMAILS", `${ME}, Admin@OtherOwn.io`);
+    routes[`${PEOPLE}/people/me/connections`] = () =>
+      json({
+        connections: [
+          { names: [{ displayName: "Me At Work" }], emailAddresses: [{ value: OTHER_OWN }] }
+        ]
+      });
+    routes[`${PEOPLE}/otherContacts`] = () => json({ otherContacts: [] });
+    routes[`${GMAIL}/messages`] = () => json({ messages: [{ id: "own-in" }, { id: "own-out" }] });
+    routes[`${GMAIL}/messages/own-in`] = () =>
+      json(
+        msg("own-in", {
+          labels: ["INBOX"],
+          from: `Simone <${OTHER_OWN}>`,
+          to: ME,
+          subject: "Forwarding to myself",
+          at: day(1)
+        })
+      );
+    routes[`${GMAIL}/messages/own-out`] = () =>
+      json(
+        msg("own-out", {
+          labels: ["SENT"],
+          from: ME,
+          to: OTHER_OWN,
+          cc: "newfriend@kelp.co",
+          subject: "Copy to my other inbox",
+          at: day(1)
+        })
+      );
+  });
+  afterAll(() => vi.unstubAllEnvs());
+
+  it("never imports the signed-in address or any address in ALLOWED_EMAILS", async () => {
+    await A.syncOutlook.run({}, ctx());
+    const emails = (await db.select().from(t.contacts)).map((p) => p.email);
+    expect(emails).toContain("newfriend@kelp.co");
+    expect(emails).not.toContain(OTHER_OWN);
+    expect(emails).not.toContain(ME);
+  });
+});
