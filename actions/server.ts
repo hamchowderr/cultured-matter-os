@@ -140,3 +140,6 @@ export async function listContactEmails(input: In<typeof A.listContactEmails>) {
 export async function draftFollowUp(input: In<typeof A.draftFollowUp>) {
   return toResult(() => A.draftFollowUp.run(input));
 }
+export async function setupStatus(input: In<typeof A.setupStatus>) {
+  return toResult(() => A.setupStatus.run(input));
+}

@@ -72,6 +72,7 @@ describe("registry", () => {
         "setNewsletter",
         "newsletterStatus",
         "outlookStatus",
+        "setupStatus",
         "syncOutlook",
         "listContactEmails",
         "draftFollowUp",

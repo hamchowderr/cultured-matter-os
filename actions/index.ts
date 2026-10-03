@@ -56,6 +56,7 @@ import {
   outlookStatus,
   syncOutlook
 } from "./outlook";
+import { setupStatus } from "./setup";
 
 export {
   searchCompanies,
@@ -101,6 +102,7 @@ export {
   newsletterSignup,
   newsletterUnsubscribe,
   outlookStatus,
+  setupStatus,
   syncOutlook,
   listContactEmails,
   draftFollowUp,
@@ -148,6 +150,7 @@ export const allActions = [
   setNewsletter,
   newsletterStatus,
   outlookStatus,
+  setupStatus,
   syncOutlook,
   listContactEmails,
   draftFollowUp,
