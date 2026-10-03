@@ -20,6 +20,7 @@ import {
   InboxIcon,
   LandmarkIcon,
   RadarIcon,
+  SettingsIcon,
   SunIcon,
   UsersIcon,
   type LucideIcon
@@ -61,7 +62,8 @@ export const navItems: NavGroup[] = [
       { title: "Grants", href: "/grants", icon: LandmarkIcon },
       { title: "People", href: "/people", icon: UsersIcon },
       { title: "Projects", href: "/projects", icon: FolderKanbanIcon },
-      { title: "Archive", href: "/archive", icon: ArchiveIcon }
+      { title: "Archive", href: "/archive", icon: ArchiveIcon },
+      { title: "Settings", href: "/settings", icon: SettingsIcon }
     ]
   }
 ];

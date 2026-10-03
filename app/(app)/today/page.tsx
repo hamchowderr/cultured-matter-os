@@ -1,9 +1,16 @@
 import { SunIcon } from "lucide-react";
 import { cookies } from "next/headers";
 
-import { dueTasks, listApprovals, searchCompanies, searchGrants } from "@/actions/server";
+import {
+  dueTasks,
+  listApprovals,
+  searchCompanies,
+  searchGrants,
+  setupStatus
+} from "@/actions/server";
 import { CompanyCard, GrantCard } from "@/components/cards";
 import { ComingSoon } from "@/components/layout/page-shell";
+import { GetStarted } from "@/components/setup/get-started";
 import { getSession } from "@/lib/session";
 import { HOME_TIME_ZONE } from "@/lib/time";
 import { generateMeta } from "@/lib/utils";
@@ -41,11 +48,12 @@ export default async function Page() {
   // Before her first Radar visit, "new" means the last week.
   const since = baselineRaw ? new Date(Number(baselineRaw)) : new Date(now.getTime() - WEEK);
 
-  const [approvals, tasks, grants, radar] = await Promise.all([
+  const [approvals, tasks, grants, radar, setup] = await Promise.all([
     listApprovals({}),
     dueTasks({}),
     searchGrants({ forProfitOnly: true, closingWithinDays: 30, limit: 5 }),
-    searchCompanies({ seenSince: since, statuses: ["new"], limit: 4 })
+    searchCompanies({ seenSince: since, statuses: ["new"], limit: 4 }),
+    setupStatus({})
   ]);
 
   const dateLabel = new Intl.DateTimeFormat("en-US", {
@@ -83,6 +91,8 @@ export default async function Page() {
             .join(" · ") || "Nothing pressing today."}
         </p>
       </header>
+
+      {setup.ok && <GetStarted status={setup.data} />}
 
       {nothing && (
         <ComingSoon
