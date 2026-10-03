@@ -3,6 +3,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ToolbarProvider } from "./toolbar-provider";
 import { Editor } from "@tiptap/core";
+import { cn } from "@/lib/utils";
 import { BoldToolbar } from "./bold";
 import { ItalicToolbar } from "./italic";
 import { UnderlineToolbar } from "./underline";
@@ -11,9 +12,15 @@ import { LinkToolbar } from "./link";
 import { BulletListToolbar } from "./bullet-list";
 import { OrderedListToolbar } from "./ordered-list";
 
-export const EditorToolbarBasic = ({ editor }: { editor: Editor }) => {
+export const EditorToolbarBasic = ({
+  editor,
+  className
+}: {
+  editor: Editor;
+  className?: string;
+}) => {
   return (
-    <div className="bg-background sticky top-0 z-20 hidden w-full border-b sm:block">
+    <div className={cn("bg-background sticky top-0 z-20 hidden w-full border-b sm:block", className)}>
       <ToolbarProvider editor={editor}>
         <TooltipProvider>
           <ScrollArea className="h-fit py-0.5">

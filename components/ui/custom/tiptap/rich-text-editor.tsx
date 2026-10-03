@@ -16,7 +16,6 @@ import Underline from "@tiptap/extension-underline";
 import { EditorContent, type Extension, useEditor, type Content } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { TipTapFloatingMenu } from "./extensions/floating-menu";
-import { FloatingToolbar } from "./extensions/floating-toolbar";
 import Placeholder from "@tiptap/extension-placeholder";
 import { useEffect } from "react";
 import { EditorToolbarBasic } from "./toolbars/editor-toolbar-basic";
@@ -139,15 +138,18 @@ export function RichTextEditorDemo({
   return (
     <div
       className={cn(
-        "bg-card relative max-h-[calc(100dvh-6rem)] w-full overflow-hidden overflow-y-scroll border pb-[60px] sm:pb-0",
+        "bg-card relative max-h-[calc(100dvh-6rem)] w-full overflow-hidden overflow-y-scroll border",
         className
       )}>
       <EditorToolbarBasic editor={editor} />
-      <FloatingToolbar editor={editor} />
       <TipTapFloatingMenu editor={editor} />
       <EditorContent
         editor={editor}
         className={cn("min-h-60 w-full min-w-full cursor-text", editorContentClassName)}
+      />
+      <EditorToolbarBasic
+        editor={editor}
+        className="max-sm:block sm:hidden! max-sm:top-auto max-sm:bottom-0 max-sm:border-t max-sm:border-b-0"
       />
     </div>
   );

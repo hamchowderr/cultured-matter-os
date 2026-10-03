@@ -1,6 +1,6 @@
 "use client";
 // @ts-nocheck
-/* eslint-disable */
+ 
 import Image from "@tiptap/extension-image";
 import { type NodeViewProps, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import {
