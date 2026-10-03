@@ -2,10 +2,9 @@
 
 Two Shortcuts send things straight to the Cultured Matter OS Inbox: one for words (spoken or typed), one for photos. Everything lands under **To sort** in the Inbox.
 
-## What you need
+## How this is set up
 
-- The **capture key**. The person who set up the app sends it to you privately. Treat it like a password: anyone who has it can add items to your Inbox.
-- The Shortcuts app (built into the iPhone).
+The app owner builds both Shortcuts once on an iPhone, tests them, and shares them as iCloud links. Simone installs them from the links and pastes the key when the Shortcut asks for it. The key is never inside a shared link.
 
 The address both Shortcuts send to:
 
@@ -13,28 +12,42 @@ The address both Shortcuts send to:
 https://cultured-matter-os.vercel.app/api/capture
 ```
 
-## Shortcut 1: Capture (words)
+## For Simone: install from the links
+
+You get two links (**Capture** and **Capture Photo**) and, separately, the capture key. Treat the key like a password: anyone who has it can add items to your Inbox.
+
+1. On your iPhone, tap the **Capture** link. It opens in the Shortcuts app.
+2. Tap **Add Shortcut**.
+3. When it asks for your key, paste the key exactly as it was sent (it starts with `Bearer`). Tap **Add**.
+4. Do the same with the **Capture Photo** link.
+5. Test: tap **Capture**, say something, and wait for "Saved to your Inbox." Then tap **Capture Photo** and pick a photo. Both appear in the app's Inbox under **To sort**.
+
+## For the owner: build once, then share
+
+You need the capture key from Infisical (otaku-internal, folder `cultured-matter-os`, environment `prod`, `CAPTURE_TOKEN`). The header value is the word `Bearer`, one space, then the key.
+
+### Shortcut 1: Capture (words)
 
 1. Open **Shortcuts**. Tap **+** at the top right.
 2. Tap the name at the top and call it **Capture**.
-3. Tap **Add Action**, search for **Dictate Text**, and tap it. (To type instead of speak, use **Ask for Input** with input type **Text**.)
+3. In the search bar at the bottom, search for **Dictate Text** and tap it. (To type instead of speak, use **Ask for Input** with input type **Text**.)
 4. Search for **Get Contents of URL** and tap it.
 5. Tap the blue **URL** in that action and enter the address above.
 6. Tap the **>** arrow on the action to show more options.
 7. **Method**: tap it and choose **POST**.
 8. **Headers**: tap **Add new header**.
    - Key: `Authorization`
-   - Value: `Bearer` then one space, then paste your capture key. Example shape: `Bearer abc123...`
+   - Value: `Bearer` then one space, then paste the capture key.
 9. **Request Body**: choose **Form**.
 10. Tap **Add new field**, choose **Text**.
     - Key: `text`
-    - Value: tap it, then pick the **Dictated Text** variable (or **Provided Input** if you used Ask for Input).
+    - Value: tap it, then pick the **Dictated Text** variable from the bar above the keyboard (or **Provided Input** if you used Ask for Input).
 11. Search for **Show Result** and add it at the end. It shows "Saved to your Inbox." when it worked.
-12. Tap **Done**.
+12. Tap **Done**, then tap the Shortcut to test it.
 
 Do not add a `Content-Type` header. Shortcuts sets it for you.
 
-## Shortcut 2: Capture Photo
+### Shortcut 2: Capture Photo
 
 1. Tap **+** to make a new shortcut and call it **Capture Photo**.
 2. Add **Select Photos** (pick from your library) or **Take Photo** (use the camera).
@@ -45,7 +58,23 @@ Do not add a `Content-Type` header. Shortcuts sets it for you.
    - Key: `photo`
    - Value: pick the **Resized Image** variable.
 7. Optional caption: add **Ask for Input** before step 5, then add a second **Text** field with key `text` and the **Provided Input** variable.
-8. Add **Show Result** at the end. Tap **Done**.
+8. Add **Show Result** at the end. Tap **Done** and test it.
+
+### Ask for the key when someone installs it
+
+Do this on each Shortcut before sharing, so the link never contains the key.
+
+1. Open the Shortcut and tap the **ⓘ** (details) button at the bottom.
+2. Tap **Setup** (called **Import Questions** on older iOS).
+3. Tap **Add Question** and tap the **Authorization** header value in the Get Contents of URL step.
+4. Question: `Paste your capture key (it starts with Bearer)`. Clear the default answer so your key is not carried along.
+5. Tap **Done**.
+
+### Share the links
+
+1. In the Shortcuts list, long-press the Shortcut and tap **Share**.
+2. Tap **Copy iCloud Link**.
+3. Send Simone both links, and send the key separately and privately as one line: `Bearer ` followed by the key.
 
 ## Using them
 
@@ -64,7 +93,7 @@ Do not add a `Content-Type` header. Shortcuts sets it for you.
 
 ## Changing the key
 
-If the key leaks, the app owner changes `CAPTURE_TOKEN` in the app settings and sends you the new key. Open each Shortcut, tap the **Authorization** header value, and replace the old key. The old key stops working straight away.
+If the key leaks, the app owner changes `CAPTURE_TOKEN` in the app settings and sends you the new key. Each person opens their Shortcuts, taps the **Authorization** header value, and pastes the new `Bearer` line. The old key stops working straight away.
 
 ## For the developer
 
