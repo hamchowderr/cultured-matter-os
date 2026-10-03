@@ -53,6 +53,9 @@ export const auth = betterAuth({
       }
     }
   },
+  // Errors with no stored callback (e.g. Microsoft replaying an already-used callback) land on
+  // /sign-in instead of Better Auth's default error page; a signed-in visitor goes on to /today.
+  onAPIError: { errorURL: "/sign-in" },
   plugins: [nextCookies()]
 });
 
