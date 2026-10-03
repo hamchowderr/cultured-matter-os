@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { accounts, sessions, users, verifications } from "@/db/schema";
 import { ACCOUNT_NOT_ALLOWED, isAllowedEmail } from "@/lib/allowed-emails";
+import { GRAPH_SCOPES } from "@/lib/graph-scopes";
 
 function refuse(): never {
   // The OAuth callback turns this into a redirect to /sign-in?error=ACCOUNT_NOT_ALLOWED.
@@ -28,7 +29,18 @@ export const auth = betterAuth({
       clientId: process.env.MICROSOFT_CLIENT_ID as string,
       clientSecret: process.env.MICROSOFT_CLIENT_SECRET as string,
       tenantId: "common",
-      prompt: "select_account"
+      prompt: "select_account",
+      // Outlook contacts and mail for People (on top of Better Auth's openid, profile, email,
+      // User.Read and offline_access). Accounts that signed in before this ask again through
+      // "Connect Outlook" (authClient.linkSocial), which records the new scopes.
+      scope: [...GRAPH_SCOPES]
+    }
+  },
+  account: {
+    accountLinking: {
+      // "Connect Outlook" re-links the same Microsoft account to add scopes. Microsoft often
+      // omits email_verified, which Better Auth otherwise requires to link.
+      trustedProviders: ["microsoft"]
     }
   },
   databaseHooks: {

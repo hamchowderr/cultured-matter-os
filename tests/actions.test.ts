@@ -68,7 +68,12 @@ describe("registry", () => {
         "requestApproval",
         "listApprovals",
         "decideApproval",
-        "dueTasks"
+        "dueTasks",
+        "outlookStatus",
+        "syncOutlook",
+        "listContactEmails",
+        "draftFollowUp",
+        "checkOutlookReplies"
       ].sort()
     );
     for (const a of A.allActions) {
@@ -124,15 +129,13 @@ describe("radar", () => {
       .returning();
     const beauty = await seedCompany({ name: "Glowcell", categories: ["Beauty", "Biotech"] });
     await seedCompany({ name: "Steelco", categories: ["Industry"] });
-    await db
-      .insert(t.sightings)
-      .values({
-        companyId: beauty.id,
-        sourceId: src.id,
-        externalId: "1",
-        seenAt: new Date(),
-        raw: {}
-      });
+    await db.insert(t.sightings).values({
+      companyId: beauty.id,
+      sourceId: src.id,
+      externalId: "1",
+      seenAt: new Date(),
+      raw: {}
+    });
 
     const byCat = await A.searchCompanies.run({ categories: ["Beauty"] }, ctx());
     expect(byCat.companies.map((c) => c.name)).toEqual(["Glowcell"]);
@@ -210,14 +213,12 @@ describe("people", () => {
         { fullName: "Ed Stranger", company: "Algae Farms", source: "sample" }
       ])
       .returning();
-    await db
-      .insert(t.contactLinks)
-      .values({
-        contactId: linked.id,
-        companyId: co.id,
-        relation: "knows",
-        note: "met at IndieBio"
-      });
+    await db.insert(t.contactLinks).values({
+      contactId: linked.id,
+      companyId: co.id,
+      relation: "knows",
+      note: "met at IndieBio"
+    });
 
     const { paths } = await A.findWarmPath.run({ companyId: co.id }, ctx());
     const got = paths.map((p) => `${p.contact.fullName}|${p.via}|${p.reason}`).sort();

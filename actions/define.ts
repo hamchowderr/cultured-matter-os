@@ -14,7 +14,15 @@ type LogEntry = {
 
 export class ActionError extends Error {
   constructor(
-    public code: "not_found" | "invalid" | "conflict" | "unauthorized",
+    public code:
+      | "not_found"
+      | "invalid"
+      | "conflict"
+      | "unauthorized"
+      // Microsoft hasn't granted the Outlook permissions yet; the UI offers "Connect Outlook".
+      | "outlook_not_connected"
+      // An outside service (e.g. Microsoft Graph) failed.
+      | "unavailable",
     message: string
   ) {
     super(message);
@@ -24,7 +32,7 @@ export class ActionError extends Error {
 
 type Handler<I, O> = (input: I, db: Executor) => Promise<O>;
 
-type ActionConfig<I extends z.ZodType, O extends z.ZodType> = {
+type ActionConfig<I extends z.ZodType, O extends z.ZodType, P = undefined> = {
   name: string;
   description: string;
   input: I;
@@ -33,16 +41,20 @@ type ActionConfig<I extends z.ZodType, O extends z.ZodType> = {
   | { kind: "read"; handler: Handler<z.output<I>, z.input<O>> }
   | {
       kind: "write";
-      handler: Handler<z.output<I>, z.input<O>>;
+      // Optional step that runs before the transaction opens: network calls (Microsoft Graph,
+      // token refresh) must not hold the database lock. Its result is passed to the handler.
+      prepare?: (input: z.output<I>, db: Database) => Promise<P>;
+      handler: (input: z.output<I>, db: Executor, prepared: P) => Promise<z.input<O>>;
       // Every write lands in activity_log, in the same transaction.
       log: (input: z.output<I>, result: z.output<O>) => LogEntry;
     }
 );
 
-export type Action<I extends z.ZodType = z.ZodType, O extends z.ZodType = z.ZodType> = ActionConfig<
-  I,
-  O
-> & {
+export type Action<
+  I extends z.ZodType = z.ZodType,
+  O extends z.ZodType = z.ZodType,
+  P = undefined
+> = ActionConfig<I, O, P> & {
   run: (input: z.input<I>, ctx?: ActionContext) => Promise<z.output<O>>;
 };
 
@@ -50,9 +62,9 @@ async function defaultDb(): Promise<Database> {
   return (await import("@/db")).db;
 }
 
-export function defineAction<I extends z.ZodType, O extends z.ZodType>(
-  config: ActionConfig<I, O>
-): Action<I, O> {
+export function defineAction<I extends z.ZodType, O extends z.ZodType, P = undefined>(
+  config: ActionConfig<I, O, P>
+): Action<I, O, P> {
   return {
     ...config,
     async run(rawInput, ctx) {
@@ -63,8 +75,9 @@ export function defineAction<I extends z.ZodType, O extends z.ZodType>(
         return config.output.parse(await config.handler(input, db));
       }
 
+      const prepared = (config.prepare ? await config.prepare(input, db) : undefined) as P;
       return db.transaction(async (tx) => {
-        const result = config.output.parse(await config.handler(input, tx));
+        const result = config.output.parse(await config.handler(input, tx, prepared));
         const entry = config.log(input, result);
         await tx.insert(activityLog).values({
           action: config.name,

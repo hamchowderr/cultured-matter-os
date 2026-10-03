@@ -68,6 +68,7 @@ export const taskFixture: Task = {
   notes: null,
   status: "waiting",
   dueDate: days(3),
+  outlookConversationId: null,
   completedAt: null,
   createdAt: days(-1),
   updatedAt: days(-1)

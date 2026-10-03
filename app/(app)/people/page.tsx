@@ -1,4 +1,4 @@
-import { searchContacts } from "@/actions/server";
+import { outlookStatus, searchContacts } from "@/actions/server";
 import { PageHeader } from "@/components/layout/page-shell";
 import { generateMeta } from "@/lib/utils";
 import { PeopleView } from "./people-view";
@@ -21,18 +21,21 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const sector = one(sp.sector) || undefined;
   const page = Math.max(1, Number(one(sp.page)) || 1);
 
-  const result = await searchContacts({
-    query,
-    sector,
-    limit: PAGE_SIZE,
-    offset: (page - 1) * PAGE_SIZE
-  });
+  const [result, outlook] = await Promise.all([
+    searchContacts({
+      query,
+      sector,
+      limit: PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE
+    }),
+    outlookStatus({})
+  ]);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="People"
-        description="Your LinkedIn network. Search by name, company or role, and tag people by sector."
+        description="Your LinkedIn and Outlook contacts. Search by name, company or role, and tag people by sector."
       />
       {result.ok ? (
         <PeopleView
@@ -41,6 +44,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
           page={page}
           pageSize={PAGE_SIZE}
           filters={{ query, sector }}
+          outlookConnected={outlook.ok && outlook.data.connected}
         />
       ) : (
         <p className="text-destructive text-sm">Couldn’t load contacts: {result.error.message}</p>

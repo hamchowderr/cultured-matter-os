@@ -141,7 +141,7 @@ export const contacts = sqliteTable(
     position: text("position"),
     connectedOn: text("connected_on"),
     sectors: text("sectors", { mode: "json" }).$type<string[]>().notNull().default([]),
-    source: text("source", { enum: ["linkedin_csv", "manual", "sample"] }).notNull(),
+    source: text("source", { enum: ["linkedin_csv", "manual", "sample", "outlook"] }).notNull(),
     createdAt: createdAt(),
     updatedAt: updatedAt()
   },
@@ -170,6 +170,29 @@ export const contactLinks = sqliteTable(
   (t) => [
     index("contact_links_contact_idx").on(t.contactId),
     index("contact_links_company_idx").on(t.companyId)
+  ]
+);
+
+// Recent Outlook emails with a contact: metadata and a link only, never the body.
+export const contactEmails = sqliteTable(
+  "contact_emails",
+  {
+    id: id(),
+    contactId: text("contact_id")
+      .notNull()
+      .references(() => contacts.id, { onDelete: "cascade" }),
+    // Graph immutable message id.
+    messageId: text("message_id").notNull(),
+    conversationId: text("conversation_id"),
+    subject: text("subject"),
+    direction: text("direction", { enum: ["in", "out"] }).notNull(),
+    at: integer("at", { mode: "timestamp_ms" }).notNull(),
+    webLink: text("web_link"),
+    createdAt: createdAt()
+  },
+  (t) => [
+    uniqueIndex("contact_emails_contact_message_unique").on(t.contactId, t.messageId),
+    index("contact_emails_contact_at_idx").on(t.contactId, t.at)
   ]
 );
 
@@ -249,10 +272,12 @@ export const tasks = sqliteTable(
     captureId: text("capture_id").references(() => captures.id, { onDelete: "set null" }),
     title: text("title").notNull(),
     notes: text("notes"),
-    status: text("status", { enum: ["todo", "in_progress", "waiting", "done"] })
+    status: text("status", { enum: ["todo", "in_progress", "waiting", "replied", "done"] })
       .notNull()
       .default("todo"),
     dueDate: integer("due_date", { mode: "timestamp_ms" }),
+    // The Outlook thread of a follow-up drafted from this task; the daily reply check watches it.
+    outlookConversationId: text("outlook_conversation_id"),
     completedAt: integer("completed_at", { mode: "timestamp_ms" }),
     createdAt: createdAt(),
     updatedAt: updatedAt()

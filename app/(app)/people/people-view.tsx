@@ -33,19 +33,22 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CATEGORIES } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { LinkedInSteps } from "./linkedin-steps";
+import { ContactOutlookButton, OutlookSync } from "./outlook";
 
 export function PeopleView({
   contacts,
   total,
   page,
   pageSize,
-  filters
+  filters,
+  outlookConnected
 }: {
   contacts: Contact[];
   total: number;
   page: number;
   pageSize: number;
   filters: { query?: string; sector?: string };
+  outlookConnected: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -128,6 +131,13 @@ export function PeopleView({
     </>
   );
 
+  const outlookButton = (
+    <OutlookSync
+      connected={outlookConnected}
+      onSynced={() => startTransition(() => router.refresh())}
+    />
+  );
+
   if (total === 0 && !filtered) {
     return (
       <Empty className="border border-dashed">
@@ -136,11 +146,16 @@ export function PeopleView({
             <UsersIcon />
           </EmptyMedia>
           <EmptyTitle>No contacts yet</EmptyTitle>
-          <EmptyDescription>Bring in your LinkedIn connections in five steps.</EmptyDescription>
+          <EmptyDescription>
+            Bring in your LinkedIn connections in five steps, or your Outlook contacts in one.
+          </EmptyDescription>
         </EmptyHeader>
         <EmptyContent className="max-w-md">
           <LinkedInSteps />
-          {importButton}
+          <div className="flex flex-wrap justify-center gap-2">
+            {importButton}
+            {outlookButton}
+          </div>
         </EmptyContent>
       </Empty>
     );
@@ -188,6 +203,7 @@ export function PeopleView({
               <LinkedInSteps />
             </PopoverContent>
           </Popover>
+          {outlookButton}
           {importButton}
         </div>
       </div>
@@ -207,32 +223,35 @@ export function PeopleView({
                 key={c.id}
                 contact={{ ...c, sectors }}
                 actions={
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="size-7"
-                        aria-label={`Tag ${c.fullName}`}
-                      >
-                        <TagIcon />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="max-h-80 w-60 overflow-y-auto">
-                      <DropdownMenuLabel>Sectors</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {CATEGORIES.map((cat) => (
-                        <DropdownMenuCheckboxItem
-                          key={cat}
-                          checked={sectors.includes(cat)}
-                          onSelect={(e) => e.preventDefault()}
-                          onCheckedChange={(on) => toggleSector(c, cat, !!on)}
+                  <div className="flex shrink-0 items-center">
+                    <ContactOutlookButton contact={c} />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-7"
+                          aria-label={`Tag ${c.fullName}`}
                         >
-                          {cat}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                          <TagIcon />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="max-h-80 w-60 overflow-y-auto">
+                        <DropdownMenuLabel>Sectors</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {CATEGORIES.map((cat) => (
+                          <DropdownMenuCheckboxItem
+                            key={cat}
+                            checked={sectors.includes(cat)}
+                            onSelect={(e) => e.preventDefault()}
+                            onCheckedChange={(on) => toggleSector(c, cat, !!on)}
+                          >
+                            {cat}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 }
               />
             );

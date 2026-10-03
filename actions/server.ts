@@ -118,3 +118,15 @@ export async function listApprovals(input: In<typeof A.listApprovals>) {
 export async function decideApproval(input: In<typeof A.decideApproval>) {
   return toResult(() => A.decideApproval.run(input));
 }
+export async function outlookStatus(input: In<typeof A.outlookStatus>) {
+  return toResult(() => A.outlookStatus.run(input));
+}
+export async function syncOutlook(input: In<typeof A.syncOutlook>) {
+  return toResult(() => A.syncOutlook.run(input));
+}
+export async function listContactEmails(input: In<typeof A.listContactEmails>) {
+  return toResult(() => A.listContactEmails.run(input));
+}
+export async function draftFollowUp(input: In<typeof A.draftFollowUp>) {
+  return toResult(() => A.draftFollowUp.run(input));
+}
