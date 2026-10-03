@@ -20,6 +20,9 @@ export async function getCompany(input: In<typeof A.getCompany>) {
 export async function radarFacets(input: In<typeof A.radarFacets>) {
   return toResult(() => A.radarFacets.run(input));
 }
+export async function radarFindsByWeek(input: In<typeof A.radarFindsByWeek>) {
+  return toResult(() => A.radarFindsByWeek.run(input));
+}
 export async function starCompany(input: In<typeof A.starCompany>) {
   return toResult(() => A.starCompany.run(input));
 }
