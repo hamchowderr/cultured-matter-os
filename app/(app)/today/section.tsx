@@ -1,18 +1,12 @@
-import { ArrowRightIcon } from "lucide-react";
+import { ArrowRightIcon, InfoIcon } from "lucide-react";
 import Link from "next/link";
 
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-// A Today block in the kit dashboard's card style: title, optional line under it, and a link
-// to the screen where the whole list lives.
+// A Today block in the kit dashboard's card style (v2.0.0): title, an optional info tooltip
+// beside it, and a link to the screen where the whole list lives.
 export function Section({
   title,
   description,
@@ -33,8 +27,17 @@ export function Section({
   return (
     <Card id={id} className={cn("scroll-mt-20", className)}>
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
+        <CardTitle className="flex items-center gap-1.5">
+          {title}
+          {description && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <InfoIcon className="text-muted-foreground size-3.5" aria-label={description} />
+              </TooltipTrigger>
+              <TooltipContent>{description}</TooltipContent>
+            </Tooltip>
+          )}
+        </CardTitle>
         <CardAction>
           <Link
             href={href}
