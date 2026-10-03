@@ -36,9 +36,9 @@ export default async function AppLayout({
         } as React.CSSProperties
       }
     >
-      <AppSidebar />
+      <AppSidebar user={{ name, email, image }} />
       <SidebarInset>
-        <SiteHeader user={{ name, email, image }} />
+        <SiteHeader />
         <div className="bg-background flex flex-1 flex-col">
           <div className="@container/main p-(--content-padding) xl:group-data-[theme-content-layout=centered]/layout:container xl:group-data-[theme-content-layout=centered]/layout:mx-auto">
             {children}
