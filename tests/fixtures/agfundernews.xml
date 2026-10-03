@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+	 xmlns:media="http://search.yahoo.com/mrss/" >
+
+<channel>
+	<title>AgFunderNews</title>
+	<atom:link href="https://agfundernews.com/feed" rel="self" type="application/rss+xml" />
+	<link>https://agfundernews.com/</link>
+	<description>Reporting on the evolution of food and agriculture</description>
+	<lastBuildDate>Fri, 02 Oct 2026 16:11:58 +0000</lastBuildDate>
+	<language>en-US</language>
+	<sy:updatePeriod>
+	hourly	</sy:updatePeriod>
+	<sy:updateFrequency>
+	1	</sy:updateFrequency>
+	
+
+<image>
+	<url>https://agfundernews.com/wp-content/uploads/2025/02/cropped-agfundernews-logo-favicon-32x32.png</url>
+	<title>AgFunderNews</title>
+	<link>https://agfundernews.com/</link>
+	<width>32</width>
+	<height>32</height>
+</image> 
+	<item>
+		<title>Exclusive: ArkeaBio raises $15m for livestock methane tech, cuts headcount</title>
+		<link>https://agfundernews.com/exclusive-arkeabio-raises-15m-for-livestock-methane-tech-cuts-headcount</link>
+					<comments>https://agfundernews.com/exclusive-arkeabio-raises-15m-for-livestock-methane-tech-cuts-headcount#respond</comments>
+		
+		<dc:creator><![CDATA[Elaine Watson]]></dc:creator>
+		<pubDate>Wed, 30 Sep 2026 08:00:47 +0000</pubDate>
+				<category><![CDATA[Agtech]]></category>
+		<category><![CDATA[Deeptech]]></category>
+		<category><![CDATA[Livestock/animal ag]]></category>
+		<category><![CDATA[Startups & funding]]></category>
+		<category><![CDATA[US & Canada]]></category>
+		<guid isPermaLink="false">https://agfundernews.com/?p=57728</guid>
+
+					<description><![CDATA[<p>The hope is that ArkeaBio's first product could be commercialized and start generating revenues in 2028, says CEO Frank Wooten.</p>
+<p>The post <a href="https://agfundernews.com/exclusive-arkeabio-raises-15m-for-livestock-methane-tech-cuts-headcount">Exclusive: ArkeaBio raises $15m for livestock methane tech, cuts headcount</a> appeared first on <a href="https://agfundernews.com">AgFunderNews</a>.</p>
+]]></description>
+										<content:encoded><![CDATA[<p><a href="https://www.arkeabio.com/">ArkeaBio</a>—a Boston-based startup <a href="https://agfundernews.com/arkeabio-vaccination-is-the-lowest-cost-and-easiest-to-scale-livestock-methane-reduction-solution">developing a vaccine to cut livestock methane emissions</a>—has raised a $15 million Series A2 round led by <a href="https://www.agrizero.nz/">AgriZeroNZ</a> and supported by <a href="https://www.breakthroughenergy.org/">Breakthrough Energy</a>.</p>
+<p>The firm has also reduced its headcount by about a third as it edges closer to commercialization, CEO Frank Wooten told <em>AgFunderNews.</em></p>
+<div dir="ltr">
+<p>“Given the environment, we had to pare back some of our initiatives and really hone in on our initial market [New Zealand], initial product and critically initial revenues.  As such, we needed to let go of some really great scientists as well as commercial folks to ensure runway to hit those critical milestones.”</p>
+<p>He added: “This round is likely to take us through the first commercial product.”</p>
+</div>
+<h4><strong>‘An elegant solution’</strong></h4>
+<p>Multiple strategies are being explored to address <a href="https://www.ccacoalition.org/sites/default/files/resources/2021_Global-Methane_Assessment_full_0.pdf">methane emissions from belching livestock</a> from <a href="https://www.feedstrategy.com/blogs/newsfeed/blog/15546223/can-selective-breeding-lead-to-lower-emissions-from-cattle">cattle breeding programs</a> and <a href="https://agfundernews.com/methane-busting-feed-supplements-are-beginning-to-scale-but-who-will-foot-the-bill-and-what-will-drive-widespread-adoption">feed additives</a> to <a href="https://agfundernews.com/crispr-a-gamechanger-for-livestock-methane-reduction-its-high-risk-high-reward-says-uc-davis-professor">editing the genes of the microbes</a> in the rumen.</p>
+<p>But the most cost-effective way to tackle the problem at scale within a reasonable timeframe is a vaccine, said Wooten, who cofounded virtual fencing company Vence and joined ArkeaBio in September 2025.</p>
+<p>“What I’ve learned along my journey in agriculture so far is that it’s really hard to change practices for folks, and vaccines are already used in 100% of livestock markets worldwide.”</p>
+<p>While feed additives are likely to be an important part of the toolbox to tackle livestock emissions, he said, “The majority of animals outside of the US are actually not ever put on feed, so when we look at a solution for a broader global market, the ability of a vaccine to have impact not only at an animal level, but in the workflows of our customer base, is the most elegant way to get that uptick in adoption.”</p>
+<h4><strong>Mode of action and efficacy</strong></h4>
+<p>A potent greenhouse gas, methane is generated on farms both from manure and burping ruminants in a stomach compartment called the rumen. Here, microbes break down complex carbs to produce carbon dioxide and hydrogen, which are then converted into methane by another set of microbes called methanogens and belched out.</p>
+<p>ArkeaBio’s vaccine prompts a cow’s immune system to produce antibodies that interfere with methanogens. As a result, hydrogen that the methanogens would normally convert into methane is taken up by other microbes to make compounds such as volatile fatty acids that could help cows produce more milk and meat.</p>
+<p>It’s through this mechanism that ArkeaBio also expects to have an impact on productivity, although this is not something it would make claims about in its first product, stressed Wooten.</p>
+<p>“We’ve seen early evidence of increases in the microbial communities in the cattle rumen that produce volatile fatty acids but we don’t anticipate any measurable effect on productivity until the methane reduction number is above 30%. And for our first product we’re looking at something closer to 10-15% reduction in methane.”</p>
+<p>While a 10-15% reduction may not sound like much (feed additive <a href="https://agfundernews.com/bovaer-is-creating-a-self-sustaining-carbon-inset-market-for-american-agriculture-says-elanco">Bovaer</a> promises a 30% reduction in lactating dairy cattle, while some seaweed companies claim reductions of up to 90%), this is just the beginning, he noted.</p>
+<p>“There are hundreds of methanogens, but there’s one particular one that represents nearly 50% of the methanogens in the rumen, so we&#8217;ve started by targeting that species. We’re also targeting the second largest species. This is just the beginning.”</p>
+<h4><strong>Minimum viable product</strong></h4>
+<p>A vaccine’s commercial viability also depends on the frequency with which farms would have to administer it, acknowledged Wooten, with the longer its methane-busting effects last, the better.</p>
+<p>“Ideally you’ve got a vaccine that lasts six or 12 months but we certainly think there’s minimum viability in dairy for an intervention every three months. So our initial product will be three months but we expect to go to six months by our second product. For beef cattle we believe that number needs to be closer to 12 months.”</p>
+<p>He added: “The other thing we are aggressively looking at is the coformulation of vaccines, where you hit an animal with one vaccine that targets a number of things, so we are actively looking at a couple of very common dairy vaccines that are utilized by 99% of dairy cattle in New Zealand, for example.</p>
+<p>“We would look to co-formulate our vaccine with those vaccines. Then the cost burden of the additional methane inhibiting vaccine drops. And our ability to offset that cost, whether it&#8217;s with a carbon credit, a premium [on the milk paid by the processor or end consumer], or productivity gains, suddenly becomes much more attainable. And as such, we think it becomes a much more attractive product.”</p>
+<h4><strong>What’s next?</strong></h4>
+<p>ArkeaBio has spent the last two years working hand in hand with New Zealand government regulators to understand the regulatory pathway and timeline and expects to submit an application next year, said Wooten.</p>
+<p>The hope is that the product could then be commercialized and start generating revenues in 2028, he said.</p>
+<p>The post <a href="https://agfundernews.com/exclusive-arkeabio-raises-15m-for-livestock-methane-tech-cuts-headcount">Exclusive: ArkeaBio raises $15m for livestock methane tech, cuts headcount</a> appeared first on <a href="https://agfundernews.com">AgFunderNews</a>.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>https://agfundernews.com/exclusive-arkeabio-raises-15m-for-livestock-methane-tech-cuts-headcount/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+		
+	</item>
+<item>
+		<title>Exclusive: Spearhead Bio lands oversubscribed seed round for faster, more precise gene editing tech</title>
+		<link>https://agfundernews.com/exclusive-spearhead-bio-lands-oversubscribed-seed-round-for-faster-more-precise-gene-editing-tech</link>
+					<comments>https://agfundernews.com/exclusive-spearhead-bio-lands-oversubscribed-seed-round-for-faster-more-precise-gene-editing-tech#respond</comments>
+		
+		<dc:creator><![CDATA[Jennifer Marston]]></dc:creator>
+		<pubDate>Thu, 17 Sep 2026 12:00:54 +0000</pubDate>
+				<category><![CDATA[Agtech]]></category>
+		<category><![CDATA[Plant breeding & genetics]]></category>
+		<category><![CDATA[Startups & funding]]></category>
+		<category><![CDATA[US & Canada]]></category>
+		<category><![CDATA[lp]]></category>
+		<guid isPermaLink="false">https://agfundernews.com/?p=57577</guid>
+
+					<description><![CDATA[<p>Spearhead Bio says its technology can save seed breeders "years of development time and millions of dollars in crop improvement."</p>
+<p>The post <a href="https://agfundernews.com/exclusive-spearhead-bio-lands-oversubscribed-seed-round-for-faster-more-precise-gene-editing-tech">Exclusive: Spearhead Bio lands oversubscribed seed round for faster, more precise gene editing tech</a> appeared first on <a href="https://agfundernews.com">AgFunderNews</a>.</p>
+]]></description>
+										<content:encoded><![CDATA[<p><a href="https://danforthtechnology.com/spearhead-bio/">Spearhead Bio</a> has closed an oversubscribed $1.62 million seed round to advance a genome engineering platform designed to address one of CRISPR’s key challenges: precisely inserting or replacing large pieces of DNA at targeted locations in crop genomes.</p>
+<p>The round comes a couple of years after Spearhead launched out of Danforth Technology Company (DTC), a subsidiary of the <a href="https://www.danforthcenter.org/">Donald Danforth Plant Science Center</a> in St. Louis, Missouri.</p>
+<p>The new round gives Spearhead runway to demonstrate how its Transposase Assisted Homology Independent Targeted Insertion (TAHITI) technology can lead to faster and more controlled introduction of genes into both transgenic and non-transgenic crops.</p>
+<p>Spearhead Bio founder Keith Slotkin says the technology &#8220;saves our partners years of development time and millions of dollars in crop improvement.&#8221;</p>
+<h4><strong>&#8216;Not just another CRISPR company&#8217;</strong></h4>
+<p>Mike Bielski, CEO of Spearhead Bio, says that while the company uses CRISPR for gene editing, it is far from being &#8220;just another CRISPR company.&#8221;</p>
+<p>In crop breeding, CRISPR acts as molecular scissors that can locate a specific sequence in a plant&#8217;s genome and cut or disable it. For example, scientists could disable the genes in wheat that make the plant susceptible to powdery mildew. One of the main benefits of CRISPR according to its advocates is that it can do all of this significantly faster than traditional breeding techniques.</p>
+<p>But, says Bielski, CRISPR&#8217;s usefulness has limitations. It&#8217;s great for cutting things out but <a href="https://agfundernews.com/danforth-technology-center-launches-gene-editing-startup-spearhead-bio-to-solve-a-major-obstacle-with-crispr">notoriously bad at inserting new genetic material</a> precisely. Frequently, it inserts this new material at random, which can disrupt other genes and overall plant function, and makes downstream breeding harder.</p>
+<p>Bielski likens this to a paragraph on a page. CRISPR is good at replacing single letters — changing the word &#8220;wood&#8221; into &#8220;food,&#8221; for example — but it can&#8217;t add or move whole sentences.</p>
+<p>This is where Spearhead&#8217;s TAHITI technology adds real value.</p>
+<p>&#8220;We happen to use CRISPR, but the platform is really about transposable elements and what transposable elements can do with these large DNA cargo movements,&#8221; says Bielski.</p>
+<p>All genomes naturally contain these &#8220;transposable elements,&#8221; what Slotkin calls &#8220;nature’s own gene-editing machinery&#8221; and “the glue that works with CRISPR scissors to create a better toolbox.”</p>
+<p>TAHITI can rearrange, cut, and insert large pieces of DNA in crops, creating a new class of large genome edits. This brings scientists the ability to control these transposable elements, which in nature would happen at random and over thousands or millions of years.</p>
+<p>Spearhead&#8217;s technology fuses a transposable element directly to Cas9 or Cas12a (CRISPR&#8217;s molecular scissors), so that when CRISPR makes the cut, TAHITI can glue in new genetic cargo precisely into that break.</p>
+<p>&#8220;There are so many different things you can do when you have the ability to precisely move large pieces of DNA to where you want them,&#8221; says Bielski. &#8220;It&#8217;s everything from stacking traits to complete replacement of genes. [Those things] are not possible with the current toolbox.&#8221;</p>
+<p>For seed companies, this approach means a faster, more efficient way to engineer plants.</p>
+<p>&#8220;If a seed company wanted to engineer something today, they would have to have this enormous pipeline because the efficiency that they&#8217;re working at is below 1%,&#8221; claims Slotkin. &#8220;We can do that much more efficiently, and [the company] can find their desired rearrangement much faster.&#8221;</p>
+<p>Importantly, TAHITI can work with both transgenic applications (aka GMOs) and non-transgenic ones. The latter is a huge potential opportunity commercially, suggests Bielski, because it would enable a faster, cheaper regulatory pathway for companies.</p>
+<p>&#8220;Instead of having an additional three years and $80 million to get a trait through deregulation, it&#8217;s going to be much faster,&#8221; claims Slotkin.</p>
+<h4><strong>&#8216;The most impactful tech&#8217; to come out of Danforth Center</strong></h4>
+<p>Spearhead Bio is currently in &#8220;active discussions&#8221; with partners at the moment, but is most heavily focused on meeting its technical milestones.</p>
+<p>&#8220;What we really want to do is create products for companies — traits — and so we&#8217;re working with them on, for example, the soybean transposable element,&#8221; says Slotkin.</p>
+<p>He adds that now the company is also focused on not just inserting DNA but also doing replacements.</p>
+<p>&#8220;At the same time we&#8217;re deleting something, we&#8217;re adding something at the same location. So the net balance there is that we&#8217;re performing replacements without introducing foreign DNA in a crop genome like soybean with industry partners.&#8221;</p>
+<p><a href="https://www.biogeneratorventures.com/">BioGenerator Ventures</a> and <a href="https://danforthtechnology.com/">Danforth Technology Company</a> (DTC) led the seed round with participation from <a href="https://altss.com/profile/qrm-capital">QRM Capital</a>, <a href="https://gritrd.com/">Grit Road Partners</a>, St. Louis Port Authority Helix Fund, <a href="https://sdhcap.com/">SDH Capital</a>, and other investors.</p>
+<p>Spearhead Bio is the third company to come out of DTC and possibly, according to DTC CEO Tom Laurita, &#8220;the most impactful new technology to come out of the Danforth Center.”</p>
+<p>The success of the round wasn&#8217;t immediate, says Bielski, but Spearhead&#8217;s alignment with Danforth Center helped &#8220;check a lot of investor boxes.&#8221;</p>
+<p>&#8220;The ability to [articulate] to people that we weren&#8217;t just another CRISPR company, and getting people to understand how disruptive this could be, made the fundraising a little more straightforward.</p>
+<p>&#8220;It definitely took a while, but we realized once people did their diligence and understood what we were about, we wound up being oversubscribed at the end.&#8221;</p>
+<p>The post <a href="https://agfundernews.com/exclusive-spearhead-bio-lands-oversubscribed-seed-round-for-faster-more-precise-gene-editing-tech">Exclusive: Spearhead Bio lands oversubscribed seed round for faster, more precise gene editing tech</a> appeared first on <a href="https://agfundernews.com">AgFunderNews</a>.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>https://agfundernews.com/exclusive-spearhead-bio-lands-oversubscribed-seed-round-for-faster-more-precise-gene-editing-tech/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+		
+	</item>
+<item>
+		<title>Impossible Foods makes UK retail debut at Tesco… without its flagship heme protein</title>
+		<link>https://agfundernews.com/impossible-makes-uk-retail-debut-at-tesco-without-its-flagship-heme-protein</link>
+					<comments>https://agfundernews.com/impossible-makes-uk-retail-debut-at-tesco-without-its-flagship-heme-protein#respond</comments>
+		
+		<dc:creator><![CDATA[Elaine Watson]]></dc:creator>
+		<pubDate>Wed, 23 Sep 2026 08:00:32 +0000</pubDate>
+				<category><![CDATA[Alternative protein]]></category>
+		<category><![CDATA[EMEA]]></category>
+		<category><![CDATA[FoodTech]]></category>
+		<guid isPermaLink="false">https://agfundernews.com/?p=57701</guid>
+
+					<description><![CDATA[<p>The products are manufactured at a new co-manufacturing facility in the Netherlands.</p>
+<p>The post <a href="https://agfundernews.com/impossible-makes-uk-retail-debut-at-tesco-without-its-flagship-heme-protein">Impossible Foods makes UK retail debut at Tesco… without its flagship heme protein</a> appeared first on <a href="https://agfundernews.com">AgFunderNews</a>.</p>
+]]></description>
+										<content:encoded><![CDATA[<p><a href="https://impossiblefoods.com/">Impossible Foods</a> is making its long-awaited debut in UK supermarkets in collaboration with Tesco this week. The products will not, for the moment, feature its signature heme protein, which still awaits regulatory approval in the UK and the EU.</p>
+<p>The firm, <a href="https://www.foodnavigator.com/Article/2022/05/18/Impossible-Foods-makes-UK-debut-without-its-flagship-heme-ingredient">which launched in the UK foodservice market in 2022</a> and made its debut in select restaurants and retailers in the Netherlands earlier this year, is introducing four products to freezer cabinets in selected Tesco stores: burger patties, beef kofta, smoky chipotle chicken pieces and spicy chicken fries.</p>
+<p>They do not contain its ‘heme’ ingredient made from genetically engineered yeast, which imparts a meaty flavor and color to the beef and pork products it sells in the US market and was originally seen as a key differentiator in the alt-meat market.</p>
+<p>An Impossible Foods spokesperson told us: “These products are some of our first to be produced at our new co-manufacturing facility in the Netherlands, demonstrating our investment in the broader European market.”</p>
+<h4><strong>The regulatory pathway in the UK and EU</strong></h4>
+<p>Regarding heme, added the spokesperson, “We&#8217;re continuing the process for regulatory approval in the UK though the process itself has changed somewhat. Earlier this year, the UK and EU agreed to pursue a <a href="https://www.gov.uk/government/news/uk-eu-sps-agreement-information-for-businesses">new Sanitary and Phyto Sanitary (SPS) agreement</a>, which would simplify trade and include the UK&#8217;s acceptance of all EU approvals of food additives.</p>
+<p>“Therefore, the concurrent UK Food Standards Agency (FSA) approval process we were engaged in has been suspended. We&#8217;re pleased with this development and look forward to continuing the regulatory approval process in the EU, which would automatically grant approval in the UK under the proposed agreement.”</p>
+<p>As far as <a href="https://agfundernews.com/impossible-foods-heme-protein-is-safe-says-efsa-gmo-panel">EU approval</a> goes, he said, “We&#8217;re still awaiting the formal green light. We remain confident they will arrive at conclusions similar to those of regulators in the US, Singapore, Canada, Australia, and New Zealand, where our products have received all necessary approvals to be sold.”</p>
+<p>In the meantime, he added, “We&#8217;ve deployed our unparalleled expertise in plant-based recipe development to create an all-new patty for the UK and Europe that leverages methods and ingredients other than heme to achieve the mouthwateringly meaty taste that consumers expect from our brand.”</p>
+<p>According to the company, UK sales “have more than doubled in the last twelve months and we&#8217;re on menu at popular restaurants like Greene King, Brew Dog, Gordon Ramsay Street Burger, Meatliquor, and Punch Taverns.”</p>
+<h4><strong>Building a global footprint</strong></h4>
+<p>Founded by Stanford biochemist Dr Pat Brown in 2011, Impossible Foods entered the US foodservice market in 2016, struck a high-profile deal with Burger King, and made an aggressive push into retail in 2020. It products are now sold in stores and foodservice locations across the US, Canada, Hong Kong, Singapore, Australia, New Zealand, the United Arab Emirates, the UK and the Netherlands.</p>
+<p>As a private company, Impossible Foods has not faced the same level of public scrutiny as <a href="https://agfundernews.com/beyond-meat-leans-into-europe-canada-as-us-sales-continue-to-slide">beleaguered rival Beyond Meat</a>. But given the jaw-dropping sums (<a href="https://impossiblefoods.com/media/news-releases/impossible-foods-closes-usd500m-in-new-funding-amid-record-growth">almost $2 billion</a>) pumped into the startup over the past 15 years, the pressure to deliver a return for investors is intense.</p>
+<p>The firm, which was led by former Chobani exec Peter McGuinness from April 2022 until January 2026, is now run by chief legal and operating officer Jason Gao, chief demand officer Meredith Madden, and chief supply officer Robert Haas.</p>
+<p>Industry sources we spoke to earlier this year said McGuinness had made significant strides to move Impossible Foods from a foodtech company into a tech-enabled CPG company. <a href="https://www.foodnavigator-usa.com/Article/2020/10/20/Impossible-Foods-seeks-to-double-size-of-R-D-team-provides-glimpse-of-work-on-Impossible-Milk-and-egg-alternatives/">R&amp;D projects on seafood, and eggs, and milk</a> were put on the backburner to focus on expanding options in beef, chicken and pork; the firm introduced new bold red packaging, and focused messaging on taste and health rather than displacing animal agriculture.</p>
+<p>However, it has faced increasing headwinds with <a href="https://agfundernews.com/plant-based-meat-by-numbers-grim-reading-for-the-us-retail-market-brighter-spots-in-foodservice-and-globally">weakening category sales at retail</a>, <a href="https://agfundernews.com/critics-are-poisoning-plant-based-well-says-beyond-meat-ceo-as-firm-ditches-jerky-plans-price-increases-in-us">negative</a> media and investor sentiment, and inflationary pressures over the past couple of years.</p>
+<p>One alt protein industry source told us: “I think he did a great job at trying to steer the ship in arguably a very difficult market. But recall Impossible raised tons of capital like Beyond at nose bleed valuations, none of which will ever hold water as a public company [that once exposed to public-market scrutiny, valuations would compress sharply].”</p>
+<p>Another source told us: “No one is doing well in this category, or not well enough to make ends meet with the massive expectations and expense structure design to be a billions of dollars company.”</p>
+<p><strong>Further reading:</strong></p>
+<p><a href="https://agfundernews.com/peter-mcguinness-stepping-down-as-ceo-at-impossible-foods">Peter McGuinness stepping down as CEO at Impossible Foods</a></p>
+<p><a href="https://agfundernews.com/beyond-meat-leans-into-europe-canada-as-us-sales-continue-to-slide">Beyond Meat leans into Europe, Canada, as US sales continue to slide</a></p>
+<p><a href="https://agfundernews.com/quorn-foods-uk-retail-recovery-gathers-pace-but-foodservice-likely-to-get-worse-before-it-gets-better">Quorn Foods’ UK retail recovery gathers pace, but foodservice ‘likely to get worse before it gets better’</a></p>
+<p>The post <a href="https://agfundernews.com/impossible-makes-uk-retail-debut-at-tesco-without-its-flagship-heme-protein">Impossible Foods makes UK retail debut at Tesco… without its flagship heme protein</a> appeared first on <a href="https://agfundernews.com">AgFunderNews</a>.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>https://agfundernews.com/impossible-makes-uk-retail-debut-at-tesco-without-its-flagship-heme-protein/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+		
+	</item>
+<item>
+		<title>AgriFood Signals: Corteva &#038; Inari settle, Starbucks scales back green goals, countries rethink climate reporting</title>
+		<link>https://agfundernews.com/agrifood-signals-corteva-inari-settle-starbucks-scales-back-green-goals-countries-rethink-climate-reporting</link>
+					<comments>https://agfundernews.com/agrifood-signals-corteva-inari-settle-starbucks-scales-back-green-goals-countries-rethink-climate-reporting#respond</comments>
+		
+		<dc:creator><![CDATA[Jennifer Marston]]></dc:creator>
+		<pubDate>Thu, 01 Oct 2026 19:04:39 +0000</pubDate>
+				<category><![CDATA[Agtech]]></category>
+		<category><![CDATA[FoodTech]]></category>
+		<guid isPermaLink="false">https://agfundernews.com/?p=57976</guid>
+
+					<description><![CDATA[<p>Plus: Hatch Blue eyes Japan</p>
+<p>The post <a href="https://agfundernews.com/agrifood-signals-corteva-inari-settle-starbucks-scales-back-green-goals-countries-rethink-climate-reporting">AgriFood Signals: Corteva &#038; Inari settle, Starbucks scales back green goals, countries rethink climate reporting</a> appeared first on <a href="https://agfundernews.com">AgFunderNews</a>.</p>
+]]></description>
+										<content:encoded><![CDATA[<p><em>AgFunderNews</em> rounds up the most important fundings, mergers, acquisitions, closures, and industry buzz in agtech and foodtech.</p>
+<h4><strong>Funding news</strong></h4>
+<p>🇺🇸 <a href="https://agfundernews.com/exclusive-arkeabio-raises-15m-for-livestock-methane-tech-cuts-headcount">ArkeaBio raises $15m for livestock methane tech, cuts headcount</a> <em>AgFunderNews</em></p>
+<p>🇨🇭 <a href="https://tech.eu/2026/09/29/cotierra-raises-3m-to-scale-decentralised-biochar-across-tropical-agriculture/">Cotierra raises $3M to scale decentralised biochar across tropical agriculture</a> <em>Tech.eu</em></p>
+<p>🇺🇾 <a href="https://latamlist.com/ordereat-raises-2m-to-expand-school-cafeteria-platform/">OrderEAT raises $2M to expand school cafeteria platform</a> <em>Latamlist</em></p>
+<p>🇺🇸 <a href="https://www.usedaro.com/post/daro-raises-2-5-million-to-scale-disease-surveillance-across-the-u-s-swine-industry">DARO raises $2.5 million to scale disease surveillance across the U.S. swine industry</a> <em>Daro</em></p>
+<p>🇧🇪 <a href="https://www.proteinproductiontechnology.com/post/those-vegan-cowboys-lands-eu1-2-million-backing-for-cow-free-sports-nutrition">Those Vegan Cowboys lands €1.2 million backing for cow-free sports nutrition</a> <em>Protein Production Technology</em></p>
+<p>🇨🇭 <a href="https://agfundernews.com/food-founders-studio-secures-new-funding-to-build-its-next-two-foodtech-ventures">FOOD FOUNDERS Studio secures new funding to build its next two foodtech ventures</a> <em>AgFunderNews</em></p>
+<figure id="attachment_57897" aria-describedby="caption-attachment-57897" style="width: 1920px" class="wp-caption alignright"><a href="https://agfundernews.com/wp-content/uploads/2026/09/Lotte-and-Ying.jpg"><img loading="lazy" decoding="async" class="size-full wp-image-57897" src="https://agfundernews.com/wp-content/uploads/2026/09/Lotte-and-Ying.jpg" alt="" width="1920" height="1080" srcset="https://agfundernews.com/wp-content/uploads/2026/09/Lotte-and-Ying.jpg 1920w, https://agfundernews.com/wp-content/uploads/2026/09/Lotte-and-Ying-300x169.jpg 300w, https://agfundernews.com/wp-content/uploads/2026/09/Lotte-and-Ying-1024x576.jpg 1024w, https://agfundernews.com/wp-content/uploads/2026/09/Lotte-and-Ying-768x432.jpg 768w, https://agfundernews.com/wp-content/uploads/2026/09/Lotte-and-Ying-1536x864.jpg 1536w" sizes="auto, (max-width: 1920px) 100vw, 1920px" /></a><figcaption id="caption-attachment-57897" class="wp-caption-text">Lotte Westerhof, CSO at Hudson River Biotechnology, with Plantik cofounder Ying Shao. Image credit: Plantik Biosciences</figcaption></figure>
+<h4><strong>M&amp;A, IPOs &amp; partnerships</strong></h4>
+<p>🇺🇸 🇬🇧 <a href="https://biomassmagazine.com/articles/generate-capital-sells-biogas-assets-to-vanguard-renewables-pinta-energy">Generate Capital sells biogas assets to Vanguard Renewables, Pinta Energy</a> <em>Biomass Magazine</em></p>
+<p>🇺🇸 <a href="https://agfundernews.com/fbn-and-google-team-up-to-give-farm-ai-the-context-its-been-missing">FBN and Google team up to give farm AI the context it’s been missing</a> <em>AgFunderNews</em></p>
+<p>🇮🇪 🇯🇵 <a href="https://www.salmonbusiness.com/hatch-blue-partners-with-umito-on-japan-aquatech-initiative/">Hatch Blue: partners with UMITO on Japan aquatech initiative</a> <em>Salmon Business</em></p>
+<p>🇫🇷 🇳🇱 <a href="https://agfundernews.com/exclusive-plantik-and-hudson-river-biotechnology-team-up-to-de-risk-heat-tolerant-strawberries">Plantik and Hudson River Biotechnology team up to de-risk heat-tolerant strawberries</a> <em>AgFunderNews</em></p>
+<p>🇺🇸 <a href="https://www.businesswire.com/news/home/20261001362594/en/Viome-Acquires-Slaria-Bi-to-Launch-Clinically-Validated-Consumer-Synbiotics-and-Medical-Foods">Viome acquires Sōlaria Biō to launch clinically validated consumer synbiotics and medical foods</a> <em>Business Wire</em></p>
+<p>🇩🇪 <a href="https://app.dealroom.co/news/feed/greenforce-acquires-neggst-s-plant-based-egg-tech-ahead-of-livekindly-merger">Greenforce acquires Neggst&#8217;s plant-based egg tech ahead of LIVEKINDLY merger</a> <em>Dealroom</em></p>
+<h4><strong>People moves</strong></h4>
+<p>🇺🇸 <a href="https://www.fooddive.com/news/General-mills-ceo-leadership-change-cereal/831741/">Cheerios maker General Mills names company veteran as CEO</a> <em>Food Dive</em></p>
+<p>🇺🇸 <a href="https://www.linkedin.com/posts/laurenmanningar_thrilled-to-have-sidnee-on-board-as-we-grow-share-7511449325059657729-jL3r/">Sidnee Rose Hill joins Food System 6 as Director of Programs</a> <em>LinkedIn</em></p>
+<figure id="attachment_32742" aria-describedby="caption-attachment-32742" style="width: 1000px" class="wp-caption aligncenter"><a href="https://agfundernews.com/wp-content/uploads/2022/10/Untitled-design-252.png"><img loading="lazy" decoding="async" class="size-full wp-image-32742" src="https://agfundernews.com/wp-content/uploads/2022/10/Untitled-design-252.png" alt="" width="1000" height="750" srcset="https://agfundernews.com/wp-content/uploads/2022/10/Untitled-design-252.png 1000w, https://agfundernews.com/wp-content/uploads/2022/10/Untitled-design-252-300x225.png 300w" sizes="auto, (max-width: 1000px) 100vw, 1000px" /></a><figcaption id="caption-attachment-32742" class="wp-caption-text">Inside an Inari greenhouse. Image credit: Inari</figcaption></figure>
+<h4><strong>Other news</strong></h4>
+<p>🇺🇸 <a href="https://www.reuters.com/legal/legalindustry/corteva-inari-settle-us-dispute-over-seed-patents-during-trial-2026-09-28/">Corteva, Inari settle US dispute over seed patents during trial</a> <em>Reuters</em></p>
+<p>🇳🇱 <a href="https://esgnews.com/gri-to-launch-new-sustainability-reporting-standard-for-food-and-beverage-companies/">GRI to launch new sustainability reporting standard for food and beverage companies</a> <em>ESG News</em></p>
+<p>🇺🇸 <a href="https://www.ft.com/content/f537987f-e88e-4f60-93bf-74e838235b2d">Starbucks retreats from green goals amid $2bn cost drive</a> <em>FT</em></p>
+<p>🇨🇴 <a href="https://carbonherald.com/colombia-moves-to-revoke-carbon-market-rules-issued-under-former-president-petro/">Colombia moves to revoke carbon market rules issued under former president Petro</a> <em>Carbon Herald</em></p>
+<p>🇫🇷 <a href="https://vegconomist.com/fermentation/danone-michelins-20m-fermentation-scale-up-site-opens-outside-projects-france/">Danone and Michelin’s €20m fermentation scale-up site opens to outside projects in France</a> <em>Vegconomist</em></p>
+<p>🇺🇸 <a href="https://www.dtnpf.com/agriculture/web/ag/news/article/2026/09/29/farmers-others-sue-usda-reap-solar">Farmers, others sue USDA over REAP solar restrictions, funding losses</a> <em>DTN Progressive Farmer</em></p>
+<p>🇺🇸 <a href="https://agfundernews.com/exclusive-believer-meats-creditors-mull-credit-bid-after-upside-foods-exit">Believer Meats creditors weigh bid for US plant after UPSIDE Foods exit</a> <em>AgFunderNews</em></p>
+<p>🇬🇧 <a href="https://www.esgtoday.com/uks-fca-drops-plans-for-mandatory-ifrs-based-climate-reporting/">UK’s FCA drops plans for mandatory IFRS-based climate reporting</a> <em>ESG Today</em></p>
+<p>The post <a href="https://agfundernews.com/agrifood-signals-corteva-inari-settle-starbucks-scales-back-green-goals-countries-rethink-climate-reporting">AgriFood Signals: Corteva &#038; Inari settle, Starbucks scales back green goals, countries rethink climate reporting</a> appeared first on <a href="https://agfundernews.com">AgFunderNews</a>.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>https://agfundernews.com/agrifood-signals-corteva-inari-settle-starbucks-scales-back-green-goals-countries-rethink-climate-reporting/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+		
+		<media:thumbnail url="https://agfundernews.com/wp-content/uploads/2026/09/Lotte-and-Ying-150x150.jpg" />
+		<media:content url="https://agfundernews.com/wp-content/uploads/2026/09/Lotte-and-Ying.jpg" medium="image">
+			<media:title type="html">Lotte and Ying</media:title>
+			<media:description type="html">Lotte Westerhof, COS of Hudson River Biotechnology, with Plantik cofounder Ying Shao. Image credit: Plantik Biosciences</media:description>
+			<media:thumbnail url="https://agfundernews.com/wp-content/uploads/2026/09/Lotte-and-Ying-150x150.jpg" />
+		</media:content>
+		<media:content url="https://agfundernews.com/wp-content/uploads/2022/10/Untitled-design-252.png" medium="image">
+			<media:title type="html">Untitled design-252</media:title>
+			<media:description type="html">Inside an Inari greenhouse. Image credit: Inari</media:description>
+			<media:thumbnail url="https://agfundernews.com/wp-content/uploads/2022/10/Untitled-design-252-150x150.png" />
+		</media:content>
+	</item>
+<item>
+		<title>Exclusive: Lilac Agriculture raises $2.3m to tackle inoculants’ ‘black box’ problem</title>
+		<link>https://agfundernews.com/exclusive-lilac-agriculture-raises-2-3m-to-tackle-inoculants-black-box-problem</link>
+					<comments>https://agfundernews.com/exclusive-lilac-agriculture-raises-2-3m-to-tackle-inoculants-black-box-problem#respond</comments>
+		
+		<dc:creator><![CDATA[Elaine Watson]]></dc:creator>
+		<pubDate>Tue, 22 Sep 2026 12:00:32 +0000</pubDate>
+				<category><![CDATA[Agtech]]></category>
+		<category><![CDATA[Biomanufacturing & biologicals]]></category>
+		<category><![CDATA[Deeptech]]></category>
+		<category><![CDATA[Precision agriculture]]></category>
+		<category><![CDATA[Startups & funding]]></category>
+		<category><![CDATA[US & Canada]]></category>
+		<guid isPermaLink="false">https://agfundernews.com/?p=57642</guid>
+
+					<description><![CDATA[<p>The funding will help Lilac Ag advance a platform built to optimize two traits at once: nitrogen-fixing efficiency and competitiveness.</p>
+<p>The post <a href="https://agfundernews.com/exclusive-lilac-agriculture-raises-2-3m-to-tackle-inoculants-black-box-problem">Exclusive: Lilac Agriculture raises $2.3m to tackle inoculants’ ‘black box’ problem</a> appeared first on <a href="https://agfundernews.com">AgFunderNews</a>.</p>
+]]></description>
+										<content:encoded><![CDATA[<p><a href="https://www.lilac.ag/">Lilac Agriculture</a> has raised an oversubscribed $2.3 million seed round to shine a light on the black box of rhizobial inoculants with next-gen products that can help growers improve yields in a wide variety of soils.</p>
+<p>The round—led by <a href="https://innova.ag/">Innova</a> and supported by <a class="decorated-link" href="https://www.701fund.com/?utm_source=chatgpt.com" target="_new" rel="noopener" data-start="52" data-end="88">701 Fund</a>, <a class="decorated-link" href="https://agventuresalliance.com/?utm_source=chatgpt.com" target="_new" rel="noopener" data-start="90" data-end="145">Ag Ventures Alliance</a>, <a class="decorated-link" href="https://evergreeninno.org/?utm_source=chatgpt.com" target="_new" rel="noopener" data-start="188" data-end="247">Evergreen Climate Innovations</a>, <a class="decorated-link" href="https://www.commerce.nd.gov/economic-development-finance/development-fund/north-dakota-development-fund?utm_source=chatgpt.com" target="_new" rel="noopener" data-start="249" data-end="385">North Dakota Development Fund</a>, <a class="decorated-link" href="https://www.pathwayventuresndsu.com/?utm_source=chatgpt.com" target="_new" rel="noopener" data-start="387" data-end="443">Pathway Ventures</a>, <a href="https://www.tallgrass.vc/">Tall Grass Ventures</a> and others—will advance a platform built to optimize two traits at once: nitrogen-fixing efficiency and competitiveness.</p>
+<h4><strong>Why it matters</strong></h4>
+<p>Inoculating pulse crops with rhizobia is standard practice across major growing regions. The bacteria colonize plant roots and form nodules, where they fix atmospheric nitrogen into a form the plant can use.</p>
+<p>The problem, says Lilac CEO Natalie DiNicola, is that native soil bacteria frequently outcompete the inoculant, leaving growers paying for something that may not be achieving anything. Put another way, it doesn’t matter how good inoculants are at fixing nitrogen if they don’t have a decent shot at colonizing the target crop.</p>
+<p>Lilac Agriculture—founded in 2024 by North Dakota State University (NDSU) assistant professor Dr. Barney Geddes, agtech veterans Matt Crisp and Tom Snipes, and NDSU biotechnology graduate Wyatt Warkenthien—is on a mission to change that.</p>
+<p>“He felt like inoculants were sort of a black box; there wasn&#8217;t a lot of transparency about what you were actually buying and if it was working,&#8221; says DiNicola. &#8220;He would dig up the roots, plate out the nodules, and the bacteria in the nodule was not the bacteria that was in the commercial product farmers had purchased.”</p>
+<p>Lilac&#8217;s platform starts by screening the diversity already present in NDSU&#8217;s collection, looking for nitrogen fixation and competitiveness.</p>
+<p>Nitrogen-fixing performance can be screened under controlled conditions in which nitrogen is limiting. Competitiveness is assessed using molecular markers that enable the team to determine which strains have penetrated roots and ultimately occupied nodules.</p>
+<p style="padding-left: 40px;"> “<em>Having grown up as a farmer, the black-box claims in this category always frustrated me &#8211; you put an inoculant in the ground and just have to trust that it works. As a scientist, I want to fix that. There’s a huge amount of untapped variation in rhizobial bacteria that’s gone largely unexplored since most commercial strains were selected decades ago. </em><em>Adapting strains to the crop and soil they’ll actually encounter, and measuring nodulation that happens in the field, is how we aim to deliver the efficacy and consistency growers are asking for</em>.” <strong>Barney Geddes, PhD, CSO, Lilac Agriculture</strong></p>
+<h4><strong>Selecting first, then evolving</strong></h4>
+<p>The firm’s first commercial strain, PL11, emerged from the first stage of Lilac&#8217;s platform: selecting the strongest naturally occurring strain from a broader pool. In the second phase, which deploys “guided evolution,” Lilac applies selection pressures in the lab, takes advantage of microbes&#8217; rapid reproduction rates, and repeatedly selects better-performing organisms.</p>
+<p>“The great thing about microbes is that they multiply really fast, so you can iterate and test very quickly,” says DiNicola.</p>
+<p>For nitrogen fixation, for example, strains can be placed in nitrogen-deficient conditions and the strongest performers selected over successive cycles. The same broad approach could ultimately be applied to traits such as competitiveness or drought tolerance.</p>
+<p>In effect, Lilac Agriculture is applying a plant-breeding philosophy to microbes, an approach that has not historically been applied to the inoculant business, says DiNicola.</p>
+<p>Legacy suppliers, she says, have made significant advances in areas such as formulation and shelf-life, but less work has been devoted to improving the underlying biology of strains, many of which originate from older culture collections.</p>
+<p>“Most products use rhizobium strains identified decades ago from a USDA collection. There&#8217;s a lot of diversity within these microbes that essentially hasn&#8217;t been fully tapped the same way that we tapped, the genomic differences in seeds, for example.”</p>
+<figure id="attachment_57719" aria-describedby="caption-attachment-57719" style="width: 1600px" class="wp-caption aligncenter"><img loading="lazy" decoding="async" class="size-full wp-image-57719" src="https://agfundernews.com/wp-content/uploads/2026/09/Lilac-Agriculture-roots.jpg" alt="Image credit: Lilac Agriculture" width="1600" height="1068" srcset="https://agfundernews.com/wp-content/uploads/2026/09/Lilac-Agriculture-roots.jpg 1600w, https://agfundernews.com/wp-content/uploads/2026/09/Lilac-Agriculture-roots-300x200.jpg 300w, https://agfundernews.com/wp-content/uploads/2026/09/Lilac-Agriculture-roots-1024x684.jpg 1024w, https://agfundernews.com/wp-content/uploads/2026/09/Lilac-Agriculture-roots-768x513.jpg 768w, https://agfundernews.com/wp-content/uploads/2026/09/Lilac-Agriculture-roots-1536x1025.jpg 1536w" sizes="auto, (max-width: 1600px) 100vw, 1600px" /><figcaption id="caption-attachment-57719" class="wp-caption-text">Image credit: Lilac Agriculture</figcaption></figure>
+<h4><strong>Gene editing further down the roadmap</strong></h4>
+<p>A third phase could involve gene editing, although DiNicola stresses that microbial gene editing is challenging and that the company needs to better understand which genetic changes are associated with desirable phenotypes. It is now rapidly generating this kind of data through its screening and guided evolution work.</p>
+<p>For now, however, PL11 is a naturally selected strain rather than an evolved or gene-edited organism.</p>
+<h4><strong>6% yield lift over commercial inoculant in early trials</strong></h4>
+<p>Ultimately, the test is whether better nodule occupancy translates into additional yield, which Lilac has already shown, claims DiNicola.</p>
+<p>Field trials conducted across multiple sites and soil types have shown an aggregate 11% yield increase with PL11 compared with no inoculant and a 6% increase versus an existing commercial inoculant, she says.</p>
+<p>While it is notoriously hard to attribute gains to a single intervention given the multiplicity of factors that can impact yield, Lilac can at least provide growers with transparency they have not enjoyed before, she observes. For a start, she says, &#8220;We&#8217;re actually checking that our product is in the nodules of the plant.”</p>
+<figure id="attachment_57698" aria-describedby="caption-attachment-57698" style="width: 1180px" class="wp-caption aligncenter"><img loading="lazy" decoding="async" class="size-full wp-image-57698" src="https://agfundernews.com/wp-content/uploads/2026/09/yellow-peas-iStock-Switlana.jpg" alt="yellow-peas-iStock-Switlana" width="1180" height="888" srcset="https://agfundernews.com/wp-content/uploads/2026/09/yellow-peas-iStock-Switlana.jpg 1180w, https://agfundernews.com/wp-content/uploads/2026/09/yellow-peas-iStock-Switlana-300x226.jpg 300w, https://agfundernews.com/wp-content/uploads/2026/09/yellow-peas-iStock-Switlana-1024x771.jpg 1024w, https://agfundernews.com/wp-content/uploads/2026/09/yellow-peas-iStock-Switlana-768x578.jpg 768w" sizes="auto, (max-width: 1180px) 100vw, 1180px" /><figcaption id="caption-attachment-57698" class="wp-caption-text">Lilac Agriculture is initially targeting pulse growers in the Northern Plains. Image credit: iStock-Switlana</figcaption></figure>
+<h4><strong>‘Almost like they have to buy it as insurance’</strong></h4>
+<p>Lilac Agriculture is initially targeting pulse growers in the Northern Plains, 90% of whom DiNicola estimates use inoculants.</p>
+<p>Grower conversations suggest many see inoculation as important but lack visibility into the return they are getting, she adds. “It&#8217;s almost like they have to buy it as an insurance.”</p>
+<p>Lilac’s first product—a shelf-stable powder with a six-month shelf life that can be applied using standard equipment—is priced competitively, she says. “We’re taking something they&#8217;re already using and making it better within that same price range, so they&#8217;re getting they&#8217;re getting more upside opportunity without additional risk.”</p>
+<p>PL11 was sold commercially on a small number of acres of peas and lentils this year, generating initial revenues. Lilac plans to expand pea and lentil acreage next season and introduce a dry bean product.</p>
+<p>The company is also preparing for registration in Canada, one of the world&#8217;s largest pea and lentil markets.</p>
+<h4><strong>From pulses to row crops</strong></h4>
+<p>Longer term, Lilac sees the platform extending beyond peas, lentils and beans.</p>
+<p>Soybeans offer a relatively straightforward next opportunity because they naturally form nitrogen-fixing nodules with bacteria, she says.</p>
+<p>Cereals such as corn do not have the same symbiotic relationship with microbes that naturally colonize plant roots and form nodules, acknowledges DiNicola. However, Lilac’s platform remains applicable.  “We’re absolutely intending to move into row crops.”</p>
+<h4><strong>$5m total capital target to profitability</strong></h4>
+<p>The new financing round comes amid a tough funding environment for agrifoodtech startups, but Lilac&#8217;s relatively capital-light model helped attract investors, she says. The firm had originally targeted $1.5 million but ultimately increased the round to $2.3 million following investor interest.</p>
+<p>Lilac is operating with a target of reaching profitability with around $5 million in total capital, adds DiNicola, who has more than 20 years&#8217; experience in the agrifood industry, including senior roles at Monsanto and Benson Hill.</p>
+<p>“I&#8217;m a scientist by training, and I love really complex, hairy science. But in this environment, what we need is a very practical approach. We&#8217;re layering advanced technology on top of something farmers already use and getting into the market quickly.”</p>
+<p>The new funding will support expanded field trials, further development of Lilac&#8217;s R&amp;D platform, wider commercialization of PL11 and preparations to enter Canada.</p>
+<p><strong> Further reading:</strong></p>
+<p><a href="https://agfundernews.com/can-microbes-supply-half-a-crops-nitrogen-pivot-bio-thinks-so">Can microbes supply half a crop’s nitrogen? Pivot Bio thinks so</a></p>
+<p><a href="https://agfundernews.com/switch-bioworks-tests-switchable-nitrogen-fixing-microbes-in-corn-for-fertilizer">Switch Bioworks tests ‘switchable’ nitrogen-fixing microbes in corn for fertilizer</a></p>
+<p><a href="https://agfundernews.com/mafix-raises-5-4m-to-activate-silicate-rock-into-climate-smart-fertilizer">Mafix raises $5.4m to activate silicate rock into climate-smart fertilizer</a></p>
+<p><a href="https://agfundernews.com/stenon-bags-20-5m-to-combat-fertilizer-price-hikes-with-better-nitrogen-management">Stenon bags $20.5m to combat fertilizer price hikes with better nitrogen management</a></p>
+<p>The post <a href="https://agfundernews.com/exclusive-lilac-agriculture-raises-2-3m-to-tackle-inoculants-black-box-problem">Exclusive: Lilac Agriculture raises $2.3m to tackle inoculants’ ‘black box’ problem</a> appeared first on <a href="https://agfundernews.com">AgFunderNews</a>.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>https://agfundernews.com/exclusive-lilac-agriculture-raises-2-3m-to-tackle-inoculants-black-box-problem/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+		
+		<media:thumbnail url="https://agfundernews.com/wp-content/uploads/2026/09/Lilac-Agriculture-roots-150x150.jpg" />
+		<media:content url="https://agfundernews.com/wp-content/uploads/2026/09/Lilac-Agriculture-roots.jpg" medium="image">
+			<media:title type="html">Lilac Agriculture roots</media:title>
+			<media:description type="html">Image credit: Lilac Agriculture</media:description>
+			<media:thumbnail url="https://agfundernews.com/wp-content/uploads/2026/09/Lilac-Agriculture-roots-150x150.jpg" />
+		</media:content>
+		<media:content url="https://agfundernews.com/wp-content/uploads/2026/09/yellow-peas-iStock-Switlana.jpg" medium="image">
+			<media:title type="html">yellow-peas-iStock-Switlana</media:title>
+			<media:description type="html">Lilac Agriculture is initially targeting pulse growers in the Northern Plains. Image credit: iStock-Switlana</media:description>
+			<media:thumbnail url="https://agfundernews.com/wp-content/uploads/2026/09/yellow-peas-iStock-Switlana-150x150.jpg" />
+		</media:content>
+	</item>
+</channel>
+</rss>
