@@ -1,6 +1,6 @@
 "use client";
 
-// Ported from the kit's project-management/components/reminders.tsx: the reminders are the
+// Ported from the kit's project-management/components/reminders.tsx (v2.0.0): the reminders are the
 // open tasks that are overdue or due in the next week. The check marks a task done.
 // The "Due this week" card above carries the counts; this card shows the tasks themselves.
 
@@ -51,7 +51,7 @@ export function Reminders({
   const rest = reminders.length - SHOWN;
 
   return (
-    <Card>
+    <Card className="xl:col-span-2">
       <CardHeader>
         <CardTitle>Next up</CardTitle>
         <CardDescription>Most urgent first. Tick a task to mark it done.</CardDescription>
@@ -70,48 +70,42 @@ export function Reminders({
         ) : (
           <div className="grid gap-4 lg:grid-cols-3">
             {reminders.slice(0, SHOWN).map(({ task, level }) => (
-              <Card key={task.id}>
-                <CardHeader>
-                  <CardTitle className="flex items-center text-base font-semibold">
-                    <span
-                      className={cn("me-2 inline-block size-2 rounded-full", {
-                        "bg-gray-400": level === "week",
-                        "bg-orange-400": level === "today",
-                        "bg-red-600": level === "overdue"
-                      })}
-                    ></span>{" "}
-                    {LEVEL_LABEL[level]}
-                    <button
-                      type="button"
-                      onClick={() => onDone(task)}
-                      className="ms-auto me-2 rounded-full"
-                      aria-label={`Mark "${task.title}" done`}
-                    >
-                      <CircleCheck className="size-4 text-gray-400 hover:text-green-600" />
-                    </button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div
-                    className={cn(
-                      "text-muted-foreground text-sm",
-                      level === "overdue" && "text-red-600"
-                    )}
-                  >
-                    {task.dueDate ? formatDue(task.dueDate) : null}
-                  </div>
+              <div key={task.id} className="space-y-3 rounded-lg border p-4">
+                <div className="flex items-center text-sm font-semibold">
+                  <span
+                    className={cn("me-2 size-2 rounded-full", {
+                      "bg-gray-400": level === "week",
+                      "bg-orange-400": level === "today",
+                      "bg-red-600": level === "overdue"
+                    })}
+                  ></span>
+                  {LEVEL_LABEL[level]}
                   <button
                     type="button"
-                    onClick={() => onOpen(task)}
-                    className="text-left text-sm hover:underline"
+                    onClick={() => onDone(task)}
+                    className="ms-auto rounded-full"
+                    aria-label={`Mark "${task.title}" done`}
                   >
-                    {task.title}
+                    <CircleCheck className="size-4 text-gray-400 hover:text-green-600" />
                   </button>
-                  <div>
-                    <Badge variant="outline">{task.projectName ?? "No project"}</Badge>
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
+                <div
+                  className={cn(
+                    "text-muted-foreground text-sm",
+                    level === "overdue" && "text-red-600"
+                  )}
+                >
+                  {task.dueDate ? formatDue(task.dueDate) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onOpen(task)}
+                  className="block text-left text-sm hover:underline"
+                >
+                  {task.title}
+                </button>
+                <Badge variant="outline">{task.projectName ?? "No project"}</Badge>
+              </div>
             ))}
           </div>
         )}

@@ -25,7 +25,9 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
+import { cn } from "@/lib/utils";
 import type { ActivityPoint } from "@/lib/project-stats";
 
 // Ported from the kit's project-management/components/chart-project-overview.tsx: tasks added
@@ -77,17 +79,24 @@ export function ChartProjectOverview({ data: chartData }: { data: ActivityPoint[
           {added} added and {finished} finished in {RANGE_LABEL[timeRange]}
         </CardDescription>
         <CardAction>
-          <ToggleGroup
-            type="single"
-            value={timeRange}
-            onValueChange={(value) => value && setTimeRange(value)}
-            variant="outline"
-            className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
-          >
-            <ToggleGroupItem value="90d">Last 3 months</ToggleGroupItem>
-            <ToggleGroupItem value="30d">Last 30 days</ToggleGroupItem>
-            <ToggleGroupItem value="7d">Last 7 days</ToggleGroupItem>
-          </ToggleGroup>
+          <ButtonGroup className="hidden @[767px]/card:flex">
+            {[
+              { value: "90d", label: "Last 3 months" },
+              { value: "30d", label: "Last 30 days" },
+              { value: "7d", label: "Last 7 days" }
+            ].map((range) => (
+              <Button
+                key={range.value}
+                variant="outline"
+                size="sm"
+                aria-pressed={timeRange === range.value}
+                className={cn("px-4", timeRange === range.value && "bg-muted")}
+                onClick={() => setTimeRange(range.value)}
+              >
+                {range.label}
+              </Button>
+            ))}
+          </ButtonGroup>
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger
               className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"

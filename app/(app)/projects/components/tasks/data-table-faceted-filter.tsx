@@ -1,7 +1,5 @@
 import * as React from "react";
-import {
-  type LegacyColumn as Column
-} from "@tanstack/react-table/legacy";
+import { type LegacyColumn as Column } from "@tanstack/react-table/legacy";
 import type { RowData } from "@tanstack/react-table";
 import { Check, PlusCircle } from "lucide-react";
 
@@ -44,7 +42,7 @@ export function DataTableFacetedFilter<TData extends RowData, TValue>({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 border-dashed">
+        <Button variant="outline" size="sm" className="border-dashed">
           <PlusCircle />
           {title}
           {selectedValues?.size > 0 && (
@@ -65,7 +63,8 @@ export function DataTableFacetedFilter<TData extends RowData, TValue>({
                       <Badge
                         variant="secondary"
                         key={option.value}
-                        className="rounded-sm px-1 font-normal">
+                        className="rounded-sm px-1 font-normal"
+                      >
                         {option.label}
                       </Badge>
                     ))
@@ -94,14 +93,16 @@ export function DataTableFacetedFilter<TData extends RowData, TValue>({
                       }
                       const filterValues = Array.from(selectedValues);
                       column?.setFilterValue(filterValues.length ? filterValues : undefined);
-                    }}>
+                    }}
+                  >
                     <div
                       className={cn(
                         "flex size-4 items-center justify-center rounded-[4px] border",
                         isSelected
                           ? "bg-primary border-primary text-primary-foreground"
                           : "border-input [&_svg]:invisible"
-                      )}>
+                      )}
+                    >
                       <Check className="text-primary-foreground size-3.5" />
                     </div>
                     {option.icon && <option.icon className="text-muted-foreground size-4" />}
@@ -121,7 +122,8 @@ export function DataTableFacetedFilter<TData extends RowData, TValue>({
                 <CommandGroup>
                   <CommandItem
                     onSelect={() => column?.setFilterValue(undefined)}
-                    className="justify-center text-center">
+                    className="justify-center text-center"
+                  >
                     Clear filters
                   </CommandItem>
                 </CommandGroup>

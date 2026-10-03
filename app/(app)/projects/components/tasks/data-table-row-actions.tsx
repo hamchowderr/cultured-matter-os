@@ -34,7 +34,7 @@ export function DataTableRowActions({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="data-[state=open]:bg-muted size-8">
+        <Button variant="ghost" size="icon-sm" className="data-[state=open]:bg-muted">
           <MoreHorizontal />
           <span className="sr-only">Open menu</span>
         </Button>
