@@ -31,6 +31,7 @@ import {
   starCompany
 } from "@/actions/server";
 import type { Company } from "@/actions/schemas";
+import { ListLink, ListRegion } from "@/components/layout/list-transition";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -171,69 +172,71 @@ export function RadarList({
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Companies</CardTitle>
-          {/* The tab already shows the unfiltered count, so the total appears only when filtered. */}
-          {hasFilters && (
-            <CardDescription>
-              {total.toLocaleString("en-US")} {total === 1 ? "company matches" : "companies match"}{" "}
-              your filters
-            </CardDescription>
-          )}
-        </CardHeader>
-        <CardContent className="flex flex-col p-0 [&_[data-slot=table-container]]:flex-1">
-          {toolbar}
-          {companies.length === 0 ? (
-            <div className="p-(--card-spacing)">
-              <RadarEmpty
-                radarEmpty={radarEmpty}
-                hasFilters={hasFilters}
-                clearHref={view ? `${pathname}?view=${view}` : pathname}
-                showAll={view !== "all"}
-              />
-            </div>
-          ) : (
-            <CompaniesTable
-              companies={companies}
-              newSince={newSince}
-              warmPathCounts={warmPathCounts}
-              busyId={busyId}
-              onOpen={openDetail}
-              onStar={(c) => run(c, () => starCompany({ companyId: c.id }), `Starred ${c.name}`)}
-              onShortlist={(c) => {
-                setNoteFor({ kind: "shortlist", company: c });
-                setNoteOpen(true);
-              }}
-              onPass={(c) => {
-                setNoteFor({ kind: "pass", company: c });
-                setNoteOpen(true);
-              }}
-              onReset={(c) =>
-                run(c, () => resetCompany({ companyId: c.id }), `Moved ${c.name} back to review`)
-              }
-            />
-          )}
-
-          {total > 0 && (
-            <div className="flex items-center justify-end gap-2 border-t px-(--card-spacing) py-3">
-              <div className="text-muted-foreground flex-1 text-sm tabular-nums">
-                {((page - 1) * pageSize + 1).toLocaleString("en-US")} -{" "}
-                {Math.min(page * pageSize, total).toLocaleString("en-US")} of{" "}
-                {total.toLocaleString("en-US")} {total === 1 ? "company" : "companies"}
+      <ListRegion>
+        <Card>
+          <CardHeader>
+            <CardTitle>Companies</CardTitle>
+            {/* The tab already shows the unfiltered count, so the total appears only when filtered. */}
+            {hasFilters && (
+              <CardDescription>
+                {total.toLocaleString("en-US")}{" "}
+                {total === 1 ? "company matches" : "companies match"} your filters
+              </CardDescription>
+            )}
+          </CardHeader>
+          <CardContent className="flex flex-col p-0 [&_[data-slot=table-container]]:flex-1">
+            {toolbar}
+            {companies.length === 0 ? (
+              <div className="p-(--card-spacing)">
+                <RadarEmpty
+                  radarEmpty={radarEmpty}
+                  hasFilters={hasFilters}
+                  clearHref={view ? `${pathname}?view=${view}` : pathname}
+                  showAll={view !== "all"}
+                />
               </div>
-              <nav className="flex items-center gap-1" aria-label="Pages">
-                <PageButton href={page > 1 ? pageHref(page - 1) : null} label="Previous page">
-                  <ChevronLeftIcon />
-                </PageButton>
-                <PageButton href={page < pages ? pageHref(page + 1) : null} label="Next page">
-                  <ChevronRightIcon />
-                </PageButton>
-              </nav>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            ) : (
+              <CompaniesTable
+                companies={companies}
+                newSince={newSince}
+                warmPathCounts={warmPathCounts}
+                busyId={busyId}
+                onOpen={openDetail}
+                onStar={(c) => run(c, () => starCompany({ companyId: c.id }), `Starred ${c.name}`)}
+                onShortlist={(c) => {
+                  setNoteFor({ kind: "shortlist", company: c });
+                  setNoteOpen(true);
+                }}
+                onPass={(c) => {
+                  setNoteFor({ kind: "pass", company: c });
+                  setNoteOpen(true);
+                }}
+                onReset={(c) =>
+                  run(c, () => resetCompany({ companyId: c.id }), `Moved ${c.name} back to review`)
+                }
+              />
+            )}
+
+            {total > 0 && (
+              <div className="flex items-center justify-end gap-2 border-t px-(--card-spacing) py-3">
+                <div className="text-muted-foreground flex-1 text-sm tabular-nums">
+                  {((page - 1) * pageSize + 1).toLocaleString("en-US")} -{" "}
+                  {Math.min(page * pageSize, total).toLocaleString("en-US")} of{" "}
+                  {total.toLocaleString("en-US")} {total === 1 ? "company" : "companies"}
+                </div>
+                <nav className="flex items-center gap-1" aria-label="Pages">
+                  <PageButton href={page > 1 ? pageHref(page - 1) : null} label="Previous page">
+                    <ChevronLeftIcon />
+                  </PageButton>
+                  <PageButton href={page < pages ? pageHref(page + 1) : null} label="Next page">
+                    <ChevronRightIcon />
+                  </PageButton>
+                </nav>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </ListRegion>
 
       <Dialog open={noteOpen} onOpenChange={setNoteOpen}>
         <DialogContent>
@@ -535,9 +538,7 @@ function PageButton({
   );
   return href ? (
     <Button variant="outline" size="icon-sm" asChild>
-      <Link href={href} scroll={false}>
-        {inner}
-      </Link>
+      <ListLink href={href}>{inner}</ListLink>
     </Button>
   ) : (
     <Button variant="outline" size="icon-sm" disabled>
@@ -613,12 +614,16 @@ function RadarEmpty({
         <EmptyContent className="flex-row justify-center gap-2">
           {hasFilters && (
             <Button size="sm" asChild>
-              <Link href={clearHref}>Clear filters</Link>
+              <ListLink href={clearHref} replace>
+                Clear filters
+              </ListLink>
             </Button>
           )}
           {showAll && (
             <Button size="sm" variant="outline" asChild>
-              <Link href="/radar?view=all">Show all companies</Link>
+              <ListLink href="/radar?view=all" replace>
+                Show all companies
+              </ListLink>
             </Button>
           )}
         </EmptyContent>

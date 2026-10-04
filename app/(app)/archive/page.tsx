@@ -14,6 +14,7 @@ import Link from "next/link";
 
 import type { ActivityEntry } from "@/actions/activity";
 import { listActivity } from "@/actions/server";
+import { ListLink, ListRegion, ListTransition } from "@/components/layout/list-transition";
 import { PageHeader } from "@/components/layout/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -97,25 +98,27 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
           action={{ href: "/radar", label: "Open Radar" }}
         />
       ) : (
-        <>
+        <ListTransition>
           <ArchiveFilters filters={{ type, from, to, query }} />
-          {result.data.entries.length === 0 ? (
-            <ArchiveEmpty
-              title="Nothing matches"
-              description="Try another search, kind or date range."
-              action={{ href: "/archive", label: "Clear filters" }}
+          <ListRegion className="space-y-4 lg:space-y-6">
+            {result.data.entries.length === 0 ? (
+              <ArchiveEmpty
+                title="Nothing matches"
+                description="Try another search, kind or date range."
+                action={{ href: "/archive", label: "Clear filters" }}
+              />
+            ) : (
+              <Timeline entries={result.data.entries} />
+            )}
+            <Pager
+              page={page}
+              pageSize={PAGE_SIZE}
+              shown={result.data.entries.length}
+              total={result.data.total}
+              href={pageHref}
             />
-          ) : (
-            <Timeline entries={result.data.entries} />
-          )}
-          <Pager
-            page={page}
-            pageSize={PAGE_SIZE}
-            shown={result.data.entries.length}
-            total={result.data.total}
-            href={pageHref}
-          />
-        </>
+          </ListRegion>
+        </ListTransition>
       )}
     </div>
   );
@@ -262,7 +265,9 @@ function ArchiveEmpty({
       </EmptyHeader>
       <EmptyContent className="flex-row justify-center gap-2">
         <Button size="sm" variant="outline" asChild>
-          <Link href={action.href}>{action.label}</Link>
+          <ListLink href={action.href} replace>
+            {action.label}
+          </ListLink>
         </Button>
       </EmptyContent>
     </Empty>
@@ -296,10 +301,10 @@ function Pager({
       {pages > 1 && (
         <nav className="space-x-2" aria-label="Pages">
           <Button size="sm" variant="outline" disabled={page <= 1} asChild={page > 1}>
-            {page > 1 ? <Link href={href(page - 1)}>Previous</Link> : <span>Previous</span>}
+            {page > 1 ? <ListLink href={href(page - 1)}>Previous</ListLink> : <span>Previous</span>}
           </Button>
           <Button size="sm" variant="outline" disabled={page >= pages} asChild={page < pages}>
-            {page < pages ? <Link href={href(page + 1)}>Next</Link> : <span>Next</span>}
+            {page < pages ? <ListLink href={href(page + 1)}>Next</ListLink> : <span>Next</span>}
           </Button>
         </nav>
       )}

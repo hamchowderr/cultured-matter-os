@@ -1,8 +1,10 @@
 "use client";
 
 import { SearchIcon, SparklesIcon, XIcon } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import { useListNavigation } from "@/components/layout/list-transition";
 
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
@@ -37,10 +39,9 @@ type Props = {
 
 // Both halves write the same URL; a filter change always goes back to page one.
 function useUpdate() {
-  const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const [pending, startTransition] = useTransition();
+  const { navigate } = useListNavigation();
 
   function update(patch: Record<string, string | undefined>) {
     const next = new URLSearchParams(params.toString());
@@ -49,14 +50,14 @@ function useUpdate() {
       else next.delete(k);
     }
     next.delete("page");
-    startTransition(() => router.replace(`${pathname}?${next.toString()}`, { scroll: false }));
+    navigate(`${pathname}?${next.toString()}`, { replace: true });
   }
-  return { update, pending };
+  return { update };
 }
 
 /** The status views (To review, Starred, ...) with their counts. */
 export function RadarTabs({ filters, facets }: Omit<Props, "hasBaseline">) {
-  const { update, pending } = useUpdate();
+  const { update } = useUpdate();
 
   const count = (statuses: readonly string[] | undefined) =>
     facets
@@ -69,26 +70,27 @@ export function RadarTabs({ filters, facets }: Omit<Props, "hasBaseline">) {
     <Tabs
       value={filters.view}
       onValueChange={(v) => update({ view: v === "review" ? undefined : v })}
-      className={cn("transition-opacity", pending && "opacity-60")}
     >
-      <TabsList className="flex-wrap">
-        {RADAR_VIEWS.map((v) => {
-          const n = count(v.statuses);
-          return (
-            <TabsTrigger key={v.value} value={v.value}>
-              {v.label}
-              {n != null && <span className="text-muted-foreground ml-1 tabular-nums">{n}</span>}
-            </TabsTrigger>
-          );
-        })}
-      </TabsList>
+      <div className="-mx-1 [scrollbar-width:none] overflow-x-auto px-1">
+        <TabsList className="w-max">
+          {RADAR_VIEWS.map((v) => {
+            const n = count(v.statuses);
+            return (
+              <TabsTrigger key={v.value} value={v.value}>
+                {v.label}
+                {n != null && <span className="text-muted-foreground ml-1 tabular-nums">{n}</span>}
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
+      </div>
     </Tabs>
   );
 }
 
 /** Search and filters, laid out as the toolbar row of the kit's v2 leads card. */
 export function RadarToolbar({ filters, facets, hasBaseline }: Props) {
-  const { update, pending } = useUpdate();
+  const { update } = useUpdate();
   const [query, setQuery] = useState(filters.query ?? "");
 
   // Follow the URL when a link elsewhere on the page (a summary card, Clear filters) changes it.
@@ -105,12 +107,7 @@ export function RadarToolbar({ filters, facets, hasBaseline }: Props) {
     filters.category || filters.stage || filters.source || filters.query || filters.newOnly;
 
   return (
-    <div
-      className={cn(
-        "flex min-h-14 flex-wrap items-center gap-2 border-b px-(--card-spacing) py-3 transition-opacity",
-        pending && "opacity-60"
-      )}
-    >
+    <div className="flex min-h-14 flex-wrap items-center gap-2 border-b px-(--card-spacing) py-3">
       <InputGroup className="w-full max-w-64 shrink-0 @max-md/card:max-w-none">
         <InputGroupInput
           value={query}

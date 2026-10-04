@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 
 import { countWarmPaths, radarFacets, searchCompanies } from "@/actions/server";
+import { ListTransition } from "@/components/layout/list-transition";
 import { PageHeader } from "@/components/layout/page-shell";
 import { MONITORS } from "@/ingest/monitors/pages";
 import { RADAR_SOURCES } from "@/ingest/radar/run";
@@ -63,34 +64,36 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     : null;
 
   return (
-    <div className="space-y-4 lg:space-y-6">
-      <VisitMarker />
-      <PageHeader title="Radar" description={SOURCES_LINE} />
-      {facets.ok && <RadarSummary facets={facets.data} />}
-      <RadarTabs
-        filters={{ view, category, stage, source, query, newOnly }}
-        facets={facets.ok ? facets.data : null}
-      />
-      {list.ok ? (
-        <RadarList
-          toolbar={
-            <RadarToolbar
-              filters={{ view, category, stage, source, query, newOnly }}
-              facets={facets.ok ? facets.data : null}
-              hasBaseline={!!baseline}
-            />
-          }
-          companies={list.data.companies}
-          total={list.data.total}
-          page={page}
-          pageSize={PAGE_SIZE}
-          newSince={baseline ?? null}
-          warmPathCounts={counts?.ok ? counts.data.counts : undefined}
-          radarEmpty={facets.ok && facets.data.total === 0}
+    <ListTransition>
+      <div className="space-y-4 lg:space-y-6">
+        <VisitMarker />
+        <PageHeader title="Radar" description={SOURCES_LINE} />
+        {facets.ok && <RadarSummary facets={facets.data} />}
+        <RadarTabs
+          filters={{ view, category, stage, source, query, newOnly }}
+          facets={facets.ok ? facets.data : null}
         />
-      ) : (
-        <p className="text-destructive text-sm">Couldn’t load companies: {list.error.message}</p>
-      )}
-    </div>
+        {list.ok ? (
+          <RadarList
+            toolbar={
+              <RadarToolbar
+                filters={{ view, category, stage, source, query, newOnly }}
+                facets={facets.ok ? facets.data : null}
+                hasBaseline={!!baseline}
+              />
+            }
+            companies={list.data.companies}
+            total={list.data.total}
+            page={page}
+            pageSize={PAGE_SIZE}
+            newSince={baseline ?? null}
+            warmPathCounts={counts?.ok ? counts.data.counts : undefined}
+            radarEmpty={facets.ok && facets.data.total === 0}
+          />
+        ) : (
+          <p className="text-destructive text-sm">Couldn’t load companies: {list.error.message}</p>
+        )}
+      </div>
+    </ListTransition>
   );
 }

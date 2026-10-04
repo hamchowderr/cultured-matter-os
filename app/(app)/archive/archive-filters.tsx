@@ -4,8 +4,10 @@
 // (pages/notifications/data-table.tsx, v2.0.0): a wide search box and popover pickers.
 
 import { CalendarIcon, CheckIcon, ChevronDownIcon, SearchIcon, XIcon } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import { useListNavigation } from "@/components/layout/list-transition";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,10 +34,9 @@ const shortDay = (day: string) =>
   });
 
 export function ArchiveFilters({ filters }: { filters: ArchiveFilterState }) {
-  const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const [pending, startTransition] = useTransition();
+  const { navigate } = useListNavigation();
   const [query, setQuery] = useState(filters.query ?? "");
   const [typeOpen, setTypeOpen] = useState(false);
 
@@ -46,7 +47,7 @@ export function ArchiveFilters({ filters }: { filters: ArchiveFilterState }) {
       else next.delete(k);
     }
     next.delete("page");
-    startTransition(() => router.replace(`${pathname}?${next.toString()}`, { scroll: false }));
+    navigate(`${pathname}?${next.toString()}`, { replace: true });
   }
 
   // Follow the URL when a link on the page (Clear filters) changes it.
@@ -70,7 +71,7 @@ export function ArchiveFilters({ filters }: { filters: ArchiveFilterState }) {
           : "Any date";
 
   return (
-    <div className={cn("flex flex-wrap gap-3 transition-opacity", pending && "opacity-60")}>
+    <div className="flex flex-wrap gap-3">
       <div className="relative min-w-48 grow">
         <SearchIcon className="text-muted-foreground absolute start-3 top-1/2 size-4 -translate-y-1/2" />
         <Input
