@@ -59,7 +59,7 @@ export function taskColumns({
               type="button"
               onClick={() => onOpen(task)}
               className={cn(
-                "max-w-[500px] truncate text-left font-medium hover:underline",
+                "line-clamp-2 max-w-[500px] text-left font-medium whitespace-normal hover:underline lg:line-clamp-1",
                 task.status === "done" && "text-muted-foreground line-through"
               )}
             >
@@ -102,7 +102,7 @@ export function taskColumns({
         return (
           <div className="flex items-center gap-2">
             <priority.icon className="text-muted-foreground size-4" />
-            <span>{priority.label}</span>
+            <span className="max-sm:sr-only">{priority.label}</span>
           </div>
         );
       },
@@ -142,7 +142,9 @@ export function taskColumns({
         if (!task.dueDate) return <span className="text-muted-foreground">—</span>;
         const late = task.status !== "done" && dueBucket(task.dueDate) === "overdue";
         return (
-          <span className={cn("whitespace-nowrap", late && "text-destructive")}>
+          <span
+            className={cn("whitespace-normal md:whitespace-nowrap", late && "text-destructive")}
+          >
             {formatDue(task.dueDate)}
           </span>
         );

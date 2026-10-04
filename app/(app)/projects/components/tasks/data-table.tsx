@@ -30,6 +30,8 @@ import {
   XIcon
 } from "lucide-react";
 
+import { revealTop } from "@/components/layout/list-transition";
+import { useIsMobile, useIsTablet } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -112,6 +114,19 @@ export function DataTable({
     getFacetedUniqueValues: getFacetedUniqueValues()
   });
 
+  // Phones show the task, its priority and due date; select and status come back from 768px,
+  // project from 992px.
+  const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
+  React.useEffect(() => {
+    setColumnVisibility((v) => ({
+      ...v,
+      select: !isMobile,
+      status: !isMobile,
+      project: !isTablet
+    }));
+  }, [isMobile, isTablet]);
+
   // A task linked into several projects counts once in each.
   const projectCounts = React.useMemo(() => {
     const counts = new Map<string, number>();
@@ -130,13 +145,24 @@ export function DataTable({
   const firstRow = shown === 0 ? 0 : pageIndex * pageSize + 1;
   const lastRow = Math.min((pageIndex + 1) * pageSize, shown);
 
+  // A new page keeps the scroll position; bring the table's top back into view if it is above.
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  const firstRender = React.useRef(true);
+  React.useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    revealTop(cardRef.current);
+  }, [pageIndex, pageSize]);
+
   function markSelectedDone() {
     for (const task of openSelected) onStatusChange(task, "done");
     table.resetRowSelection();
   }
 
   return (
-    <Card>
+    <Card ref={cardRef} className="scroll-mt-20">
       <CardContent className="flex flex-col p-0 [&_[data-slot=table-container]]:flex-1">
         <div className="flex min-h-14 flex-wrap items-center gap-2 border-b px-(--card-spacing) py-3">
           {selected.length > 0 ? (

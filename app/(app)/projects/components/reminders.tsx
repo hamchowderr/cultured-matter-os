@@ -70,7 +70,7 @@ export function Reminders({
         ) : (
           <div className="grid gap-4 lg:grid-cols-3">
             {reminders.slice(0, SHOWN).map(({ task, level }) => (
-              <div key={task.id} className="space-y-3 rounded-lg border p-4">
+              <div key={task.id} className="bg-muted/50 space-y-3 rounded-lg p-4">
                 <div className="flex items-center text-sm font-semibold">
                   <span
                     className={cn("me-2 size-2 rounded-full", {

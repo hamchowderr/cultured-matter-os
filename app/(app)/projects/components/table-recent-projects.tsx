@@ -72,6 +72,14 @@ const projectStatusDot: Record<ProjectStatus, string> = {
 
 type Row = ProjectSummary & { nextDue: Date | null };
 
+// Columns that drop out on phones and small tablets, so name, status and actions always fit.
+const HIDE_ON_PHONE: Record<string, string> = {
+  business: "max-md:hidden",
+  createdAt: "max-md:hidden",
+  nextDue: "max-sm:hidden",
+  progress: "max-lg:hidden"
+};
+
 export function TableRecentProjects({
   projects,
   nextDue,
@@ -306,13 +314,14 @@ export function TableRecentProjects({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <Table className="min-w-[860px] table-fixed [&_td:first-child]:ps-(--card-spacing) [&_td:last-child]:pe-(--card-spacing) [&_th:first-child]:ps-(--card-spacing) [&_th:last-child]:pe-(--card-spacing)">
+        <Table className="md:min-w-[860px] md:table-fixed [&_td:first-child]:ps-(--card-spacing) [&_td:last-child]:pe-(--card-spacing) [&_th:first-child]:ps-(--card-spacing) [&_th:last-child]:pe-(--card-spacing)">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
+                    className={HIDE_ON_PHONE[header.column.id]}
                     style={{
                       // 150 is TanStack's default size: only sized columns get a width.
                       width: header.getSize() !== 150 ? header.getSize() : undefined
@@ -331,7 +340,7 @@ export function TableRecentProjects({
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className={HIDE_ON_PHONE[cell.column.id]}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
