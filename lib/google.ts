@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { desc, eq } from "drizzle-orm";
 
 import { ActionError } from "@/actions/define";
@@ -223,20 +225,43 @@ function displayName(name: string) {
   return `"${text.replace(/(["\\])/g, "\\$1")}"`;
 }
 
-// A plain-text RFC 2822 message, base64url encoded for users.drafts.create `message.raw`.
-export function rawMessage(m: { to: string; toName?: string; subject: string; body: string }) {
+const bodyBase64 = (s: string) =>
+  (base64(s.replace(/\r?\n/g, "\r\n")).match(/.{1,76}/g) ?? []).join("\r\n");
+
+// An RFC 2822 message, base64url encoded for users.drafts.create and users.messages.send
+// `raw`. Plain text, or multipart/alternative when an HTML version is given.
+export function rawMessage(m: {
+  to: string;
+  toName?: string;
+  subject: string;
+  body: string;
+  html?: string;
+}) {
   const to = m.toName?.trim() ? `${displayName(m.toName.trim())} <${m.to}>` : m.to;
-  const body = (base64(m.body.replace(/\r?\n/g, "\r\n")).match(/.{1,76}/g) ?? []).join("\r\n");
-  const message = [
-    `To: ${to}`,
-    `Subject: ${headerText(m.subject)}`,
-    "MIME-Version: 1.0",
-    'Content-Type: text/plain; charset="UTF-8"',
+  const headers = [`To: ${to}`, `Subject: ${headerText(m.subject)}`, "MIME-Version: 1.0"];
+  const part = (type: string, content: string) => [
+    `Content-Type: ${type}; charset="UTF-8"`,
     "Content-Transfer-Encoding: base64",
     "",
-    body
-  ].join("\r\n");
-  return Buffer.from(message, "utf8").toString("base64url");
+    bodyBase64(content)
+  ];
+  let lines: string[];
+  if (m.html === undefined) {
+    lines = [...headers, ...part("text/plain", m.body)];
+  } else {
+    const boundary = `=_cmos_${randomUUID().replace(/-/g, "")}`;
+    lines = [
+      ...headers,
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      "",
+      `--${boundary}`,
+      ...part("text/plain", m.body),
+      `--${boundary}`,
+      ...part("text/html", m.html),
+      `--${boundary}--`
+    ];
+  }
+  return Buffer.from(lines.join("\r\n"), "utf8").toString("base64url");
 }
 
 // Links that open Gmail on her mailbox, whichever Google account is first in the browser.

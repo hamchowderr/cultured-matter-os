@@ -177,3 +177,20 @@ export async function markNotificationsRead(input: { itemIds: string[] }) {
     return A.markNotificationsRead.run({ userId, itemIds: input.itemIds });
   });
 }
+
+// Settings: the calendar feed link and the daily email. The user comes from the session.
+async function sessionUserId() {
+  const { getSession } = await import("@/lib/session");
+  return (await getSession())?.user.id ?? "";
+}
+export async function getUserSettings() {
+  return toResult(async () => A.getUserSettings.run({ userId: await sessionUserId() }));
+}
+export async function resetCalendarLink() {
+  return toResult(async () => A.resetCalendarLink.run({ userId: await sessionUserId() }));
+}
+export async function setDailyEmail(input: { enabled: boolean }) {
+  return toResult(async () =>
+    A.setDailyEmail.run({ userId: await sessionUserId(), enabled: input.enabled })
+  );
+}

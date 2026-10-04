@@ -61,6 +61,15 @@ import {
 } from "./outlook";
 import { setupStatus } from "./setup";
 import { listNotifications, markNotificationsRead } from "./notifications";
+import {
+  calendarFeed,
+  dailySummary,
+  getUserSettings,
+  newGrantsSince,
+  recordDailySummary,
+  resetCalendarLink,
+  setDailyEmail
+} from "./preferences";
 
 export {
   searchCompanies,
@@ -115,7 +124,14 @@ export {
   draftFollowUp,
   checkOutlookReplies,
   listNotifications,
-  markNotificationsRead
+  markNotificationsRead,
+  getUserSettings,
+  resetCalendarLink,
+  setDailyEmail,
+  calendarFeed,
+  newGrantsSince,
+  dailySummary,
+  recordDailySummary
 };
 
 // Every named action, for the phase-2 agent to wrap as tools.
@@ -168,7 +184,14 @@ export const allActions = [
   draftFollowUp,
   checkOutlookReplies,
   listNotifications,
-  markNotificationsRead
+  markNotificationsRead,
+  getUserSettings,
+  resetCalendarLink,
+  setDailyEmail,
+  newGrantsSince,
+  dailySummary
+  // Not tools: calendarFeed (keyed by the feed's secret token) and recordDailySummary (the cron's
+  // bookkeeping).
 ] as const;
 
 export { ActionError, type Action, type ActionResult } from "./define";
