@@ -71,6 +71,13 @@ import {
   resetCalendarLink,
   setDailyEmail
 } from "./preferences";
+import {
+  prunePushSubscriptions,
+  pushStatus,
+  removePushSubscription,
+  savePushSubscription,
+  setPushPreferences
+} from "./push";
 
 export {
   searchCompanies,
@@ -133,7 +140,12 @@ export {
   calendarFeed,
   newGrantsSince,
   dailySummary,
-  recordDailySummary
+  recordDailySummary,
+  pushStatus,
+  setPushPreferences,
+  savePushSubscription,
+  removePushSubscription,
+  prunePushSubscriptions
 };
 
 // Every named action, for the phase-2 agent to wrap as tools.
@@ -191,9 +203,12 @@ export const allActions = [
   resetCalendarLink,
   setDailyEmail,
   newGrantsSince,
-  dailySummary
+  dailySummary,
+  pushStatus,
+  setPushPreferences
   // Not tools: calendarFeed (keyed by the feed's secret token), recordDailySummary (the cron's
-  // bookkeeping) and markTourSeen (the guided tours' bookkeeping).
+  // bookkeeping), markTourSeen (the guided tours' bookkeeping) and the push device actions (they
+  // need a browser's push subscription).
 ] as const;
 
 export { ActionError, type Action, type ActionResult } from "./define";

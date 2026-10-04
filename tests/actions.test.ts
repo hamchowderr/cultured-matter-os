@@ -86,7 +86,9 @@ describe("registry", () => {
         "resetCalendarLink",
         "setDailyEmail",
         "newGrantsSince",
-        "dailySummary"
+        "dailySummary",
+        "pushStatus",
+        "setPushPreferences"
       ].sort()
     );
     for (const a of A.allActions) {

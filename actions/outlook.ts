@@ -402,7 +402,12 @@ export const draftFollowUp = defineAction({
     entityType: "approval",
     entityId: approval.id,
     summary: `Requested approval: ${approval.summary}`
-  })
+  }),
+  // Same push as requestApproval.
+  async after(_input, approval, db) {
+    const { sendPush, approvalPush } = await import("@/lib/push");
+    await sendPush(db, "approvals", approvalPush(approval));
+  }
 });
 
 type CreatedDraft = { id: string; message?: { id?: string; threadId?: string | null } };
@@ -492,5 +497,15 @@ export const checkOutlookReplies = defineAction({
       ? `Replies arrived: ${r.replied.map((t) => `"${t.title}"`).join(", ")}`
       : `Checked ${r.checked} waiting ${r.checked === 1 ? "task" : "tasks"} for Gmail replies`,
     data: { replied: r.replied.map((t) => t.id) }
-  })
+  }),
+  // One push for the replies this check found.
+  async after(_input, r, db) {
+    if (r.replied.length === 0) return;
+    const rows = await db
+      .select({ title: tasks.title, projectId: tasks.projectId })
+      .from(tasks)
+      .where(inArray(tasks.id, r.replied.map((t) => t.id)));
+    const { sendPush, replyPush } = await import("@/lib/push");
+    await sendPush(db, "replies", replyPush(rows));
+  }
 });

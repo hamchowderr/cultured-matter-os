@@ -2,9 +2,10 @@ import { ArrowRightIcon } from "lucide-react";
 import { headers } from "next/headers";
 import Link from "next/link";
 
-import { getUserSettings, setupStatus } from "@/actions/server";
+import { getUserSettings, pushStatus, setupStatus } from "@/actions/server";
 import { CalendarFeedCard } from "@/components/settings/calendar-feed-card";
 import { DailyEmailCard } from "@/components/settings/daily-email-card";
+import { NotificationsCard } from "@/components/settings/notifications-card";
 import { PageHeader } from "@/components/layout/page-shell";
 import { ConnectGoogleDialog } from "@/components/setup/connect-google-dialog";
 import { ConnectionCard, type ConnectionState } from "@/components/setup/connection-card";
@@ -19,7 +20,7 @@ export async function generateMetadata() {
   return generateMeta({
     title: "Settings",
     description:
-      "Your account, what is connected (LinkedIn, Google, iPhone, newsletter), the calendar feed and the daily email."
+      "Your account, what is connected (LinkedIn, Google, iPhone, newsletter), the calendar feed, the daily email and notifications."
   });
 }
 
@@ -50,9 +51,10 @@ async function requestOrigin() {
 export default async function Page() {
   // Session first: it marks the page as dynamic before any action runs.
   const user = (await getSession())?.user;
-  const [status, settings, origin] = await Promise.all([
+  const [status, settings, push, origin] = await Promise.all([
     setupStatus({}),
     getUserSettings(),
+    pushStatus(),
     requestOrigin()
   ]);
 
@@ -140,6 +142,18 @@ export default async function Page() {
               enabled={settings.data.dailyEmail}
               email={user.email}
               googleConnected={status.ok ? status.data.outlook.done : true}
+            />
+          </div>
+        </section>
+      )}
+
+      {user && push.ok && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Notifications</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <NotificationsCard
+              configured={push.data.configured}
+              preferences={push.data.preferences}
             />
           </div>
         </section>

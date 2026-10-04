@@ -399,9 +399,11 @@ export const recordDailySummary = defineAction({
     userId: id,
     at: z.coerce.date(),
     outcome: z.enum(["sent", "skipped"]),
-    via: z.enum(["gmail", "resend"]).optional(),
+    via: z.enum(["gmail", "resend", "push"]).optional(),
     reason: z.string().max(300).optional(),
-    items: z.number().int().min(0).default(0)
+    items: z.number().int().min(0).default(0),
+    // Devices the push version reached, when one was sent.
+    pushed: z.number().int().min(0).optional()
   }),
   output: z.object({ outcome: z.enum(["sent", "skipped"]) }),
   async handler(input, db) {
@@ -413,13 +415,30 @@ export const recordDailySummary = defineAction({
     }
     return { outcome: input.outcome };
   },
-  log: (input) => ({
-    entityType: "daily_summary",
-    entityId: input.userId,
-    summary:
-      input.outcome === "sent"
-        ? `Sent the daily summary (${input.items} item${input.items === 1 ? "" : "s"}) via ${input.via === "resend" ? "Resend" : "Gmail"}`
-        : `Skipped the daily summary: ${input.reason ?? "no reason given"}`,
-    data: { via: input.via ?? null, reason: input.reason ?? null, items: input.items }
-  })
+  log: (input) => {
+    const devices =
+      input.pushed !== undefined
+        ? `push to ${input.pushed} device${input.pushed === 1 ? "" : "s"}`
+        : null;
+    const channel =
+      input.via === "push"
+        ? devices
+        : [input.via === "resend" ? "Resend" : "Gmail", devices].filter(Boolean).join(" and ");
+    return {
+      entityType: "daily_summary",
+      entityId: input.userId,
+      summary:
+        input.outcome === "sent"
+          ? `Sent the daily summary (${input.items} item${input.items === 1 ? "" : "s"}) via ${channel}`
+          : `Skipped the daily summary: ${input.reason ?? "no reason given"}${
+              input.via !== "push" && devices ? ` (sent the ${devices})` : ""
+            }`,
+      data: {
+        via: input.via ?? null,
+        reason: input.reason ?? null,
+        items: input.items,
+        pushed: input.pushed ?? null
+      }
+    };
+  }
 });
