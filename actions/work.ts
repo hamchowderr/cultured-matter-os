@@ -232,6 +232,22 @@ export const decideApproval = defineAction({
           .returning();
         return done;
       }
+      // A change the chat assistant proposed: run that named action now, in this transaction,
+      // so the approval and the change commit together. Imported lazily: ./chat imports this file.
+      if (row.status === "approved") {
+        const { approvableAction } = await import("./chat");
+        const action = approvableAction(row.action);
+        if (action) {
+          const { runWriteInTx } = await import("./define");
+          const result = await runWriteInTx(action, row.payload, db);
+          const [done] = await db
+            .update(approvals)
+            .set({ result: result as Record<string, unknown> })
+            .where(eq(approvals.id, row.id))
+            .returning();
+          return done;
+        }
+      }
       return row;
     }
     const [existing] = await db

@@ -1,0 +1,101 @@
+{
+  "fixtures": [
+    {
+      "_comment": "Radar search. The first hop matches her question with no tool result yet; the second hop matches the id this fixture gives the tool call, which comes back on the tool result.",
+      "match": { "userMessage": "What is on Radar about sunscreen?", "hasToolResult": false },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "call_radar_search",
+            "name": "searchCompanies",
+            "arguments": { "query": "Soliome" }
+          }
+        ]
+      }
+    },
+    {
+      "match": { "toolCallId": "call_radar_search" },
+      "response": {
+        "content": "I found Soliome on Radar: a pre-seed company making reef-safe sunscreen. Want me to shortlist it?"
+      }
+    },
+    {
+      "_comment": "A write: the assistant proposes it and an approval card waits for her.",
+      "match": { "userMessage": "Shortlist this company", "hasToolResult": false },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "call_shortlist",
+            "name": "proposeShortlistCompany",
+            "arguments": {
+              "companyId": "co_soliome",
+              "note": "Fits the beauty pairing",
+              "summary": "Shortlist Soliome"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": { "toolCallId": "call_shortlist" },
+      "response": {
+        "content": "I've asked to shortlist Soliome. It will happen once you tap Approve on the card."
+      }
+    },
+    {
+      "match": { "userMessage": "Who can introduce me to this company?", "hasToolResult": false },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "call_warm_path",
+            "name": "findWarmPath",
+            "arguments": { "companyId": "co_soliome" }
+          }
+        ]
+      }
+    },
+    {
+      "match": { "toolCallId": "call_warm_path" },
+      "response": {
+        "content": "Jordan Rivera works at Soliome, so Jordan is your warmest way in."
+      }
+    },
+    {
+      "match": { "userMessage": "Which grants close soon?", "hasToolResult": false },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "call_grants",
+            "name": "searchGrants",
+            "arguments": { "closingWithinDays": 30, "hideClosed": true }
+          }
+        ]
+      }
+    },
+    {
+      "match": { "toolCallId": "call_grants" },
+      "response": {
+        "content": "One grant closes in the next month: the EPA SBIR Phase I for sustainable materials."
+      }
+    },
+    {
+      "match": { "userMessage": "Find Jordan in my contacts", "hasToolResult": false },
+      "response": {
+        "toolCalls": [
+          { "id": "call_contacts", "name": "searchContacts", "arguments": { "query": "Jordan" } }
+        ]
+      }
+    },
+    {
+      "match": { "toolCallId": "call_contacts" },
+      "response": { "content": "Here is Jordan Rivera, Head of Sustainability at Soliome." }
+    },
+    {
+      "_comment": "Catch-all, last: any other message gets a fixed reply instead of a 404.",
+      "match": {},
+      "response": {
+        "content": "I'm running on test fixtures right now, so I can only answer the sample questions."
+      }
+    }
+  ]
+}

@@ -65,6 +65,56 @@ async function defaultDb(): Promise<Database> {
   return (await import("@/db")).db;
 }
 
+type WriteConfig<I extends z.ZodType, O extends z.ZodType, P> = Extract<
+  ActionConfig<I, O, P>,
+  { kind: "write" }
+>;
+
+// The body of a write: the handler, then its activity_log row, on an open transaction.
+async function writeInTx<I extends z.ZodType, O extends z.ZodType, P>(
+  config: WriteConfig<I, O, P>,
+  input: z.output<I>,
+  tx: Executor,
+  prepared: P
+): Promise<z.output<O>> {
+  const result = config.output.parse(await config.handler(input, tx, prepared));
+  const entry = config.log(input, result);
+  await tx.insert(activityLog).values({
+    action: config.name,
+    entityType: entry.entityType,
+    entityId: entry.entityId ?? null,
+    summary: entry.summary,
+    data: entry.data ?? null
+  });
+  return result;
+}
+
+// Runs a write action inside a transaction someone else opened, such as decideApproval carrying
+// out what she approved: the approval and the change commit together or not at all. Actions with
+// a prepare step can't run this way, because prepare must not hold the database lock.
+export async function runWriteInTx(
+  action: AnyAction,
+  rawInput: unknown,
+  tx: Executor
+): Promise<unknown> {
+  if (action.kind !== "write") throw new ActionError("invalid", `${action.name} is not a write`);
+  if (action.prepare)
+    throw new ActionError("invalid", `${action.name} can't run inside another write`);
+  const config = action as unknown as WriteConfig<z.ZodType, z.ZodType, undefined>;
+  return writeInTx(config, config.input.parse(rawInput), tx, undefined);
+}
+
+// Any action, seen from code that handles them generically (the chat tools, approvals). Each
+// action's own input schema validates what it is given.
+export type AnyAction = {
+  name: string;
+  description: string;
+  kind: "read" | "write";
+  input: z.ZodType;
+  prepare?: unknown;
+  run: (input: never, ctx?: ActionContext) => Promise<unknown>;
+};
+
 export function defineAction<I extends z.ZodType, O extends z.ZodType, P = undefined>(
   config: ActionConfig<I, O, P>
 ): Action<I, O, P> {
@@ -79,18 +129,7 @@ export function defineAction<I extends z.ZodType, O extends z.ZodType, P = undef
       }
 
       const prepared = (config.prepare ? await config.prepare(input, db) : undefined) as P;
-      const committed = await db.transaction(async (tx) => {
-        const result = config.output.parse(await config.handler(input, tx, prepared));
-        const entry = config.log(input, result);
-        await tx.insert(activityLog).values({
-          action: config.name,
-          entityType: entry.entityType,
-          entityId: entry.entityId ?? null,
-          summary: entry.summary,
-          data: entry.data ?? null
-        });
-        return result;
-      });
+      const committed = await db.transaction((tx) => writeInTx(config, input, tx, prepared));
       if (config.after) {
         try {
           await config.after(input, committed, db);
@@ -104,8 +143,7 @@ export function defineAction<I extends z.ZodType, O extends z.ZodType, P = undef
 }
 
 export type ActionResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; error: { code: string; message: string } };
+  { ok: true; data: T } | { ok: false; error: { code: string; message: string } };
 
 // Every server action in actions/server.ts passes through toResult, so this is the one place
 // that refuses anonymous calls. Imported lazily so tests and scripts that call `.run` directly
