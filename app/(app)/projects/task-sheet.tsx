@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { priorities } from "@/lib/task-priority";
+import { useChatRecord } from "@/components/chat/chat-provider";
 import { fromDateInput, type ProjectSummary, type ProjectTask } from "./types";
 
 const toDateInput = (d: Date | null) =>
@@ -51,6 +52,7 @@ export function TaskSheet({
   const [notes, setNotes] = useState("");
   const [subtask, setSubtask] = useState("");
   const [drafting, setDrafting] = useState(false);
+  useChatRecord(task ? { type: "task", id: task.id, label: task.title } : null);
 
   useEffect(() => {
     setTitle(task?.title ?? "");

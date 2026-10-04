@@ -19,11 +19,10 @@ export const proposeToolName = (action: string) =>
   `propose${action[0].toUpperCase()}${action.slice(1)}`;
 
 // Inputs the server fills in, so the model never has to guess them.
-const SERVER_FILLED: Partial<
-  Record<string, (ctx: ChatRequestContext) => Record<string, unknown>>
-> = {
-  listNotifications: (ctx) => ({ userId: ctx.userId })
-};
+const SERVER_FILLED: Partial<Record<string, (ctx: ChatRequestContext) => Record<string, unknown>>> =
+  {
+    listNotifications: (ctx) => ({ userId: ctx.userId })
+  };
 
 type Shape = Record<string, z.ZodType>;
 
@@ -65,6 +64,23 @@ function contextOf(requestContext: { get(key: string): unknown } | undefined): C
   return { userId };
 }
 
+// Some reads (listTasks, listProjects) have no limit. Long lists are cut so one answer can't
+// fill the model's context; the count of what was left out stays.
+export const MAX_LIST_ROWS = 25;
+export function capLists(output: unknown): unknown {
+  if (!output || typeof output !== "object" || Array.isArray(output)) return output;
+  const capped: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(output)) {
+    if (Array.isArray(value) && value.length > MAX_LIST_ROWS) {
+      capped[key] = value.slice(0, MAX_LIST_ROWS);
+      capped[`${key}LeftOut`] = value.length - MAX_LIST_ROWS;
+    } else {
+      capped[key] = value;
+    }
+  }
+  return capped;
+}
+
 function readTool(action: AnyAction, db?: Database) {
   return createTool({
     id: action.name,
@@ -73,7 +89,7 @@ function readTool(action: AnyAction, db?: Database) {
     execute: async (input, context) => {
       const fill = SERVER_FILLED[action.name];
       const full = fill ? { ...input, ...fill(contextOf(context?.requestContext)) } : input;
-      return safely(() => action.run(full as never, db ? { db } : undefined));
+      return safely(async () => capLists(await action.run(full as never, db ? { db } : undefined)));
     }
   });
 }

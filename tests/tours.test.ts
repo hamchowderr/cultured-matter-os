@@ -67,6 +67,21 @@ describe("resolveSteps", () => {
     expect(steps.map((s) => s.id)).toEqual(["today-heading", "today-stats", "today-tasks"]);
   });
 
+  it("shows the chat button after the bell", () => {
+    const steps = resolveSteps(
+      welcome,
+      visible("tour-menu-button", "tour-search", "tour-bell", "tour-chat", "tour-start")
+    );
+    expect(steps.map((s) => s.id)).toEqual([
+      "tour-menu-button",
+      "tour-search",
+      "tour-bell",
+      "tour-chat",
+      "tour-start"
+    ]);
+    expect(steps[3].content).toContain("asks before it changes anything");
+  });
+
   it("returns no steps when nothing is visible", () => {
     expect(resolveSteps(getTour("radar")!, () => false)).toEqual([]);
   });

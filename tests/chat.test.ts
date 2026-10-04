@@ -151,6 +151,21 @@ describe("chat tools", () => {
   });
 });
 
+describe("chat cards", () => {
+  it("turns JSON dates back into Dates for the cards, and leaves Dates alone", async () => {
+    const { reviveDates } = await import("@/components/chat/chat-tool-part");
+    const d = new Date("2026-10-04T12:00:00.000Z");
+    const out = reviveDates({
+      approval: { createdAt: d.toISOString(), decidedAt: d, summary: d.toISOString() },
+      grants: [{ deadline: d.toISOString(), title: "x" }]
+    });
+    expect(out.approval.createdAt).toBeInstanceOf(Date);
+    expect(out.approval.decidedAt).toBe(d);
+    expect(out.approval.summary).toBe(d.toISOString());
+    expect(out.grants[0].deadline).toBeInstanceOf(Date);
+  });
+});
+
 describe("page context", () => {
   it("tells the agent the page and the open record", () => {
     const msg = pageContextMessage({

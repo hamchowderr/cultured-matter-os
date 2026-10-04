@@ -8,6 +8,7 @@ import Notifications from "@/components/layout/header/notifications";
 import ThemeSwitch from "@/components/layout/header/theme-switch";
 import { ThemeCustomizerPanel } from "@/components/theme-customizer";
 import { TourButton } from "@/components/tours/app-tours";
+import { ChatButton } from "@/components/chat/chat-sidebar";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
 
@@ -32,6 +33,7 @@ export function SiteHeader() {
         <Search />
 
         <div className="ml-auto flex items-center gap-2">
+          <ChatButton />
           <TourButton />
           <Notifications />
           <ThemeSwitch />

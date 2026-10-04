@@ -39,6 +39,7 @@ import { Table, TableBody, TableCell, TableHead, TableRow } from "@/components/u
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CATEGORIES } from "@/lib/categories";
 import { formatDate, initials } from "@/lib/format";
+import { useChatRecord } from "@/components/chat/chat-provider";
 import { sourceLabel } from "./contacts-table";
 import { ContactEmails } from "./google-sync";
 import { ContactWarmPaths } from "./warm-paths";
@@ -85,11 +86,11 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
     <TableRow className="hover:bg-transparent">
       <TableHead
         scope="row"
-        className="text-muted-foreground h-auto w-32 ps-0 pe-3 py-2.5 align-top font-normal"
+        className="text-muted-foreground h-auto w-32 py-2.5 ps-0 pe-3 align-top font-normal"
       >
         {label}
       </TableHead>
-      <TableCell className="ps-3 pe-0 py-2.5 whitespace-normal">{children}</TableCell>
+      <TableCell className="py-2.5 ps-3 pe-0 whitespace-normal">{children}</TableCell>
     </TableRow>
   );
 }
@@ -111,6 +112,9 @@ export function ContactSheet({
   onToggleNewsletter: (contact: Contact, on: boolean) => void;
 }) {
   const [drafting, setDrafting] = React.useState(false);
+  useChatRecord(
+    contact && open ? { type: "contact", id: contact.id, label: contact.fullName } : null
+  );
 
   if (!contact) return null;
   const role = [contact.position, contact.company].filter(Boolean).join(" at ");

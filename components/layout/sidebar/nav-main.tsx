@@ -19,6 +19,7 @@ import {
   FolderKanbanIcon,
   InboxIcon,
   LandmarkIcon,
+  MessageCircleIcon,
   RadarIcon,
   SunIcon,
   UsersIcon,
@@ -61,7 +62,8 @@ export const navItems: NavGroup[] = [
       { title: "People", href: "/people", icon: UsersIcon },
       { title: "Radar", href: "/radar", icon: RadarIcon },
       { title: "Grants", href: "/grants", icon: LandmarkIcon },
-      { title: "Archive", href: "/archive", icon: ArchiveIcon }
+      { title: "Archive", href: "/archive", icon: ArchiveIcon },
+      { title: "Chat", href: "/chat", icon: MessageCircleIcon }
     ]
   }
 ];

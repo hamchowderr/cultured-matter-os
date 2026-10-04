@@ -72,6 +72,11 @@ export const TOURS: TourDef[] = [
         "What's new",
         "The bell shows news: replies to your emails, decisions waiting for you, grants closing soon, new Radar finds and notes to sort."
       ),
+      at(
+        "tour-chat",
+        "Ask the assistant",
+        "Tap here to chat about Radar, grants, people or tasks. It knows the page you're on, and it asks before it changes anything."
+      ),
       at("tour-start", "Help on every page", "Tap here on any page for a short tour of that page."),
       at(
         "tour-account",

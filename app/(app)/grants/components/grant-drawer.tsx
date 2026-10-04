@@ -21,6 +21,7 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { daysUntil, formatAmount, formatDeadline } from "@/lib/format";
+import { useChatRecord } from "@/components/chat/chat-provider";
 
 type Status = NonNullable<Grant["status"]>;
 
@@ -50,6 +51,7 @@ export function GrantDrawer({
   onOpenChange: (open: boolean) => void;
   onStatusChange: (grant: Grant, status: Status) => void;
 }) {
+  useChatRecord(grant ? { type: "grant", id: grant.id, label: grant.title } : null);
   const amount = grant ? formatAmount(grant.amountMin, grant.amountMax) : null;
   const days = grant?.deadline ? daysUntil(grant.deadline) : null;
   const urgent = days != null && days >= 0 && days <= 14;

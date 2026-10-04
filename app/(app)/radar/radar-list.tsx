@@ -78,6 +78,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { useChatRecord } from "@/components/chat/chat-provider";
 import { WarmPaths } from "./warm-paths";
 
 type RadarCompany = Company & { sources: string[] };
@@ -115,6 +116,9 @@ export function RadarList({
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState("");
   const [detail, setDetail] = useState<{ company: RadarCompany; data: Detail | null } | null>(null);
+  useChatRecord(
+    detail ? { type: "company", id: detail.company.id, label: detail.company.name } : null
+  );
 
   async function run(
     company: RadarCompany,
