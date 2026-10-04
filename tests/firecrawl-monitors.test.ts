@@ -5,9 +5,17 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import type { Database } from "@/db";
 import * as t from "@/db/schema";
-import { ENTRY_SCHEMA, scrapeOptions, toRecords, type Scrape } from "@/ingest/monitors/firecrawl";
+import {
+  ENTRY_SCHEMA,
+  isOutputLimit,
+  scrapeOptions,
+  toRecords,
+  type Scrape
+} from "@/ingest/monitors/firecrawl";
 import { duePages, runMonitors } from "@/ingest/monitors";
-import { MONITORS, type Monitor } from "@/ingest/monitors/pages";
+import { MONITORS, NAME_WEBSITE_SCHEMA, type Monitor } from "@/ingest/monitors/pages";
+import { runRadarIngestion } from "@/ingest/radar/run";
+import { thirdDerivative } from "@/ingest/radar/third-derivative";
 import { freshDb } from "./test-db";
 
 // Recorded Firecrawl JSON-format responses (fc-epa-sbir is built by hand from the page HTML).
@@ -30,11 +38,23 @@ describe("Firecrawl JSON extraction", () => {
     ]);
   });
 
+  it("asks Third Derivative for name and website only", () => {
+    const options = scrapeOptions(monitor("fc-third-derivative"));
+    expect(options.formats).toEqual([
+      expect.objectContaining({ type: "json", schema: NAME_WEBSITE_SCHEMA })
+    ]);
+    expect(Object.keys(NAME_WEBSITE_SCHEMA.properties.entries.items.properties)).toEqual([
+      "name",
+      "website"
+    ]);
+  });
+
   it.each([
     ["fc-fashion-for-good", 48, "Syre"],
     ["fc-elemental-impact", 143, "Allume Energy"],
     ["fc-epa-sbir", 9, "EcoaTEX, LLC"],
-    ["fc-climate-story-fund", 55, "Against the Tide"]
+    ["fc-climate-story-fund", 55, "Against the Tide"],
+    ["fc-third-derivative", 312, "Zinc8 Energy Solutions"]
   ])("reads %s into %i entries", (slug, n, example) => {
     const records = toRecords(monitor(slug), fixture(slug));
     expect(records).toHaveLength(n);
@@ -87,6 +107,24 @@ describe("Firecrawl JSON extraction", () => {
     expect(() => toRecords(m, { json: undefined })).toThrow(/No JSON entries/);
     expect(() => toRecords(m, { json: { entries: [] } })).toThrow(/No entries/);
   });
+
+  it("names an output-length warning as too many entries", () => {
+    const m = monitor("fc-third-derivative");
+    const doc = {
+      json: undefined,
+      warning: "JSON extraction failed: the response exceeded the model's maximum output length."
+    };
+    expect(() => toRecords(m, doc)).toThrow(/^Too many entries for one extraction/);
+  });
+
+  it("tells output-length errors apart from timeouts", () => {
+    expect(isOutputLimit("LLM output exceeded maximum output length")).toBe(true);
+    expect(isOutputLimit("Max output tokens reached")).toBe(true);
+    expect(isOutputLimit('{"finish_reason":"length"}')).toBe(true);
+    expect(isOutputLimit("Request timed out")).toBe(false);
+    expect(isOutputLimit("Scrape timed out after waiting in the concurrency queue")).toBe(false);
+    expect(isOutputLimit("Payload Too Large: content length exceeded")).toBe(false);
+  });
 });
 
 describe("runMonitors", () => {
@@ -115,11 +153,33 @@ describe("runMonitors", () => {
     const day2 = new Date("2026-10-02T12:00:00Z");
     const second = await runMonitors({ db, scrape: recorded, now: day2 });
     expect(second.map((r) => r.slug)).toEqual(["fc-epa-sbir", "fc-climate-story-fund"]);
+  });
 
-    // Nothing is due on day 3.
+  it("checks Third Derivative's full list on day 3, then nothing is due", async () => {
+    const third = await runMonitors({
+      db,
+      scrape: recorded,
+      now: new Date("2026-10-03T12:00:00Z")
+    });
+    expect(third).toEqual([expect.objectContaining({ slug: "fc-third-derivative", ok: true })]);
+    expect(third[0]).toMatchObject({ fetched: 312 });
+
+    // Nothing is due on day 4.
     expect(
-      await runMonitors({ db, scrape: recorded, now: new Date("2026-10-03T12:00:00Z") })
+      await runMonitors({ db, scrape: recorded, now: new Date("2026-10-04T12:00:00Z") })
     ).toEqual([]);
+  });
+
+  it("checks Third Derivative monthly while the others stay weekly", async () => {
+    const td = monitor("fc-third-derivative");
+    expect(td.everyDays).toBe(30);
+    expect(MONITORS.filter((m) => m.slug !== td.slug).every((m) => !m.everyDays)).toBe(true);
+
+    // Two weeks after its check it is not due; a month after, it is.
+    const twoWeeks = await duePages(db, [td], new Date("2026-10-17T12:00:00Z"));
+    expect(twoWeeks).toEqual([]);
+    const month = await duePages(db, [td], new Date("2026-11-02T12:00:00Z"));
+    expect(month.map((m) => m.slug)).toEqual(["fc-third-derivative"]);
   });
 
   it("adds a sighting for every entry and only new companies on a re-check", async () => {
@@ -169,5 +229,106 @@ describe("runMonitors", () => {
     // The failed page goes first the next day.
     const next = await duePages(db, MONITORS, new Date("2026-10-21T12:00:00Z"));
     expect(next[0].slug).toBe("fc-elemental-impact");
+  });
+
+  it("records an output-length failure as too many entries, not a timeout", async () => {
+    const td = monitor("fc-third-derivative");
+    const tooLong: Scrape = async () => {
+      // The shape the SDK throws: an SdkError with the API's error text and details.
+      throw Object.assign(new Error("Extraction failed"), {
+        status: 500,
+        details: { error: "LLM response exceeded the model's maximum output length" }
+      });
+    };
+    const now = new Date("2026-11-05T12:00:00Z");
+    const [result] = await runMonitors({ db, scrape: tooLong, monitors: [td], now });
+    expect(result).toMatchObject({ slug: td.slug, ok: false });
+
+    const [src] = await db
+      .select({ status: t.sources.lastStatus, error: t.sources.lastError })
+      .from(t.sources)
+      .where(eq(t.sources.slug, td.slug));
+    expect(src.status).toBe("failed");
+    expect(src.error).toMatch(/^Too many entries for one extraction: /);
+    expect(src.error).toMatch(/maximum output length/);
+    expect(src.error).not.toMatch(/timed out/i);
+  });
+});
+
+describe("Third Derivative portfolio feed", () => {
+  let db: Database;
+  let cleanup: () => void;
+  beforeAll(async () => {
+    ({ db, cleanup } = await freshDb());
+  });
+  afterAll(() => cleanup());
+
+  const xml = readFileSync("tests/fixtures/third-derivative.xml", "utf8");
+  const feedFetch = (body: string) =>
+    (async (input: RequestInfo | URL) => {
+      if (String(input) !== "https://www.third-derivative.org/portfolio/rss.xml")
+        throw new Error(`Unexpected fetch ${input}`);
+      return new Response(body);
+    }) as typeof fetch;
+
+  it("reads the newest startups with sectors and cohort year", async () => {
+    const records = await thirdDerivative.fetchRecords(feedFetch(xml));
+    expect(records).toHaveLength(10);
+    expect(records[0]).toMatchObject({
+      externalId: "pristinz",
+      name: "PRISTINZ",
+      website: null,
+      cohortYear: 2026,
+      tags: ["Buildings", "Future Industries Partnership"],
+      raw: { page: "https://www.third-derivative.org/portfolio/pristinz" }
+    });
+    expect(records[0].description).toMatch(/^Buildings in tropical regions/);
+    expect(records.find((r) => r.name === "Mitti Labs")?.tags).toContain(
+      "Carbon & Methane Management"
+    );
+  });
+
+  it("matches the full Firecrawl list by name and adds only new startups", async () => {
+    const day1 = new Date("2026-10-01T12:00:00Z");
+    const [full] = await runMonitors({
+      db,
+      scrape: async () => fixture("fc-third-derivative"),
+      monitors: [monitor("fc-third-derivative")],
+      now: day1
+    });
+    expect(full).toMatchObject({ ok: true, fetched: 312, created: 312 });
+
+    // Every startup in today's feed is already on the full list.
+    const day2 = new Date("2026-10-02T12:00:00Z");
+    const [feed] = await runRadarIngestion({
+      db,
+      fetchFn: feedFetch(xml),
+      radarSources: [thirdDerivative],
+      now: day2
+    });
+    expect(feed).toMatchObject({ ok: true, fetched: 10, created: 0 });
+
+    // A startup added after the monthly check arrives through the feed.
+    const added = xml.replace(
+      "<item>",
+      `<item><title>Newco Climate</title><link>https://www.third-derivative.org/portfolio/newco</link><category>Cohort 26-2</category></item><item>`
+    );
+    const [next] = await runRadarIngestion({
+      db,
+      fetchFn: feedFetch(added),
+      radarSources: [thirdDerivative],
+      now: new Date("2026-10-03T12:00:00Z")
+    });
+    expect(next).toMatchObject({ ok: true, fetched: 11, created: 1 });
+    const [pristinz] = await db
+      .select({ id: t.companies.id })
+      .from(t.companies)
+      .where(eq(t.companies.normalizedName, "pristinz"));
+    const seen = await db
+      .select({ sourceId: t.sightings.sourceId })
+      .from(t.sightings)
+      .where(eq(t.sightings.companyId, pristinz.id));
+    // One company, sighted by both the page and the feed.
+    expect(seen).toHaveLength(2);
   });
 });
