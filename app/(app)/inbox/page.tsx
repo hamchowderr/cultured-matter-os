@@ -38,7 +38,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   }
 
   return (
-    <div className="h-(--content-full-height) rounded-md border">
+    <div className="bg-card ring-foreground/10 h-(--content-full-height) overflow-hidden rounded-xl ring-1">
       <Inbox
         toSort={toSort.data.captures}
         filed={filed.data.captures}

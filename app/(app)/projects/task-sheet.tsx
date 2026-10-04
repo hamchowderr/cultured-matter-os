@@ -92,7 +92,7 @@ export function TaskSheet({
       <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
         {task && (
           <div className="space-y-6 px-4 pb-6">
-            <SheetHeader className="px-0">
+            <SheetHeader className="ps-0 pe-10">
               <SheetTitle className="sr-only">Edit task</SheetTitle>
               <SheetDescription className="sr-only">
                 Title, status, priority, notes, due date, subtasks and projects.

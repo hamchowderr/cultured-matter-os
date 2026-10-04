@@ -56,7 +56,7 @@ export default async function Page() {
       {user && (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Account</h2>
-          <div className="bg-card flex items-center gap-4 rounded-xl border p-4">
+          <div className="bg-card ring-foreground/10 flex items-center gap-4 rounded-xl p-4 ring-1">
             <Avatar className="size-10 rounded-md">
               {user.image && <AvatarImage src={user.image} alt="" />}
               <AvatarFallback className="rounded-md text-sm">

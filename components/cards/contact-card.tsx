@@ -21,7 +21,7 @@ export function ContactCard({ contact, reason, actions, className }: ContactCard
   const role = [contact.position, contact.company].filter(Boolean).join(" at ");
 
   return (
-    <article className={cn("bg-card flex gap-3 rounded-lg border p-4", className)}>
+    <article className={cn("bg-muted/40 flex gap-3 rounded-lg p-4", className)}>
       <Avatar className="size-10">
         <AvatarFallback>{initials(contact.fullName)}</AvatarFallback>
       </Avatar>

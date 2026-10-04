@@ -25,7 +25,7 @@ function Stat({
       <CardHeader>
         <CardTitle>{label}</CardTitle>
         <CardAction>
-          <Icon className="text-muted-foreground/50 size-4 lg:size-5" />
+          <Icon className="text-muted-foreground/50 size-4 max-sm:hidden lg:size-5" />
         </CardAction>
       </CardHeader>
       <CardContent>
@@ -42,7 +42,7 @@ const Note = ({ children }: { children: ReactNode }) => (
 
 export function SummaryCards({ stats }: { stats: ProjectStats }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-6">
       <Stat label="Active projects" value={stats.activeProjects} icon={Briefcase}>
         <Note>{stats.pausedProjects ? `${stats.pausedProjects} paused` : "None paused"}</Note>
       </Stat>

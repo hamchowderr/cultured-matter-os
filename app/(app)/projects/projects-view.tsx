@@ -210,7 +210,7 @@ export function ProjectsView({
 
         <TabsContent value="tasks" className="space-y-4 lg:space-y-6">
           {current && (
-            <header className="flex flex-wrap items-start justify-between gap-3 rounded-lg border p-4">
+            <header className="bg-muted/40 flex flex-wrap items-start justify-between gap-3 rounded-xl p-4">
               <div>
                 <p className="text-muted-foreground text-xs">{current.business}</p>
                 <h2 className="text-xl font-semibold">{current.name}</h2>

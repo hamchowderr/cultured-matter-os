@@ -256,7 +256,7 @@ export function TableRecentProjects({
         <CardTitle>Recent projects</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col p-0 [&_[data-slot=table-container]]:flex-1">
-        <div className="flex min-h-14 items-center gap-2 border-b px-(--card-spacing) py-3">
+        <div className="flex min-h-14 items-center gap-2 px-(--card-spacing) py-3">
           <InputGroup className="w-full max-w-56 shrink-0 @max-md/card:min-w-24 @max-md/card:flex-1 @max-md/card:basis-0">
             <InputGroupInput
               placeholder="Search project, business..."

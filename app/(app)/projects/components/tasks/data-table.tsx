@@ -32,6 +32,8 @@ import {
 
 import { revealTop } from "@/components/layout/list-transition";
 import { useIsMobile, useIsTablet } from "@/hooks/use-mobile";
+import { CompactPager } from "@/components/layout/compact-pager";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -164,7 +166,7 @@ export function DataTable({
   return (
     <Card ref={cardRef} className="scroll-mt-20">
       <CardContent className="flex flex-col p-0 [&_[data-slot=table-container]]:flex-1">
-        <div className="flex min-h-14 flex-wrap items-center gap-2 border-b px-(--card-spacing) py-3">
+        <div className="flex min-h-14 flex-wrap items-center gap-2 px-(--card-spacing) py-3">
           {selected.length > 0 ? (
             <>
               <span className="px-1 text-sm font-medium">{selected.length} selected</span>
@@ -194,7 +196,7 @@ export function DataTable({
                   aria-label="Search tasks"
                   value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
                   onChange={(event) => table.getColumn("title")?.setFilterValue(event.target.value)}
-                  className="h-7 w-40 ps-8 text-[0.8rem] lg:w-56"
+                  className="h-7 w-40 ps-8 text-base md:text-[0.8rem] lg:w-56"
                 />
               </div>
               {table.getColumn("status") && (
@@ -232,9 +234,19 @@ export function DataTable({
                   <XIcon />
                 </Button>
               )}
+              {pageCount > 1 && (
+              <CompactPager
+                className="ms-auto"
+                from={firstRow}
+                to={lastRow}
+                total={shown}
+                prev={table.getCanPreviousPage() ? () => table.previousPage() : null}
+                next={table.getCanNextPage() ? () => table.nextPage() : null}
+              />
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="ms-auto">
+                  <Button variant="outline" size="sm" className={cn(pageCount <= 1 && "ms-auto")}>
                     <Columns3Icon />
                     <span className="hidden lg:inline">Columns</span>
                   </Button>
@@ -315,7 +327,7 @@ export function DataTable({
           </div>
           <div className="flex items-center gap-3">
             <span className="text-muted-foreground text-sm tabular-nums">
-              {firstRow} - {lastRow} of {shown}
+              {firstRow}–{lastRow} of {shown}
             </span>
             <div className="flex items-center gap-1">
               <Button

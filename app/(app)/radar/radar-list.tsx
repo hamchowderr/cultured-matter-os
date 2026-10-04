@@ -31,10 +31,11 @@ import {
   starCompany
 } from "@/actions/server";
 import type { Company } from "@/actions/schemas";
+import { CompactPager } from "@/components/layout/compact-pager";
 import { ListLink, ListRegion } from "@/components/layout/list-transition";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -166,6 +167,8 @@ export function RadarList({
     return `${pathname}?${next.toString()}`;
   };
   const pages = Math.max(1, Math.ceil(total / pageSize));
+  const firstRow = (page - 1) * pageSize + 1;
+  const lastRow = Math.min(page * pageSize, total);
 
   const hasFilters = ["q", "category", "stage", "source", "new"].some((k) => params.has(k));
   const view = params.get("view");
@@ -182,6 +185,17 @@ export function RadarList({
                 {total.toLocaleString("en-US")}{" "}
                 {total === 1 ? "company matches" : "companies match"} your filters
               </CardDescription>
+            )}
+            {pages > 1 && (
+              <CardAction>
+                <CompactPager
+                  from={firstRow}
+                  to={lastRow}
+                  total={total}
+                  prev={page > 1 ? pageHref(page - 1) : null}
+                  next={page < pages ? pageHref(page + 1) : null}
+                />
+              </CardAction>
             )}
           </CardHeader>
           <CardContent className="flex flex-col p-0 [&_[data-slot=table-container]]:flex-1">
@@ -220,8 +234,7 @@ export function RadarList({
             {total > 0 && (
               <div className="flex items-center justify-end gap-2 border-t px-(--card-spacing) py-3">
                 <div className="text-muted-foreground flex-1 text-sm tabular-nums">
-                  {((page - 1) * pageSize + 1).toLocaleString("en-US")} -{" "}
-                  {Math.min(page * pageSize, total).toLocaleString("en-US")} of{" "}
+                  {firstRow.toLocaleString("en-US")}–{lastRow.toLocaleString("en-US")} of{" "}
                   {total.toLocaleString("en-US")} {total === 1 ? "company" : "companies"}
                 </div>
                 <nav className="flex items-center gap-1" aria-label="Pages">
@@ -420,44 +433,14 @@ function CompaniesTable({
       {
         id: "actions",
         header: () => <div className="text-end">Status</div>,
-        cell: ({ row }) => {
-          const c = row.original;
-          const busy = busyId === c.id;
-          const status = statusLabel[c.status];
-          return (
-            <div
-              className="flex items-center justify-end gap-1"
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => e.stopPropagation()}
-            >
-              {status && (
-                <Badge variant="secondary" className="mr-1">
-                  {status}
-                </Badge>
-              )}
-              {c.status !== "new" && (
-                <TriageButton
-                  label="Undo"
-                  icon={Undo2Icon}
-                  busy={busy}
-                  onClick={() => onReset(c)}
-                />
-              )}
-              {c.status !== "passed" && (
-                <TriageButton label="Pass" icon={XIcon} busy={busy} onClick={() => onPass(c)} />
-              )}
-              {c.status === "new" && (
-                <TriageButton label="Star" icon={StarIcon} busy={busy} onClick={() => onStar(c)} />
-              )}
-              {c.status !== "shortlisted" && (
-                <Button size="sm" variant="outline" disabled={busy} onClick={() => onShortlist(c)}>
-                  <BookmarkPlusIcon />
-                  Shortlist
-                </Button>
-              )}
-            </div>
-          );
-        }
+        cell: ({ row }) => (
+          <TriageActions
+            company={row.original}
+            busy={busyId === row.original.id}
+            handlers={{ onStar, onShortlist, onPass, onReset }}
+            className="justify-end"
+          />
+        )
       }
     ],
     [newSince, warmPathCounts, busyId, onStar, onShortlist, onPass, onReset]
@@ -474,7 +457,59 @@ function CompaniesTable({
 
   return (
     <TooltipProvider>
-      <div>
+      {/* Phones: one stacked row per company, so nothing runs off the side of the card. */}
+      <ul className="divide-y md:hidden">
+        {companies.map((c) => (
+          <li
+            key={c.id}
+            className={cn("space-y-2 px-(--card-spacing) py-3", c.status === "passed" && "opacity-60")}
+          >
+            <button
+              type="button"
+              onClick={() => onOpen(c)}
+              className="block w-full min-w-0 space-y-0.5 text-left"
+              aria-label={`Open ${c.name}`}
+            >
+              <span className="flex items-center gap-2">
+                <span className="truncate font-medium">{c.name}</span>
+                {newSince && c.firstSeenAt > newSince && <Badge variant="info">New</Badge>}
+              </span>
+              {c.domain && (
+                <span className="text-muted-foreground block truncate text-xs">{c.domain}</span>
+              )}
+              {c.description && (
+                <span className="text-muted-foreground line-clamp-2 text-sm">{c.description}</span>
+              )}
+            </button>
+            {(c.categories.length > 0 || !!statusLabel[c.status] || !!warmPathCounts[c.id]) && (
+              <div className="flex flex-wrap items-center gap-1">
+                {statusLabel[c.status] && (
+                  <Badge variant="secondary">{statusLabel[c.status]}</Badge>
+                )}
+                {c.categories.slice(0, 2).map((cat) => (
+                  <Badge key={cat} variant="outline" className="font-normal">
+                    {cat}
+                  </Badge>
+                ))}
+                {(warmPathCounts[c.id] ?? 0) > 0 && (
+                  <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+                    <UsersIcon className="size-3" />
+                    {warmPathCounts[c.id]}
+                  </span>
+                )}
+              </div>
+            )}
+            <TriageActions
+              company={c}
+              busy={busyId === c.id}
+              handlers={{ onStar, onShortlist, onPass, onReset }}
+              iconOnly
+              showStatus={false}
+            />
+          </li>
+        ))}
+      </ul>
+      <div className="max-md:hidden">
         <Table className="[&_td:first-child]:ps-(--card-spacing) [&_td:last-child]:pe-(--card-spacing) [&_th:first-child]:ps-(--card-spacing) [&_th:last-child]:pe-(--card-spacing)">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -518,6 +553,60 @@ function CompaniesTable({
         </Table>
       </div>
     </TooltipProvider>
+  );
+}
+
+function TriageActions({
+  company: c,
+  busy,
+  handlers,
+  iconOnly = false,
+  showStatus = true,
+  className
+}: {
+  company: RadarCompany;
+  busy: boolean;
+  handlers: { onStar: RowHandler; onShortlist: RowHandler; onPass: RowHandler; onReset: RowHandler };
+  iconOnly?: boolean;
+  showStatus?: boolean;
+  className?: string;
+}) {
+  const status = statusLabel[c.status];
+  return (
+    <div
+      className={cn("flex items-center gap-1", className)}
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      {showStatus && status && (
+        <Badge variant="secondary" className="mr-1">
+          {status}
+        </Badge>
+      )}
+      {c.status !== "new" && (
+        <TriageButton label="Undo" icon={Undo2Icon} busy={busy} onClick={() => handlers.onReset(c)} />
+      )}
+      {c.status !== "passed" && (
+        <TriageButton label="Pass" icon={XIcon} busy={busy} onClick={() => handlers.onPass(c)} />
+      )}
+      {c.status === "new" && (
+        <TriageButton label="Star" icon={StarIcon} busy={busy} onClick={() => handlers.onStar(c)} />
+      )}
+      {c.status !== "shortlisted" &&
+        (iconOnly ? (
+          <TriageButton
+            label="Shortlist"
+            icon={BookmarkPlusIcon}
+            busy={busy}
+            onClick={() => handlers.onShortlist(c)}
+          />
+        ) : (
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => handlers.onShortlist(c)}>
+            <BookmarkPlusIcon />
+            Shortlist
+          </Button>
+        ))}
+    </div>
   );
 }
 

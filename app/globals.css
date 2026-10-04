@@ -163,6 +163,21 @@
     font-weight: var(--display-weight);
   }
 
+  /* Touch screens: every button reaches at least 44 × 44 px without changing how it looks. The
+     extra area is invisible and centred on the button. Buttons placed with absolute, fixed or
+     sticky keep their own positioning. */
+  @media (pointer: coarse) {
+    [data-slot="button"]:not(.absolute):not(.fixed):not(.sticky) {
+      position: relative;
+    }
+    [data-slot="button"]::after {
+      content: "";
+      position: absolute;
+      inset-block: min(0px, calc((100% - 44px) / 2));
+      inset-inline: min(0px, calc((100% - 44px) / 2));
+    }
+  }
+
   [data-slot="button"],
   [data-slot="dialog-trigger"],
   [data-slot="dropdown-menu-item"],

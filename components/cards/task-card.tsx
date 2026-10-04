@@ -52,7 +52,7 @@ export function TaskCard({
       : undefined;
 
   return (
-    <article className={cn("bg-card flex items-start gap-3 rounded-lg border p-4", className)}>
+    <article className={cn("bg-muted/40 flex items-start gap-3 rounded-lg p-4", className)}>
       <Checkbox
         className="mt-0.5"
         checked={done}

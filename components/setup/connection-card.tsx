@@ -2,7 +2,6 @@ import type { LucideIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 
 export type ConnectionState = "connected" | "not_connected" | "waiting";
 
@@ -32,10 +31,10 @@ export function ConnectionCard({
 }) {
   const badge = BADGE[state];
   return (
-    <Card className={cn("gap-0 pb-0 shadow-none", state === "waiting" && "border-dashed")}>
-      <CardContent className="pb-6">
+    <Card className="gap-0 pb-0 shadow-none">
+      <CardContent>
         <div className="mb-4 flex items-start justify-between gap-3">
-          <span className="text-muted-foreground flex size-9 items-center justify-center rounded-lg border">
+          <span className="text-muted-foreground bg-muted flex size-9 items-center justify-center rounded-lg">
             <Icon className="size-4" />
           </span>
           <Badge variant={badge.variant}>{badge.label}</Badge>
@@ -46,7 +45,7 @@ export function ConnectionCard({
         </div>
       </CardContent>
       {action && (
-        <CardFooter className="bg-muted/50 border-t border-dashed px-6 py-4!">{action}</CardFooter>
+        <CardFooter className="bg-muted/40 px-(--card-spacing) py-3">{action}</CardFooter>
       )}
     </Card>
   );

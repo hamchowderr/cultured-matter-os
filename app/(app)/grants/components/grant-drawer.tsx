@@ -20,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { daysUntil, formatAmount, formatDeadline } from "@/lib/format";
 
 type Status = NonNullable<Grant["status"]>;
@@ -58,7 +57,7 @@ export function GrantDrawer({
   return (
     <Drawer direction="right" open={grant != null} onOpenChange={onOpenChange}>
       <DrawerContent className="w-full sm:max-w-lg">
-        <DrawerHeader className="border-b">
+        <DrawerHeader className="pb-0">
           <DrawerTitle>Grant</DrawerTitle>
           <DrawerDescription className="sr-only">
             Deadline, amount and eligibility for this grant.
@@ -127,15 +126,12 @@ export function GrantDrawer({
             )}
 
             {grant.description && (
-              <>
-                <Separator />
-                <div className="space-y-2">
-                  <span className="font-semibold">About this grant</span>
-                  <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-line">
-                    {grant.description}
-                  </p>
-                </div>
-              </>
+              <div className="space-y-2">
+                <span className="font-semibold">About this grant</span>
+                <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-line">
+                  {grant.description}
+                </p>
+              </div>
             )}
           </div>
         )}
