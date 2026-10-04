@@ -35,9 +35,10 @@ export async function duePages(
     if (!row?.at || row.status === "failed") return 0;
     return row.at.getTime();
   };
-  const cutoff = now.getTime() - everyDays * DAY + SLACK;
+  // A page's own everyDays wins over the run's default.
+  const cutoff = (m: Monitor) => now.getTime() - (m.everyDays ?? everyDays) * DAY + SLACK;
   return monitors
-    .filter((m) => rank(m) <= cutoff)
+    .filter((m) => rank(m) <= cutoff(m))
     .sort((a, b) => rank(a) - rank(b))
     .slice(0, max);
 }

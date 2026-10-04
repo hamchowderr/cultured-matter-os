@@ -9,6 +9,7 @@ import { gca } from "./gca";
 import { greentown } from "./greentown";
 import { nsf } from "./nsf";
 import { sosv } from "./sosv";
+import { thirdDerivative } from "./third-derivative";
 import type { Fetch, RadarSource } from "./types";
 import { upsertRecords, type UpsertStats } from "./upsert";
 import { yc } from "./yc";
@@ -21,12 +22,12 @@ export const RADAR_SOURCES: RadarSource[] = [
   nsf,
   agfundernews,
   gca,
-  closedLoop
+  closedLoop,
+  thirdDerivative
 ];
 
 export type SourceResult =
-  | ({ slug: string; ok: true } & UpsertStats)
-  | { slug: string; ok: false; error: string };
+  ({ slug: string; ok: true } & UpsertStats) | { slug: string; ok: false; error: string };
 
 // Fetches every source in parallel, then writes each one. A failing source is
 // recorded on its row and in the activity log; the others still run.

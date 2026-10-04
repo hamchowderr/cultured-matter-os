@@ -49,7 +49,7 @@ export const ENTRY_SCHEMA = {
 
 export function scrapeOptions(monitor: Monitor): ScrapeOptions {
   return {
-    formats: [{ type: "json", schema: ENTRY_SCHEMA, prompt: monitor.prompt }],
+    formats: [{ type: "json", schema: monitor.schema ?? ENTRY_SCHEMA, prompt: monitor.prompt }],
     onlyMainContent: true,
     // Reuse a copy up to 6 hours old; the default window is 2 days, too stale for a daily check.
     maxAge: 6 * 60 * 60 * 1000,
@@ -70,13 +70,34 @@ const Entry = z.object({
 });
 const Extracted = z.object({ entries: z.array(z.unknown()) });
 
+// Firecrawl's extraction model writes the whole JSON answer in one reply. A long list
+// with many fields per entry runs past its maximum output length; the page itself was
+// fetched fine. Raising the timeout does not help, so this gets its own message.
+const OUTPUT_LIMIT =
+  /max(imum)?[ _-]*(output|completion)[ _-]*(length|tokens?)|output[ _-]*(length|token[ _-]*limit)|finish_?reason\W+length/i;
+export const TOO_MANY_ENTRIES =
+  "Too many entries for one extraction: Firecrawl's model hit its maximum output length. " +
+  "Ask this page for fewer fields, or split it into smaller pages.";
+
+export function isOutputLimit(message: string | null | undefined): boolean {
+  return !!message && OUTPUT_LIMIT.test(message);
+}
+
+function outputLimitError(detail: string): Error {
+  return new Error(`${TOO_MANY_ENTRIES} (Firecrawl: ${detail.slice(0, 300)})`);
+}
+
 // Turns a Firecrawl document into Radar records. Throws when the page gave nothing,
 // so a broken or blocked page is logged as a failed source instead of a silent zero.
 export function toRecords(monitor: Monitor, doc: Document): RadarRecord[] {
   const status = doc.metadata?.statusCode;
   if (status && status >= 400) throw new Error(`${status} from ${monitor.url}`);
   const parsed = Extracted.safeParse(doc.json);
-  if (!parsed.success) throw new Error(`No JSON entries extracted from ${monitor.url}`);
+  if (!parsed.success) {
+    // Firecrawl can return the page with a warning in place of the JSON.
+    if (isOutputLimit(doc.warning)) throw outputLimitError(doc.warning!);
+    throw new Error(`No JSON entries extracted from ${monitor.url}`);
+  }
 
   const host = normalizeDomain(monitor.url);
   const byKey = new Map<string, RadarRecord>();
@@ -119,7 +140,20 @@ export function monitorSource(monitor: Monitor, scrape: Scrape): RadarSource {
     name: monitor.name,
     kind: "firecrawl",
     url: monitor.url,
-    fetchRecords: async () => toRecords(monitor, await scrape(monitor.url, scrapeOptions(monitor)))
+    fetchRecords: async () => {
+      let doc: Document;
+      try {
+        doc = await scrape(monitor.url, scrapeOptions(monitor));
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        const details = (e as { details?: unknown })?.details;
+        const detailText = details == null ? "" : JSON.stringify(details);
+        if (isOutputLimit(message) || isOutputLimit(detailText))
+          throw outputLimitError(isOutputLimit(message) ? message : detailText);
+        throw e;
+      }
+      return toRecords(monitor, doc);
+    }
   };
 }
 
