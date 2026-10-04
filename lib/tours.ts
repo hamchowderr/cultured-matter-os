@@ -263,6 +263,11 @@ export const TOURS: TourDef[] = [
     steps: [
       at("archive-heading", "Archive", "A record of everything done in the app, newest first."),
       at(
+        "archive-tabs",
+        "Activity and Notes",
+        "Activity is the record. Notes holds the notes brought over from Apple Notes."
+      ),
+      at(
         "archive-filters",
         "Search and filter",
         "Search for something, or narrow it down by kind of change or by date."

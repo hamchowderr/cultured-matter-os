@@ -79,6 +79,7 @@ import {
   savePushSubscription,
   setPushPreferences
 } from "./push";
+import { fileNoteToInbox, getNote, importNotes, searchNotes } from "./notes";
 
 export {
   searchCompanies,
@@ -147,7 +148,11 @@ export {
   setPushPreferences,
   savePushSubscription,
   removePushSubscription,
-  prunePushSubscriptions
+  prunePushSubscriptions,
+  importNotes,
+  searchNotes,
+  getNote,
+  fileNoteToInbox
 };
 
 // Every named action, for the phase-2 agent to wrap as tools.
@@ -208,10 +213,13 @@ export const allActions = [
   newGrantsSince,
   dailySummary,
   pushStatus,
-  setPushPreferences
+  setPushPreferences,
+  searchNotes,
+  getNote,
+  fileNoteToInbox
   // Not tools: calendarFeed (keyed by the feed's secret token), recordDailySummary (the cron's
-  // bookkeeping), markTourSeen (the guided tours' bookkeeping) and the push device actions (they
-  // need a browser's push subscription).
+  // bookkeeping), markTourSeen (the guided tours' bookkeeping), importNotes (the Apple Notes
+  // Shortcut's endpoint) and the push device actions (they need a browser's push subscription).
 ] as const;
 
 export { ActionError, type Action, type ActionResult } from "./define";

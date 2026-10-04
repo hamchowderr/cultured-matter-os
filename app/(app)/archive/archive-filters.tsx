@@ -61,14 +61,6 @@ export function ArchiveFilters({ filters }: { filters: ArchiveFilterState }) {
   }, [query]);
 
   const anyFilter = !!(filters.type || filters.from || filters.to || filters.query);
-  const dateLabel =
-    filters.from && filters.to
-      ? `${shortDay(filters.from)} – ${shortDay(filters.to)}`
-      : filters.from
-        ? `From ${shortDay(filters.from)}`
-        : filters.to
-          ? `Until ${shortDay(filters.to)}`
-          : "Any date";
 
   return (
     <div className="flex flex-wrap gap-3" data-tour-step-id="archive-filters">
@@ -122,51 +114,7 @@ export function ArchiveFilters({ filters }: { filters: ArchiveFilterState }) {
           </Command>
         </PopoverContent>
       </Popover>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" aria-label="Date range">
-            <CalendarIcon />
-            Date
-            {filters.from || filters.to ? (
-              <Badge variant="secondary">{dateLabel}</Badge>
-            ) : (
-              <ChevronDownIcon />
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-64 space-y-3" align="end">
-          <label className="text-muted-foreground grid gap-1.5 text-sm">
-            From
-            <Input
-              type="date"
-              value={filters.from ?? ""}
-              max={filters.to}
-              onChange={(e) => update({ from: e.target.value || undefined })}
-              aria-label="From date"
-            />
-          </label>
-          <label className="text-muted-foreground grid gap-1.5 text-sm">
-            To
-            <Input
-              type="date"
-              value={filters.to ?? ""}
-              min={filters.from}
-              onChange={(e) => update({ to: e.target.value || undefined })}
-              aria-label="To date"
-            />
-          </label>
-          {(filters.from || filters.to) && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="w-full"
-              onClick={() => update({ from: undefined, to: undefined })}
-            >
-              Any date
-            </Button>
-          )}
-        </PopoverContent>
-      </Popover>
+      <DateRangeFilter from={filters.from} to={filters.to} onChange={(range) => update(range)} />
       {anyFilter && (
         <Button
           variant="ghost"
@@ -180,5 +128,70 @@ export function ArchiveFilters({ filters }: { filters: ArchiveFilterState }) {
         </Button>
       )}
     </div>
+  );
+}
+
+// The date range picker, shared with the Notes filters (archive/notes).
+export function DateRangeFilter({
+  from,
+  to,
+  label = "Date",
+  onChange
+}: {
+  from?: string;
+  to?: string;
+  label?: string;
+  onChange: (range: { from?: string; to?: string }) => void;
+}) {
+  const dateLabel =
+    from && to
+      ? `${shortDay(from)} – ${shortDay(to)}`
+      : from
+        ? `From ${shortDay(from)}`
+        : to
+          ? `Until ${shortDay(to)}`
+          : "Any date";
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" aria-label="Date range">
+          <CalendarIcon />
+          {label}
+          {from || to ? <Badge variant="secondary">{dateLabel}</Badge> : <ChevronDownIcon />}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 space-y-3" align="end">
+        <label className="text-muted-foreground grid gap-1.5 text-sm">
+          From
+          <Input
+            type="date"
+            value={from ?? ""}
+            max={to}
+            onChange={(e) => onChange({ from: e.target.value || undefined, to })}
+            aria-label="From date"
+          />
+        </label>
+        <label className="text-muted-foreground grid gap-1.5 text-sm">
+          To
+          <Input
+            type="date"
+            value={to ?? ""}
+            min={from}
+            onChange={(e) => onChange({ from, to: e.target.value || undefined })}
+            aria-label="To date"
+          />
+        </label>
+        {(from || to) && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="w-full"
+            onClick={() => onChange({ from: undefined, to: undefined })}
+          >
+            Any date
+          </Button>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }

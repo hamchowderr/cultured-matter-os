@@ -30,14 +30,19 @@ function keyMatches(given: string, expected: string) {
 // The key comes from the Authorization header or, more reliably from a Shortcut, a "key" field
 // in the Form or JSON body. Pasting into a header can carry hidden characters that make iOS drop
 // the request; a body field tolerates them. "Bearer " and surrounding whitespace are ignored.
-function authorized(request: Request, bodyKey?: string) {
+// Shared with the Apple Notes import (lib/apple-notes.ts).
+export function authorized(request: Request, bodyKey?: string) {
   const expected = process.env.CAPTURE_TOKEN;
   if (!expected) return false;
   const header = request.headers.get("authorization") ?? "";
   const match = /^Bearer\s+(.+)$/i.exec(header.trim());
-  const given = match?.[1] ?? bodyKey?.replace(/^\s*Bearer\s+/i, "");
-  return !!given?.trim() && keyMatches(given.trim(), expected);
+  const given = cleanKey(match?.[1] ?? bodyKey?.replace(/^\s*Bearer\s+/i, "") ?? "");
+  return !!given && keyMatches(given, cleanKey(expected));
 }
+
+// A key never contains spaces. Pasting it on an iPhone can add line breaks, no-break spaces or
+// zero-width characters, so all of those are dropped before comparing.
+const cleanKey = (key: string) => key.replace(/[\s\u00a0\u200b-\u200d\u2060\ufeff]/g, "");
 
 const EXT: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -75,12 +80,12 @@ async function fromFile(file: Blob): Promise<{ text?: string; photo?: Blob }> {
   return { text: new TextDecoder().decode(bytes) };
 }
 
-type FormEntry = [name: string, value: string | Blob];
+export type FormEntry = [name: string, value: string | Blob];
 
 // Form bodies. Multipart goes through busboy: the platform's Request.formData() rejects the
 // multipart bodies iPhone Shortcuts sends with photos ("Failed to parse body as FormData").
-function readForm(type: string, raw: Uint8Array): Promise<FormEntry[]> {
-  if (!type.includes("multipart/form-data")) {
+export function readForm(type: string, raw: Uint8Array): Promise<FormEntry[]> {
+  if (!type.toLowerCase().includes("multipart/form-data")) {
     const params = new URLSearchParams(new TextDecoder().decode(raw));
     return Promise.resolve([...params.entries()]);
   }
@@ -104,7 +109,8 @@ function readForm(type: string, raw: Uint8Array): Promise<FormEntry[]> {
 // The Shortcut can send JSON ({"text": "..."}), a Form (fields "text" and "photo"), plain text,
 // or the photo itself as the whole request body ("File"). The body is already read in full.
 async function parse(type: string, raw: Uint8Array): Promise<Parsed> {
-  if (type.includes("application/json")) {
+  const lower = type.toLowerCase();
+  if (lower.includes("application/json")) {
     const json = JSON.parse(new TextDecoder().decode(raw)) as Record<string, unknown> | null;
     const value = TEXT_FIELDS.map((k) => json?.[k]).find((v) => v != null);
     const fields = Object.entries(json ?? {}).map(([name, v]) => ({
@@ -115,7 +121,7 @@ async function parse(type: string, raw: Uint8Array): Promise<Parsed> {
     const key = typeof json?.key === "string" ? json.key : undefined;
     return { body: value == null ? "" : String(value), photo: null, key, fields };
   }
-  if (type.includes("multipart/form-data") || type.includes("application/x-www-form-urlencoded")) {
+  if (lower.includes("multipart/form-data") || lower.includes("application/x-www-form-urlencoded")) {
     let body = "";
     let photo: Blob | null = null;
     let key: string | undefined;
@@ -182,7 +188,8 @@ export async function handleCapture(request: Request, deps: CaptureDeps = {}) {
   // Read the whole request before answering. Replying while the iPhone is still sending makes
   // iOS report "network connection lost" instead of showing the reply.
   const raw = new Uint8Array(await request.arrayBuffer().catch(() => new ArrayBuffer(0)));
-  const type = (request.headers.get("content-type") ?? "").toLowerCase();
+  // Not lowercased: the multipart boundary is case-sensitive.
+  const type = request.headers.get("content-type") ?? "";
   let parsed: Parsed | null = null;
   let parseError: unknown;
   try {

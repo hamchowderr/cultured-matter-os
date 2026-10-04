@@ -89,7 +89,10 @@ describe("registry", () => {
         "newGrantsSince",
         "dailySummary",
         "pushStatus",
-        "setPushPreferences"
+        "setPushPreferences",
+        "searchNotes",
+        "getNote",
+        "fileNoteToInbox"
       ].sort()
     );
     for (const a of A.allActions) {

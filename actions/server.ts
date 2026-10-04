@@ -271,3 +271,13 @@ export async function sendTestPush(input: { endpoint: string }) {
     return result;
   });
 }
+
+export async function searchNotes(input: In<typeof A.searchNotes>) {
+  return toResult(() => A.searchNotes.run(input));
+}
+export async function getNote(input: In<typeof A.getNote>) {
+  return toResult(() => A.getNote.run(input));
+}
+export async function fileNoteToInbox(input: In<typeof A.fileNoteToInbox>) {
+  return toResult(() => A.fileNoteToInbox.run(input));
+}
