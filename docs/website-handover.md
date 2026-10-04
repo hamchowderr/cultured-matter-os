@@ -4,14 +4,15 @@ Simone's demo website and FluentCRM run as one WordPress install on the owner's 
 
 ## What runs where
 
-| Part           | Value                                                                                                        |
-| -------------- | ------------------------------------------------------------------------------------------------------------ |
-| Host           | Hostinger VPS `191.101.15.236`, Coolify v4 at `https://coolify.otakusolutions.io`                            |
-| Coolify        | Project "Cultured Matter Site", environment `production`, one-click `wordpress-with-mariadb`                 |
-| Containers     | `wordpress:latest` (Apache + PHP) and `mariadb:11`, on the service's own private network                     |
-| Volumes        | `wordpress-files` → `/var/www/html` (core, `wp-content`, `wp-config.php`); `mariadb-data` → `/var/lib/mysql` |
-| Demo address   | `https://culturedmatter.otakusolutions.io` (Traefik issues the Let's Encrypt certificate)                    |
-| Search engines | Discouraged (`blog_public` = 0). It is a demo.                                                               |
+| Part           | Value                                                                                                                                                  |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Host           | Hostinger VPS `191.101.15.236`, Coolify v4 at `https://coolify.otakusolutions.io`                                                                      |
+| Coolify        | Service `cultured-matter-site` (`moss6ndtjuiixvkd0t2fcjyr`) in project "Otaku Solutions", environment `production`, one-click `wordpress-with-mariadb` |
+| Plugins        | FluentCRM 3.2.5 (free), FluentAuth (`fluent-security`) 3.0.4                                                                                           |
+| Containers     | `wordpress:latest` (Apache + PHP) and `mariadb:11`, on the service's own private network                                                               |
+| Volumes        | `wordpress-files` → `/var/www/html` (core, `wp-content`, `wp-config.php`); `mariadb-data` → `/var/lib/mysql`                                           |
+| Demo address   | `https://culturedmatter.otakusolutions.io` (Traefik issues the Let's Encrypt certificate)                                                              |
+| Search engines | Discouraged (`blog_public` = 0). It is a demo.                                                                                                         |
 
 Nothing is shared with the owner's other services: no shared database, no shared volume, and the service is not connected to Coolify's shared `coolify` network.
 
@@ -19,67 +20,54 @@ Her live site (`culturedmatter.com`) and her mail (`simonepaz.com`, Google Works
 
 ## Accounts
 
-| Account       | Role                                                   | Who                                                                                         |
-| ------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| `otaku-admin` | Administrator                                          | The owner. Password in Infisical `/cultured-matter-os`, env `prod`: `CM_WP_ADMIN_PASSWORD`. |
-| `cm-api`      | Administrator (FluentCRM free has no CRM Manager role) | The app's API user. Application password "Cultured Matter OS".                              |
-| Simone        | Editor, plus FluentCRM access                          | Not created yet. Created only when the owner approves.                                      |
+| Account       | Role                                           | Who                                                                                          |
+| ------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `otaku-admin` | Administrator                                  | The owner. The app connects as this user with the application password "cultured-matter-os". |
+| `simone`      | Editor (`simone@simonepaz.com`, no email sent) | Simone. FluentCRM access is granted in FluentCRM → Settings → Managers.                      |
 
 Secrets are never written to git. Names in Infisical (`/cultured-matter-os`):
 
-- `prod`: `CM_WP_ADMIN_PASSWORD`, `CM_WP_DB_PASSWORD` (copy of the Coolify-generated value, for restores)
-- `dev` and `staging`: `FLUENTCRM_URL`, `FLUENTCRM_USER`, `FLUENTCRM_APP_PASSWORD`, `FLUENTCRM_LIST_ID`, `NEWSLETTER_WEBHOOK_SECRET`
-- `prod` app values wait for the owner's approval, because they connect the live app.
+- `prod`: `CM_SITE_WP_ADMIN_USER`, `CM_SITE_WP_ADMIN_PASSWORD`, `CM_SITE_SIMONE_USER`, `CM_SITE_SIMONE_PASSWORD`
+- `dev`, `staging` and `prod`: `FLUENTCRM_URL`, `FLUENTCRM_USER`, `FLUENTCRM_APP_PASSWORD`, `FLUENTCRM_LIST_ID` (`1`, "Newsletter"), `NEWSLETTER_WEBHOOK_SECRET`. The prod values are also set on the Vercel project.
+- The database password is the one Coolify generated for the service (service → Environment Variables).
 
 ## Build steps
 
 These are the steps that set up the install. Run the Coolify CLI from PowerShell (Git Bash rewrites leading-slash arguments).
 
 1. **DNS.** In Cloudflare, zone `otakusolutions.io`, add an `A` record: name `culturedmatter`, content `191.101.15.236`, proxy status **DNS only** (grey cloud), so Traefik can complete the Let's Encrypt HTTP-01 challenge. The zone has no wildcard record.
-2. **Project and service.**
+2. **Service** (in the existing "Otaku Solutions" project):
    ```powershell
-   coolify project create --name "Cultured Matter Site"
-   coolify service create wordpress-with-mariadb --server-uuid sq3c52uczu81384adrlo7w77 `
-     --project-uuid <project uuid> --environment-name production --name "Cultured Matter WordPress"
+   coolify service create wordpress-with-mariadb --server-uuid=sq3c52uczu81384adrlo7w77 `
+     --project-uuid=v11kpx15vw3l3pzs8csucps8 --environment-name=production --name="cultured-matter-site"
+   coolify service application update <service uuid> <wordpress app uuid> --url "https://culturedmatter.otakusolutions.io"
+   coolify service start <service uuid>
    ```
-   Set the WordPress domain to `https://culturedmatter.otakusolutions.io` (service → wordpress → Domains), then **Deploy**. Use Deploy, not the API `start`; `start` can leave compose stacks in `Created`.
-3. **WP-CLI.** `wordpress:latest` has no `wp` binary. Run the `wordpress:cli` image against the live container's files and network, as uid 33 (`www-data`):
+3. **Install.** Run the WordPress installer straight away (`/wp-admin/install.php`), because until then anyone can claim the site. Admin user `otaku-admin`, owner email, generated password stored in Infisical; "Discourage search engines" ticked.
+4. **WP-CLI.** `wordpress:latest` has no `wp` binary. Download the phar into the container's `/tmp` (it is gone after a restart, which is fine) and run it as `www-data`:
    ```sh
    WP=wordpress-<service uuid>
-   docker run --rm --user 33:33 --volumes-from "$WP" --network container:"$WP" \
-     -e WORDPRESS_DB_HOST=mariadb -e WORDPRESS_DB_NAME=wordpress \
-     --env-file <(docker exec "$WP" env | grep '^WORDPRESS_DB_\(USER\|PASSWORD\)=') \
-     wordpress:cli wp <command>
+   docker exec -u www-data "$WP" sh -c 'cd /tmp && curl -sSLo wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar'
+   docker exec -u www-data "$WP" php /tmp/wp --path=/var/www/html <command>
    ```
-4. **Install and settings.**
+5. **Settings and plugins.**
    ```sh
-   wp core install --url=https://culturedmatter.otakusolutions.io --title="Cultured Matter" \
-     --admin_user=otaku-admin --admin_email=<owner email> --admin_password="$CM_WP_ADMIN_PASSWORD" --skip-email
-   wp option update blog_public 0
    wp rewrite structure '/%postname%/' --hard
-   wp plugin install fluent-crm --activate
+   wp plugin delete akismet hello
+   wp plugin install fluent-crm fluent-security --activate
+   wp eval '$l = \FluentCrm\App\Models\Lists::firstOrCreate(["slug"=>"newsletter"],["title"=>"Newsletter"]); echo $l->id;'
    ```
-5. **Cron.** Set `define('DISABLE_WP_CRON', true);` in `wp-config.php` and add a Coolify scheduled task (CLI only; the UI form discards it):
-   ```powershell
-   coolify service task create <service uuid> --name "WordPress cron" `
-     --command 'su -s /bin/sh -c "php /var/www/html/wp-cron.php" www-data' `
-     --frequency "* * * * *" --container wordpress --timeout 55
-   ```
-6. **App connection.**
-   ```sh
-   wp user create cm-api <api email> --role=administrator
-   wp user application-password create cm-api "Cultured Matter OS" --porcelain   # shown once
-   ```
-   Create the list in FluentCRM → Contacts → Lists ("Newsletter"). Its ID is `FLUENTCRM_LIST_ID`. The other values are in `docs/newsletter.md`.
-7. **Unsubscribe webhook.** Needs FluentCRM Pro (automations). Point it at a stable app URL only. Vercel preview URLs change per deployment and sit behind deployment protection, so a webhook aimed at one breaks. Full setup: `docs/newsletter.md`, step 4.
+6. **App connection.** `wp user application-password create otaku-admin cultured-matter-os --porcelain` prints the password once. Pipe it straight into `infisical secrets set` (never print it), with the list ID as `FLUENTCRM_LIST_ID`. Copy the prod values to Vercel and redeploy. Details: `docs/newsletter.md`.
+7. **Simone's login.** `wp user create simone simone@simonepaz.com --role=editor --user_pass=<generated>` (no email is sent). Store the password in Infisical and give it to her directly. Add her in FluentCRM → Settings → Managers for CRM access.
+8. **Unsubscribe webhook.** Needs FluentCRM Pro (automations). Point it at a stable app URL only. Vercel preview URLs change per deployment and sit behind deployment protection, so a webhook aimed at one breaks. Full setup: `docs/newsletter.md`, step 4.
 
 ## Backups
 
-| What                      | How                                                                                                                                                                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Database (MariaDB)        | Coolify scheduled backup on the service's `mariadb` database, daily `0 3 * * *`, keep 7 locally. Set in the UI: service → mariadb → Backups. The `/databases/{uuid}/backups` API only accepts standalone databases. |
-| Files (`wordpress-files`) | Coolify volume backup on the service storage, daily `0 3 * * *`, keep 7: `PUT /api/v1/services/{uuid}/storages/{storage_uuid}/backups`.                                                                             |
-| Off-server copy           | None yet. Both backups stay on the same VPS. Add an S3 destination (`coolify s3 create`) and set `save_s3` on both schedules before the site holds real data.                                                       |
+| What                      | How                                                                                                                                                                                                |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Files (`wordpress-files`) | Coolify volume backup, daily `0 3 * * *`, keep 7 locally: `coolify service storage set-backup <service uuid> <storage uuid> --frequency "0 3 * * *" --retention-amount-locally 7`.                 |
+| Database (`mariadb-data`) | Coolify volume backup, daily `15 3 * * *`, keep 7 locally, with `--stop-during-backup` so the copy is consistent (MariaDB pauses for a few seconds). For a SQL dump instead, use the export below. |
+| Off-server copy           | None yet. Both backups stay on the same VPS. Add an S3 destination (`coolify s3 create`) and set `save_s3` on both schedules before the site holds real data.                                      |
 
 Test a restore before the handover: restore both into a scratch service and load the site.
 
