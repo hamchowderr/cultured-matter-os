@@ -265,7 +265,7 @@ export const TOURS: TourDef[] = [
             target: "grants-board",
             title: "Your board",
             content:
-              "Drag a grant from column to column as you work on it. Tap a grant to see the details."
+              "Drag a grant from column to column as you work on it, or open it and change its column there."
           },
           {
             target: "grants-column",

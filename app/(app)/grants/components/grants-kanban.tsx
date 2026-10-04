@@ -372,7 +372,7 @@ export default function GrantsKanban({
                           : undefined
                     }
                     className={cn(
-                      "w-full min-w-0 md:w-[300px] md:min-w-[300px] lg:w-auto lg:min-w-[240px] lg:flex-1",
+                      "w-full min-w-0 md:w-[300px] md:min-w-[300px] lg:w-auto lg:min-w-[240px] lg:flex-1 xl:min-w-0",
                       key !== phoneColumn && "max-md:hidden"
                     )}
                   >
@@ -452,16 +452,25 @@ const GrantKanbanCard = React.forwardRef<
   const urgent = days != null && days >= 0 && days <= 14;
 
   return (
-    <Card ref={ref} className={cn("cursor-pointer", className)} {...props} onClick={onOpen}>
+    <Card
+      ref={ref}
+      // Five columns share the board from xl, so the cards use the small padding there.
+      className={cn("cursor-pointer xl:[--card-spacing:--spacing(3)]", className)}
+      {...props}
+      onClick={onOpen}
+    >
       <CardContent className="space-y-3">
         <div className="space-y-1">
-          <div className="text-base leading-snug font-semibold">{grant.title}</div>
+          <div className="text-base leading-snug font-semibold wrap-break-word">{grant.title}</div>
           {grant.agency && (
             <p className="text-muted-foreground line-clamp-2 text-sm">{grant.agency}</p>
           )}
         </div>
         <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
-          <Badge variant={urgent ? "warning" : "outline"}>
+          <Badge
+            variant={urgent ? "warning" : "outline"}
+            className="h-auto max-w-full whitespace-normal"
+          >
             <CalendarDaysIcon />
             {formatDeadline(grant.deadline)}
           </Badge>
@@ -472,9 +481,10 @@ const GrantKanbanCard = React.forwardRef<
             </span>
           )}
         </div>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <EligibilityBadge grant={grant} />
           <Button
+            className="ms-auto"
             variant="ghost"
             size="icon-sm"
             aria-label={`Open ${grant.title}`}
