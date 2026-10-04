@@ -20,8 +20,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 type Recipient = Pick<Contact, "id" | "fullName" | "email">;
 
-// Writes a follow-up. Nothing reaches Outlook until it is approved; approving saves it in her
-// Outlook Drafts and she sends it herself.
+// Writes a follow-up. Nothing reaches Gmail until it is approved; approving saves it in her
+// Gmail Drafts and she sends it herself.
 export function FollowUpDialog({
   open,
   onOpenChange,
@@ -69,7 +69,7 @@ export function FollowUpDialog({
     const result = await draftFollowUp({ contactId: to.id, taskId, subject, body });
     setSaving(false);
     if (!result.ok) return toast.error(result.error.message);
-    toast.success("Sent for approval. Once you approve it, it waits in your Outlook Drafts.");
+    toast.success("Sent for approval. Once you approve it, it waits in your Gmail Drafts.");
     onOpenChange(false);
     onQueued?.();
   }
@@ -81,7 +81,7 @@ export function FollowUpDialog({
           <DialogHeader>
             <DialogTitle>Draft follow-up</DialogTitle>
             <DialogDescription>
-              After you approve it, this is saved in your Outlook Drafts. You send it yourself.
+              After you approve it, this is saved in your Gmail Drafts. You send it yourself.
             </DialogDescription>
           </DialogHeader>
 

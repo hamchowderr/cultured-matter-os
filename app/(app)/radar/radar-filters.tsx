@@ -1,12 +1,22 @@
 "use client";
 
-import { SearchIcon, SparklesIcon } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { SearchIcon, SlidersHorizontalIcon, SparklesIcon, XIcon } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import { useListNavigation } from "@/components/layout/list-transition";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger
+} from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CATEGORIES } from "@/lib/categories";
 import { STAGE_GROUPS } from "@/lib/stages";
@@ -29,20 +39,17 @@ export type RadarFilterState = {
   newOnly: boolean;
 };
 
-export function RadarFilters({
-  filters,
-  facets,
-  hasBaseline
-}: {
+type Props = {
   filters: RadarFilterState;
   facets: Facets | null;
   hasBaseline: boolean;
-}) {
-  const router = useRouter();
+};
+
+// Both halves write the same URL; a filter change always goes back to page one.
+function useUpdate() {
   const pathname = usePathname();
   const params = useSearchParams();
-  const [pending, startTransition] = useTransition();
-  const [query, setQuery] = useState(filters.query ?? "");
+  const { navigate } = useListNavigation();
 
   function update(patch: Record<string, string | undefined>) {
     const next = new URLSearchParams(params.toString());
@@ -51,15 +58,14 @@ export function RadarFilters({
       else next.delete(k);
     }
     next.delete("page");
-    startTransition(() => router.replace(`${pathname}?${next.toString()}`, { scroll: false }));
+    navigate(`${pathname}?${next.toString()}`, { replace: true });
   }
+  return { update };
+}
 
-  // Search as she types, after a short pause.
-  useEffect(() => {
-    if (query === (filters.query ?? "")) return;
-    const t = setTimeout(() => update({ q: query.trim() || undefined }), 300);
-    return () => clearTimeout(t);
-  }, [query]);
+/** The status views (To review, Starred, ...) with their counts. */
+export function RadarTabs({ filters, facets }: Omit<Props, "hasBaseline">) {
+  const { update } = useUpdate();
 
   const count = (statuses: readonly string[] | undefined) =>
     facets
@@ -68,16 +74,16 @@ export function RadarFilters({
         : facets.total
       : null;
 
-  const anyFilter =
-    filters.category || filters.stage || filters.source || filters.query || filters.newOnly;
-
   return (
-    <div className={cn("space-y-3 transition-opacity", pending && "opacity-60")}>
-      <Tabs
-        value={filters.view}
-        onValueChange={(v) => update({ view: v === "review" ? undefined : v })}
+    <Tabs
+      value={filters.view}
+      onValueChange={(v) => update({ view: v === "review" ? undefined : v })}
+    >
+      <div
+        className="-mx-1 [scrollbar-width:none] overflow-x-auto px-1"
+        data-tour-step-id="radar-tabs"
       >
-        <TabsList className="flex-wrap">
+        <TabsList className="w-max">
           {RADAR_VIEWS.map((v) => {
             const n = count(v.statuses);
             return (
@@ -88,25 +94,46 @@ export function RadarFilters({
             );
           })}
         </TabsList>
-      </Tabs>
+      </div>
+    </Tabs>
+  );
+}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative w-full sm:w-64">
-          <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search name or description"
-            className="h-8 pl-9"
-            aria-label="Search companies"
-          />
-        </div>
+/** Search and filters, laid out as the toolbar row of the kit's v2 leads card. */
+export function RadarToolbar({ filters, facets, hasBaseline }: Props) {
+  const { update } = useUpdate();
+  const [query, setQuery] = useState(filters.query ?? "");
+
+  // Follow the URL when a link elsewhere on the page (a summary card, Clear filters) changes it.
+  useEffect(() => setQuery(filters.query ?? ""), [filters.query]);
+
+  // Search as she types, after a short pause.
+  useEffect(() => {
+    if (query === (filters.query ?? "")) return;
+    const t = setTimeout(() => update({ q: query.trim() || undefined }), 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const anyFilter =
+    filters.category || filters.stage || filters.source || filters.query || filters.newOnly;
+
+  const active = [filters.category, filters.stage, filters.source, filters.newOnly].filter(
+    Boolean
+  ).length;
+
+  // The same controls inline on a wide card and in a bottom sheet on a phone.
+  const controls = (stacked: boolean) => {
+    const select = stacked ? "w-full" : "w-auto";
+    const size = stacked ? "default" : "sm";
+    return (
+      <>
         <NativeSelect
-          size="sm"
-          className="w-auto"
+          size={size}
+          className={select}
           value={filters.category ?? ""}
           onChange={(e) => update({ category: e.target.value || undefined })}
           aria-label="Category"
+          data-tour-step-id={stacked ? undefined : "radar-controls"}
         >
           <NativeSelectOption value="">All categories</NativeSelectOption>
           {CATEGORIES.map((c) => (
@@ -116,8 +143,8 @@ export function RadarFilters({
           ))}
         </NativeSelect>
         <NativeSelect
-          size="sm"
-          className="w-auto"
+          size={size}
+          className={select}
           value={filters.stage ?? ""}
           onChange={(e) => update({ stage: e.target.value || undefined })}
           aria-label="Stage"
@@ -130,8 +157,8 @@ export function RadarFilters({
           ))}
         </NativeSelect>
         <NativeSelect
-          size="sm"
-          className="w-auto"
+          size={size}
+          className={select}
           value={filters.source ?? ""}
           onChange={(e) => update({ source: e.target.value || undefined })}
           aria-label="Source"
@@ -144,11 +171,12 @@ export function RadarFilters({
           ))}
         </NativeSelect>
         <Button
-          size="sm"
+          size={stacked ? "lg" : "sm"}
           variant={filters.newOnly ? "default" : "outline"}
           disabled={!hasBaseline}
           onClick={() => update({ new: filters.newOnly ? undefined : "1" })}
           title={hasBaseline ? undefined : "Available after your first visit"}
+          className={cn(stacked && "w-full justify-start")}
         >
           <SparklesIcon />
           New since last visit
@@ -156,8 +184,9 @@ export function RadarFilters({
         </Button>
         {anyFilter && (
           <Button
-            size="sm"
+            size={stacked ? "lg" : "sm"}
             variant="ghost"
+            className={cn(stacked && "w-full")}
             onClick={() => {
               setQuery("");
               update({
@@ -170,9 +199,46 @@ export function RadarFilters({
             }}
           >
             Clear filters
+            <XIcon />
           </Button>
         )}
-      </div>
+      </>
+    );
+  };
+
+  return (
+    <div className="flex min-h-14 flex-wrap items-center gap-2 px-(--card-spacing) pb-3">
+      <InputGroup
+        className="w-full max-w-64 shrink-0 max-md:max-w-none max-md:flex-1"
+        data-tour-step-id="radar-search"
+      >
+        <InputGroupInput
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search name or description"
+          aria-label="Search companies"
+        />
+        <InputGroupAddon>
+          <SearchIcon />
+        </InputGroupAddon>
+      </InputGroup>
+      <div className="contents max-md:hidden">{controls(false)}</div>
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="outline" className="md:hidden" data-tour-step-id="radar-filter-button">
+            <SlidersHorizontalIcon />
+            Filters
+            {active > 0 && <span className="tabular-nums">{active}</span>}
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="bottom" className="rounded-t-xl">
+          <SheetHeader>
+            <SheetTitle>Filters</SheetTitle>
+            <SheetDescription>Narrow the companies list.</SheetDescription>
+          </SheetHeader>
+          <div className="flex flex-col gap-3 px-4 pb-4">{controls(true)}</div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

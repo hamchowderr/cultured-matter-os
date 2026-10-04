@@ -1,30 +1,57 @@
-import { ArrowRightIcon } from "lucide-react";
+import { ArrowRightIcon, InfoIcon } from "lucide-react";
 import Link from "next/link";
 
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+
+// A Today block in the kit dashboard's card style (v2.0.0): title, an optional info tooltip
+// beside it, and a link to the screen where the whole list lives.
 export function Section({
   title,
+  description,
   href,
   linkLabel,
+  id,
+  tourId,
+  className,
   children
 }: {
   title: string;
+  description?: string;
   href: string;
   linkLabel: string;
+  id?: string;
+  // The guided-tour step that points at this block (lib/tours.ts).
+  tourId?: string;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-3">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-lg font-semibold">{title}</h2>
-        <Link
-          href={href}
-          className="text-muted-foreground inline-flex items-center gap-1 text-sm hover:underline"
-        >
-          {linkLabel}
-          <ArrowRightIcon className="size-3.5" />
-        </Link>
-      </div>
-      {children}
-    </section>
+    <Card id={id} data-tour-step-id={tourId} className={cn("scroll-mt-20", className)}>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-1.5">
+          {title}
+          {description && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <InfoIcon className="text-muted-foreground size-3.5" aria-label={description} />
+              </TooltipTrigger>
+              <TooltipContent>{description}</TooltipContent>
+            </Tooltip>
+          )}
+        </CardTitle>
+        <CardAction>
+          <Link
+            href={href}
+            className="text-muted-foreground inline-flex items-center gap-1 text-sm hover:underline"
+          >
+            {linkLabel}
+            <ArrowRightIcon className="size-3.5" />
+          </Link>
+        </CardAction>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
   );
 }

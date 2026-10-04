@@ -29,6 +29,62 @@
       "when": 1791041436721,
       "tag": "0003_v1_1",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1791050468533,
+      "tag": "0004_google_sources",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1791051701210,
+      "tag": "0005_task_priority",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1791059182830,
+      "tag": "0006_notification_reads",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1791081073494,
+      "tag": "0007_user_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1791083806918,
+      "tag": "0008_tours_seen",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1791087566333,
+      "tag": "0009_push_subscriptions",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1791090288825,
+      "tag": "0010_apple_notes",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1791094548378,
+      "tag": "0011_personal",
+      "breakpoints": true
     }
   ]
 }

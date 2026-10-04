@@ -19,6 +19,8 @@ import {
 import { NavMain } from "@/components/layout/sidebar/nav-main";
 import { NavUser, type SidebarUser } from "@/components/layout/sidebar/nav-user";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useThemeConfig } from "@/components/active-theme";
+import type { SidebarCollapsible, SidebarVariant } from "@/lib/themes";
 
 export function AppSidebar({
   user,
@@ -27,6 +29,8 @@ export function AppSidebar({
   const pathname = usePathname();
   const { setOpen, setOpenMobile, isMobile } = useSidebar();
   const isTablet = useIsTablet();
+  // Variant and collapse style come from the theme customizer (as in the kit v2 app-sidebar).
+  const { theme } = useThemeConfig();
 
   useEffect(() => {
     if (isMobile) setOpenMobile(false);
@@ -37,7 +41,11 @@ export function AppSidebar({
   }, [isTablet]);
 
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar
+      collapsible={theme.sidebarCollapsible as SidebarCollapsible}
+      variant={theme.sidebarVariant as SidebarVariant}
+      {...props}
+    >
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

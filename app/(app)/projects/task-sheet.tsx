@@ -26,7 +26,8 @@ import {
   SheetTitle
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { fromDateInput, type ProjectSummary, type ProjectTask } from "./projects-view";
+import { priorities } from "@/lib/task-priority";
+import { fromDateInput, type ProjectSummary, type ProjectTask } from "./types";
 
 const toDateInput = (d: Date | null) =>
   d
@@ -91,10 +92,10 @@ export function TaskSheet({
       <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
         {task && (
           <div className="space-y-6 px-4 pb-6">
-            <SheetHeader className="px-0">
+            <SheetHeader className="ps-0 pe-10">
               <SheetTitle className="sr-only">Edit task</SheetTitle>
               <SheetDescription className="sr-only">
-                Title, notes, due date, subtasks and projects.
+                Title, status, priority, notes, due date, subtasks and projects.
               </SheetDescription>
               <Input
                 value={title}
@@ -133,6 +134,26 @@ export function TaskSheet({
                 </NativeSelect>
               </div>
               <div className="space-y-1.5">
+                <Label htmlFor="task-priority">Priority</Label>
+                <NativeSelect
+                  id="task-priority"
+                  size="sm"
+                  value={task.priority}
+                  onChange={(e) =>
+                    save({
+                      taskId: task.id,
+                      priority: e.target.value as ProjectTask["priority"]
+                    })
+                  }
+                >
+                  {priorities.map((p) => (
+                    <NativeSelectOption key={p.value} value={p.value}>
+                      {p.label}
+                    </NativeSelectOption>
+                  ))}
+                </NativeSelect>
+              </div>
+              <div className="space-y-1.5">
                 <Label htmlFor="task-due">Due</Label>
                 <Input
                   id="task-due"
@@ -164,11 +185,11 @@ export function TaskSheet({
             <section className="space-y-2">
               <h3 className="text-sm font-medium">Follow-up email</h3>
               <p className="text-muted-foreground text-sm">
-                {task.outlookConversationId
+                {task.emailThreadId
                   ? task.status === "waiting"
-                    ? "Saved in your Outlook Drafts. Once you send it, the task moves to Replied when they write back."
-                    : "A follow-up for this task was saved in your Outlook Drafts."
-                  : "Write an email for this task. After you approve it, it waits in your Outlook Drafts."}
+                    ? "Saved in your Gmail Drafts. Once you send it, the task moves to Replied when they write back."
+                    : "A follow-up for this task was saved in your Gmail Drafts."
+                  : "Write an email for this task. After you approve it, it waits in your Gmail Drafts."}
               </p>
               <Button size="sm" variant="outline" onClick={() => setDrafting(true)}>
                 <MailIcon />

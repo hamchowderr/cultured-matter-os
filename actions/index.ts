@@ -2,25 +2,30 @@ import {
   getCompany,
   passCompany,
   radarFacets,
+  radarFindsByWeek,
   resetCompany,
   searchCompanies,
   shortlistCompany,
   starCompany
 } from "./radar";
 import { searchGrants, setGrantStatus } from "./grants";
+import { tasksDueBetween } from "./grants";
 import { listActivity } from "./activity";
 import {
   createProject,
+  deleteProject,
   dueTasks,
   getProject,
   linkTaskToProject,
   listProjects,
+  listTasks,
   unlinkTaskFromProject,
   updateProject,
   updateTask
 } from "./projects";
 import {
   addPairing,
+  contactWarmPaths,
   countWarmPaths,
   findWarmPath,
   importContacts,
@@ -56,21 +61,45 @@ import {
   outlookStatus,
   syncOutlook
 } from "./outlook";
+import { setupStatus } from "./setup";
+import { listNotifications, markNotificationsRead } from "./notifications";
+import {
+  calendarFeed,
+  dailySummary,
+  getUserSettings,
+  markTourSeen,
+  newGrantsSince,
+  recordDailySummary,
+  resetCalendarLink,
+  setDailyEmail,
+  setWorkScope
+} from "./preferences";
+import {
+  prunePushSubscriptions,
+  pushStatus,
+  removePushSubscription,
+  savePushSubscription,
+  setPushPreferences
+} from "./push";
+import { fileNoteToInbox, getNote, importNotes, searchNotes } from "./notes";
 
 export {
   searchCompanies,
   getCompany,
   radarFacets,
+  radarFindsByWeek,
   starCompany,
   shortlistCompany,
   passCompany,
   resetCompany,
   searchGrants,
   setGrantStatus,
+  tasksDueBetween,
   listActivity,
   searchContacts,
   findWarmPath,
   countWarmPaths,
+  contactWarmPaths,
   listPairings,
   addPairing,
   removePairing,
@@ -84,8 +113,10 @@ export {
   createTask,
   setTaskStatus,
   listProjects,
+  listTasks,
   getProject,
   createProject,
+  deleteProject,
   updateProject,
   updateTask,
   linkTaskToProject,
@@ -101,10 +132,31 @@ export {
   newsletterSignup,
   newsletterUnsubscribe,
   outlookStatus,
+  setupStatus,
   syncOutlook,
   listContactEmails,
   draftFollowUp,
-  checkOutlookReplies
+  checkOutlookReplies,
+  listNotifications,
+  markNotificationsRead,
+  getUserSettings,
+  resetCalendarLink,
+  setDailyEmail,
+  setWorkScope,
+  markTourSeen,
+  calendarFeed,
+  newGrantsSince,
+  dailySummary,
+  recordDailySummary,
+  pushStatus,
+  setPushPreferences,
+  savePushSubscription,
+  removePushSubscription,
+  prunePushSubscriptions,
+  importNotes,
+  searchNotes,
+  getNote,
+  fileNoteToInbox
 };
 
 // Every named action, for the phase-2 agent to wrap as tools.
@@ -112,16 +164,19 @@ export const allActions = [
   searchCompanies,
   getCompany,
   radarFacets,
+  radarFindsByWeek,
   starCompany,
   shortlistCompany,
   passCompany,
   resetCompany,
   searchGrants,
   setGrantStatus,
+  tasksDueBetween,
   listActivity,
   searchContacts,
   findWarmPath,
   countWarmPaths,
+  contactWarmPaths,
   listPairings,
   addPairing,
   removePairing,
@@ -135,8 +190,10 @@ export const allActions = [
   createTask,
   setTaskStatus,
   listProjects,
+  listTasks,
   getProject,
   createProject,
+  deleteProject,
   updateProject,
   updateTask,
   linkTaskToProject,
@@ -148,10 +205,27 @@ export const allActions = [
   setNewsletter,
   newsletterStatus,
   outlookStatus,
+  setupStatus,
   syncOutlook,
   listContactEmails,
   draftFollowUp,
-  checkOutlookReplies
+  checkOutlookReplies,
+  listNotifications,
+  markNotificationsRead,
+  getUserSettings,
+  resetCalendarLink,
+  setDailyEmail,
+  setWorkScope,
+  newGrantsSince,
+  dailySummary,
+  pushStatus,
+  setPushPreferences,
+  searchNotes,
+  getNote,
+  fileNoteToInbox
+  // Not tools: calendarFeed (keyed by the feed's secret token), recordDailySummary (the cron's
+  // bookkeeping), markTourSeen (the guided tours' bookkeeping), importNotes (the Apple Notes
+  // Shortcut's endpoint) and the push device actions (they need a browser's push subscription).
 ] as const;
 
 export { ActionError, type Action, type ActionResult } from "./define";

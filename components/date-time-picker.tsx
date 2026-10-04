@@ -49,14 +49,15 @@ export function DateTimePicker({ date, setDate }: Props) {
           className={cn(
             "w-full justify-start text-left font-normal",
             !date && "text-muted-foreground"
-          )}>
+          )}
+        >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {date ? format(date, "MM/dd/yyyy hh:mm aa") : <span>MM/DD/YYYY hh:mm aa</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">
         <div className="sm:flex">
-          <Calendar mode="single" selected={date} onSelect={handleDateSelect} initialFocus />
+          <Calendar mode="single" selected={date} onSelect={handleDateSelect} autoFocus />
           <div className="flex h-[300px] flex-col divide-y border-s sm:flex-row sm:divide-x sm:divide-y-0">
             <ScrollArea className="w-64 sm:w-auto">
               <div className="flex p-2 sm:flex-col">
@@ -66,7 +67,8 @@ export function DateTimePicker({ date, setDate }: Props) {
                     size="icon"
                     variant={date && date.getHours() % 12 === hour % 12 ? "default" : "ghost"}
                     className="aspect-square shrink-0 sm:w-full"
-                    onClick={() => handleTimeChange("hour", hour.toString())}>
+                    onClick={() => handleTimeChange("hour", hour.toString())}
+                  >
                     {hour}
                   </Button>
                 ))}
@@ -81,7 +83,8 @@ export function DateTimePicker({ date, setDate }: Props) {
                     size="icon"
                     variant={date && date.getMinutes() === minute ? "default" : "ghost"}
                     className="aspect-square shrink-0 sm:w-full"
-                    onClick={() => handleTimeChange("minute", minute.toString())}>
+                    onClick={() => handleTimeChange("minute", minute.toString())}
+                  >
                     {minute}
                   </Button>
                 ))}
@@ -102,7 +105,8 @@ export function DateTimePicker({ date, setDate }: Props) {
                         : "ghost"
                     }
                     className="aspect-square shrink-0 sm:w-full"
-                    onClick={() => handleTimeChange("ampm", ampm)}>
+                    onClick={() => handleTimeChange("ampm", ampm)}
+                  >
                     {ampm}
                   </Button>
                 ))}

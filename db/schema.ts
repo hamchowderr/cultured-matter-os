@@ -142,7 +142,7 @@ export const contacts = sqliteTable(
     connectedOn: text("connected_on"),
     sectors: text("sectors", { mode: "json" }).$type<string[]>().notNull().default([]),
     source: text("source", {
-      enum: ["linkedin_csv", "manual", "sample", "newsletter_signup", "outlook"]
+      enum: ["linkedin_csv", "manual", "sample", "newsletter_signup", "google"]
     }).notNull(),
     // Newsletter: the flag is ours; FluentCRM is told on the next sync.
     newsletter: integer("newsletter", { mode: "boolean" }).notNull().default(false),
@@ -180,7 +180,7 @@ export const contactLinks = sqliteTable(
   ]
 );
 
-// Recent Outlook emails with a contact: metadata and a link only, never the body.
+// Recent Gmail emails with a contact: metadata and a link only, never the body.
 export const contactEmails = sqliteTable(
   "contact_emails",
   {
@@ -188,8 +188,9 @@ export const contactEmails = sqliteTable(
     contactId: text("contact_id")
       .notNull()
       .references(() => contacts.id, { onDelete: "cascade" }),
-    // Graph immutable message id.
+    // Gmail message id.
     messageId: text("message_id").notNull(),
+    // Gmail thread id.
     conversationId: text("conversation_id"),
     subject: text("subject"),
     direction: text("direction", { enum: ["in", "out"] }).notNull(),
@@ -259,7 +260,7 @@ export const captures = sqliteTable(
   {
     id: id(),
     body: text("body").notNull(),
-    // Pathname of a photo in the private Vercel Blob store (iPhone Shortcut captures).
+    // Pathname of a photo in the private Vercel Blob store (iPhone Shortcut or Inbox camera).
     imagePath: text("image_path"),
     kind: text("kind", { enum: ["task", "idea", "reference"] }),
     tier: integer("tier"),
@@ -284,9 +285,13 @@ export const tasks = sqliteTable(
     status: text("status", { enum: ["todo", "in_progress", "waiting", "replied", "done"] })
       .notNull()
       .default("todo"),
+    priority: text("priority", { enum: ["low", "medium", "high", "urgent"] })
+      .notNull()
+      .default("medium"),
     dueDate: integer("due_date", { mode: "timestamp_ms" }),
-    // The Outlook thread of a follow-up drafted from this task; the daily reply check watches it.
-    outlookConversationId: text("outlook_conversation_id"),
+    // The Gmail thread of a follow-up drafted from this task; the daily reply check watches it.
+    // The column keeps its name from the Outlook version (no table rewrite needed).
+    emailThreadId: text("outlook_conversation_id"),
     completedAt: integer("completed_at", { mode: "timestamp_ms" }),
     createdAt: createdAt(),
     updatedAt: updatedAt()
@@ -331,6 +336,108 @@ export const approvals = sqliteTable(
     createdAt: createdAt()
   },
   (t) => [index("approvals_status_idx").on(t.status)]
+);
+
+// Header notifications she has marked as read. Item ids are built by listNotifications and
+// change when the underlying thing changes (e.g. more radar finds), so a fresh event shows again.
+export const notificationReads = sqliteTable(
+  "notification_reads",
+  {
+    userId: text("user_id").notNull(),
+    itemId: text("item_id").notNull(),
+    readAt: integer("read_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch('subsec') * 1000)`)
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.itemId] }),
+    index("notification_reads_read_at_idx").on(t.readAt)
+  ]
+);
+
+// Per-user preferences that are hers rather than Better Auth's (the users table is generated).
+export const userSettings = sqliteTable("user_settings", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  // Secret part of the private calendar feed URL (/api/calendar/<token>.ics). Reset replaces it,
+  // so the old link stops working.
+  calendarToken: text("calendar_token").unique(),
+  dailyEmail: integer("daily_email", { mode: "boolean" }).notNull().default(false),
+  // When the last daily summary went out; the next one covers what is new since then.
+  lastSummaryAt: integer("last_summary_at", { mode: "timestamp_ms" }),
+  // Guided tours she has finished or skipped (ids from lib/tours.ts). The welcome tour starts
+  // on its own until "welcome" is in here.
+  toursSeen: text("tours_seen", { mode: "json" })
+    .$type<string[]>()
+    .notNull()
+    .default(sql`'[]'`),
+  // Which push notifications she gets, on every device that allowed them.
+  pushDaily: integer("push_daily", { mode: "boolean" }).notNull().default(true),
+  pushReplies: integer("push_replies", { mode: "boolean" }).notNull().default(true),
+  pushApprovals: integer("push_approvals", { mode: "boolean" }).notNull().default(true),
+  // The Business / Personal / All switch on Today and Projects. Personal means projects under
+  // the "Personal" business (lib/personal.ts).
+  workScope: text("work_scope", { enum: ["business", "personal", "all"] })
+    .notNull()
+    .default("all"),
+  // The suggested personal projects are offered once; deleting them never brings them back.
+  personalSeeded: integer("personal_seeded", { mode: "boolean" }).notNull().default(false),
+  createdAt: createdAt(),
+  updatedAt: updatedAt()
+});
+
+// One row per device (browser or installed app) that allowed notifications. The endpoint is the
+// push service URL the browser gave us; it is the device's identity. Rows whose endpoint the push
+// service reports gone (404/410) are deleted when a push is sent.
+export const pushSubscriptions = sqliteTable(
+  "push_subscriptions",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    endpoint: text("endpoint").notNull().unique(),
+    // Encryption keys from PushSubscription.toJSON().keys.
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    // "iPhone", "Mac", ... for Settings and the log.
+    device: text("device"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt()
+  },
+  (t) => [index("push_subscriptions_user_idx").on(t.userId)]
+);
+
+// ---------------------------------------------------------------- Notes archive
+
+// Notes imported from Apple Notes by a Shortcut (lib/apple-notes.ts, docs/apple-notes-shortcut.md).
+// Shortcuts exposes no stable note id, so a note is recognised again by its creation time (to the
+// second) plus its title: dedupe_key. A re-run updates the row when the note was edited since.
+export const notes = sqliteTable(
+  "notes",
+  {
+    id: id(),
+    dedupeKey: text("dedupe_key").notNull().unique(),
+    title: text("title").notNull(),
+    // Plain text. Locked notes arrive with the title only, so this can be empty.
+    body: text("body").notNull().default(""),
+    folder: text("folder"),
+    noteCreatedAt: integer("note_created_at", { mode: "timestamp_ms" }),
+    noteModifiedAt: integer("note_modified_at", { mode: "timestamp_ms" }),
+    source: text("source").notNull().default("apple_notes"),
+    // Left empty for now: later AI suggestions fill these in.
+    kind: text("kind", { enum: ["task", "idea", "reference"] }),
+    tier: integer("tier"),
+    projectId: text("project_id").references(() => projects.id, { onDelete: "set null" }),
+    sector: text("sector"),
+    personal: integer("personal", { mode: "boolean" }),
+    // The Inbox item made from this note with "File to Inbox".
+    captureId: text("capture_id").references(() => captures.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt()
+  },
+  (t) => [index("notes_created_idx").on(t.noteCreatedAt), index("notes_folder_idx").on(t.folder)]
 );
 
 // ---------------------------------------------------------------- Log

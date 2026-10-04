@@ -57,10 +57,10 @@ export const navItems: NavGroup[] = [
     items: [
       { title: "Today", href: "/today", icon: SunIcon },
       { title: "Inbox", href: "/inbox", icon: InboxIcon },
+      { title: "Projects", href: "/projects", icon: FolderKanbanIcon },
+      { title: "People", href: "/people", icon: UsersIcon },
       { title: "Radar", href: "/radar", icon: RadarIcon },
       { title: "Grants", href: "/grants", icon: LandmarkIcon },
-      { title: "People", href: "/people", icon: UsersIcon },
-      { title: "Projects", href: "/projects", icon: FolderKanbanIcon },
       { title: "Archive", href: "/archive", icon: ArchiveIcon }
     ]
   }
@@ -73,10 +73,10 @@ export function NavMain() {
   return (
     <>
       {navItems.map((nav) => (
-        <SidebarGroup key={nav.title}>
+        <SidebarGroup key={nav.title} data-tour-step-id="tour-nav">
           <SidebarGroupLabel>{nav.title}</SidebarGroupLabel>
           <SidebarGroupContent className="flex flex-col gap-2">
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {nav.items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   {Array.isArray(item.items) && item.items.length > 0 ? (
@@ -93,13 +93,15 @@ export function NavMain() {
                           <DropdownMenuContent
                             side={isMobile ? "bottom" : "right"}
                             align={isMobile ? "end" : "start"}
-                            className="min-w-48 rounded-lg">
+                            className="min-w-48 rounded-lg"
+                          >
                             <DropdownMenuLabel>{item.title}</DropdownMenuLabel>
                             {item.items?.map((item) => (
                               <DropdownMenuItem
                                 className="hover:text-foreground active:text-foreground hover:bg-sidebar-accent! active:bg-sidebar-accent!"
                                 asChild
-                                key={item.title}>
+                                key={item.title}
+                              >
                                 <a href={item.href}>{item.title}</a>
                               </DropdownMenuItem>
                             ))}
@@ -108,11 +110,13 @@ export function NavMain() {
                       </div>
                       <Collapsible
                         className="group/collapsible block group-data-[collapsible=icon]:hidden"
-                        defaultOpen={!!item.items.find((s) => s.href === pathname)}>
+                        defaultOpen={!!item.items.find((s) => s.href === pathname)}
+                      >
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton
-                            className="hover:text-foreground active:text-foreground hover:bg-sidebar-accent active:bg-sidebar-accent"
-                            tooltip={item.title}>
+                            className="hover:text-foreground hover:bg-sidebar-foreground/5 active:bg-sidebar-foreground/10 data-active:hover:bg-sidebar-accent data-active:hover:text-sidebar-accent-foreground"
+                            tooltip={item.title}
+                          >
                             {item.icon && <item.icon />}
                             <span>{item.title}</span>
                             <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -123,9 +127,10 @@ export function NavMain() {
                             {item?.items?.map((subItem, key) => (
                               <SidebarMenuSubItem key={key}>
                                 <SidebarMenuSubButton
-                                  className="hover:text-foreground active:text-foreground hover:bg-sidebar-accent active:bg-sidebar-accent"
+                                  className="hover:text-foreground hover:bg-sidebar-foreground/5 active:bg-sidebar-foreground/10 data-active:hover:bg-sidebar-accent data-active:hover:text-sidebar-accent-foreground"
                                   isActive={pathname === subItem.href}
-                                  asChild>
+                                  asChild
+                                >
                                   <Link href={subItem.href} target={subItem.newTab ? "_blank" : ""}>
                                     <span>{subItem.title}</span>
                                   </Link>
@@ -138,10 +143,11 @@ export function NavMain() {
                     </>
                   ) : (
                     <SidebarMenuButton
-                      className="hover:text-foreground active:text-foreground hover:bg-sidebar-accent active:bg-sidebar-accent"
+                      className="hover:text-foreground hover:bg-sidebar-foreground/5 active:bg-sidebar-foreground/10 data-active:hover:bg-sidebar-accent data-active:hover:text-sidebar-accent-foreground"
                       isActive={pathname === item.href}
                       tooltip={item.title}
-                      asChild>
+                      asChild
+                    >
                       <Link href={item.href} target={item.newTab ? "_blank" : ""}>
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>

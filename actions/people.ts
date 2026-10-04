@@ -1,4 +1,4 @@
-import { and, asc, count, eq, exists, inArray, like, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, inArray, like, or, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 
 import type { Executor } from "@/db";
@@ -8,6 +8,21 @@ import { ActionError, defineAction } from "./define";
 import { parseConnectionsCsv } from "@/lib/linkedin";
 import { contactSchema, id, limit, note, offset, pairingSchema, type Contact } from "./schemas";
 
+const sortColumns = {
+  name: contacts.fullName,
+  company: contacts.company,
+  role: contacts.position,
+  added: contacts.createdAt
+} as const;
+
+function contactOrder(sort: keyof typeof sortColumns, dir: "asc" | "desc") {
+  const col = sortColumns[sort];
+  const by = dir === "desc" ? desc : asc;
+  // Blank companies and roles go to the bottom, not the top.
+  const blanksLast = sql`coalesce(${col}, '') = ''`;
+  return [blanksLast, by(col), asc(contacts.fullName), asc(contacts.id)];
+}
+
 export const searchContacts = defineAction({
   name: "searchContacts",
   description: "Search contacts by name, company, position, sector tag or newsletter flag.",
@@ -16,6 +31,9 @@ export const searchContacts = defineAction({
     query: z.string().trim().optional(),
     sector: z.string().optional(),
     newsletter: z.boolean().optional(),
+    // Contacts with no company or role sort last either way; ties fall back to name.
+    sort: z.enum(["name", "company", "role", "added"]).default("name"),
+    dir: z.enum(["asc", "desc"]).default("asc"),
     limit,
     offset
   }),
@@ -44,7 +62,7 @@ export const searchContacts = defineAction({
         .select()
         .from(contacts)
         .where(where)
-        .orderBy(asc(contacts.fullName))
+        .orderBy(...contactOrder(input.sort, input.dir))
         .limit(input.limit)
         .offset(input.offset),
       db.select({ total: count() }).from(contacts).where(where)
@@ -66,105 +84,203 @@ const warmPathSchema = z.object({
 
 type WarmPath = z.input<typeof warmPathSchema>;
 
-// Warm paths for several radar companies in a fixed number of queries, whatever the count.
-// findWarmPath and countWarmPaths share it so the list and the detail panel always agree.
-async function warmPathsFor(db: Executor, companyIds: string[]) {
-  const result = new Map<string, WarmPath[]>(companyIds.map((cid) => [cid, []]));
-  if (companyIds.length === 0) return result;
+// A warm path plus the radar company it leads to.
+type FoundPath = WarmPath & { companyId: string; companyName: string };
 
-  const rows = await db
-    .select({ id: companies.id, name: companies.name, domain: companies.domain })
-    .from(companies)
-    .where(inArray(companies.id, companyIds));
-  const brands = await db.select().from(pairings).where(inArray(pairings.companyId, companyIds));
+// A radar company or one of its target brands, which a contact may work at.
+type Target = {
+  companyId: string;
+  companyName: string;
+  via: "company" | "brand";
+  name: string;
+  // normalizeName(name), worked out once.
+  key: string;
+  domain: string | null;
+};
 
-  const targets = [
-    ...rows.map((c) => ({
-      companyId: c.id,
-      via: "company" as const,
-      name: c.name,
-      domain: normalizeDomain(c.domain)
-    })),
-    ...brands.map((b) => ({
-      companyId: b.companyId,
-      via: "brand" as const,
-      name: b.brandName,
-      domain: normalizeDomain(b.brandDomain)
-    }))
-  ];
-  const domains = [...new Set(targets.map((t) => t.domain).filter((d): d is string => !!d))];
-  const names = [...new Set(targets.map((t) => t.name))];
+// Who the paths are for: a set of radar companies (Radar) or one contact (People).
+type WarmPathScope = { companyIds: string[] } | { contactId: string };
 
-  // Names go in as one JSON parameter so a long list never deepens the SQL expression.
-  const candidates = await db
-    .select()
-    .from(contacts)
-    .where(
-      or(
-        domains.length ? inArray(contacts.companyDomain, domains) : undefined,
-        names.length
-          ? exists(
-              db
-                .select({ one: sql`1` })
-                .from(sql`json_each(${JSON.stringify(names)})`)
-                .where(sql`${contacts.company} like '%' || value || '%'`)
-            )
-          : undefined
-      )
+// The one matching rule: same company website, or the same company name once case,
+// punctuation and suffixes like "Inc." are ignored.
+// companyKey is normalizeName(contact.company).
+function worksAt(
+  contact: { companyDomain: string | null; companyKey: string | null },
+  target: Target
+) {
+  if (target.domain && contact.companyDomain === target.domain) return true;
+  return !!target.key && contact.companyKey === target.key;
+}
+
+// Every warm path in a scope, in a fixed number of queries whatever its size. The Radar
+// company view, the Radar counts and the People contact view all read from here, so they
+// always agree.
+async function collectWarmPaths(db: Executor, scope: WarmPathScope): Promise<FoundPath[]> {
+  let candidates: Contact[];
+  let companyRows: { id: string; name: string; domain: string | null }[];
+  let brandRows: { brand: typeof pairings.$inferSelect; companyName: string }[];
+
+  if ("contactId" in scope) {
+    const [contact] = await db.select().from(contacts).where(eq(contacts.id, scope.contactId));
+    if (!contact) return [];
+    candidates = [contact as Contact];
+    // Cheap prefilter in SQL; worksAt below makes the exact call.
+    const domain = contact.companyDomain;
+    const company = contact.company;
+    const byCompany = or(
+      domain ? eq(companies.domain, domain) : undefined,
+      company ? sql`${company} like '%' || ${companies.name} || '%'` : undefined
     );
-
-  const seen = new Set<string>();
-  const add = (companyId: string, p: WarmPath) => {
-    const key = `${companyId}:${p.contact.id}:${p.via}:${p.target}:${p.linkId ?? ""}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    result.get(companyId)?.push(p);
-  };
-
-  const candidateNames = candidates.map((c) => (c.company ? normalizeName(c.company) : null));
-  for (const t of targets) {
-    const name = normalizeName(t.name);
-    candidates.forEach((c, i) => {
-      const byDomain = !!t.domain && c.companyDomain === t.domain;
-      const byName = !!name && candidateNames[i] === name;
-      if (byDomain || byName) {
-        add(t.companyId, {
-          contact: c as Contact,
-          via: t.via,
-          target: t.name,
-          reason: "works_at",
-          note: null,
-          linkId: null
-        });
-      }
-    });
+    const byBrand = or(
+      domain ? eq(pairings.brandDomain, domain) : undefined,
+      company ? sql`${company} like '%' || ${pairings.brandName} || '%'` : undefined
+    );
+    companyRows =
+      domain || company
+        ? await db
+            .select({ id: companies.id, name: companies.name, domain: companies.domain })
+            .from(companies)
+            .where(byCompany)
+        : [];
+    brandRows =
+      domain || company
+        ? await db
+            .select({ brand: pairings, companyName: companies.name })
+            .from(pairings)
+            .innerJoin(companies, eq(pairings.companyId, companies.id))
+            .where(byBrand)
+        : [];
+  } else {
+    const { companyIds } = scope;
+    if (companyIds.length === 0) return [];
+    companyRows = await db
+      .select({ id: companies.id, name: companies.name, domain: companies.domain })
+      .from(companies)
+      .where(inArray(companies.id, companyIds));
+    brandRows = await db
+      .select({ brand: pairings, companyName: companies.name })
+      .from(pairings)
+      .innerJoin(companies, eq(pairings.companyId, companies.id))
+      .where(inArray(pairings.companyId, companyIds));
   }
 
-  const companyNames = new Map(rows.map((c) => [c.id, c.name]));
-  const brandIds = brands.map((b) => b.id);
+  const targets: Target[] = [
+    ...companyRows.map((c) => ({
+      companyId: c.id,
+      companyName: c.name,
+      via: "company" as const,
+      name: c.name,
+      key: normalizeName(c.name),
+      domain: normalizeDomain(c.domain)
+    })),
+    ...brandRows.map(({ brand, companyName }) => ({
+      companyId: brand.companyId,
+      companyName,
+      via: "brand" as const,
+      name: brand.brandName,
+      key: normalizeName(brand.brandName),
+      domain: normalizeDomain(brand.brandDomain)
+    }))
+  ];
+
+  if ("companyIds" in scope) {
+    const domains = [...new Set(targets.map((t) => t.domain).filter((d): d is string => !!d))];
+    const names = [...new Set(targets.map((t) => t.name))];
+    // Names go in as one JSON parameter so a long list never deepens the SQL expression.
+    candidates = (await db
+      .select()
+      .from(contacts)
+      .where(
+        or(
+          domains.length ? inArray(contacts.companyDomain, domains) : undefined,
+          names.length
+            ? exists(
+                db
+                  .select({ one: sql`1` })
+                  .from(sql`json_each(${JSON.stringify(names)})`)
+                  .where(sql`${contacts.company} like '%' || value || '%'`)
+              )
+            : undefined
+        )
+      )) as Contact[];
+  }
+
+  const found: FoundPath[] = [];
+  const seen = new Set<string>();
+  const add = (p: FoundPath) => {
+    const key = `${p.companyId}:${p.contact.id}:${p.via}:${p.target}:${p.linkId ?? ""}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    found.push(p);
+  };
+
+  const people = candidates!.map((c) => ({
+    contact: c,
+    companyDomain: c.companyDomain,
+    companyKey: c.company ? normalizeName(c.company) : null
+  }));
+  for (const t of targets) {
+    for (const p of people) {
+      if (!worksAt(p, t)) continue;
+      const c = p.contact;
+      add({
+        companyId: t.companyId,
+        companyName: t.companyName,
+        contact: c,
+        via: t.via,
+        target: t.name,
+        reason: "works_at",
+        note: null,
+        linkId: null
+      });
+    }
+  }
+
+  // Hand-made links, to the company itself or to one of its brands.
+  const linkedCompanyId = sql<string>`coalesce(${pairings.companyId}, ${contactLinks.companyId})`;
+  let linkWhere;
+  if ("contactId" in scope) {
+    linkWhere = eq(contactLinks.contactId, scope.contactId);
+  } else {
+    const brandIds = brandRows.map((b) => b.brand.id);
+    linkWhere = or(
+      inArray(contactLinks.companyId, scope.companyIds),
+      brandIds.length ? inArray(contactLinks.pairingId, brandIds) : undefined
+    );
+  }
   const links = await db
-    .select({ link: contactLinks, contact: contacts, brand: pairings })
+    .select({ link: contactLinks, contact: contacts, brand: pairings, companyName: companies.name })
     .from(contactLinks)
     .innerJoin(contacts, eq(contactLinks.contactId, contacts.id))
     .leftJoin(pairings, eq(contactLinks.pairingId, pairings.id))
-    .where(
-      or(
-        inArray(contactLinks.companyId, companyIds),
-        brandIds.length ? inArray(contactLinks.pairingId, brandIds) : undefined
-      )
-    );
-  for (const { link, contact, brand } of links) {
+    .leftJoin(companies, eq(companies.id, linkedCompanyId))
+    .where(linkWhere);
+  for (const { link, contact, brand, companyName } of links) {
     const companyId = brand ? brand.companyId : link.companyId!;
-    add(companyId, {
+    add({
+      companyId,
+      companyName: companyName ?? "",
       contact: contact as Contact,
       via: brand ? "brand" : "company",
-      target: brand ? brand.brandName : (companyNames.get(companyId) ?? ""),
+      target: brand ? brand.brandName : (companyName ?? ""),
       reason: "linked",
       note: link.note,
       linkId: link.id
     });
   }
 
+  return found;
+}
+
+// Warm paths grouped by radar company. findWarmPath and countWarmPaths share it so the list
+// and the detail panel always agree.
+async function warmPathsFor(db: Executor, companyIds: string[]) {
+  const result = new Map<string, WarmPath[]>(companyIds.map((cid) => [cid, []]));
+  for (const { companyId, companyName: _name, ...path } of await collectWarmPaths(db, {
+    companyIds
+  })) {
+    result.get(companyId)?.push(path);
+  }
   return result;
 }
 
@@ -201,6 +317,37 @@ export const countWarmPaths = defineAction({
         ids.map((cid) => [cid, new Set((paths.get(cid) ?? []).map((p) => p.contact.id)).size])
       )
     };
+  }
+});
+
+const contactWarmPathSchema = warmPathSchema.omit({ contact: true }).extend({
+  // The radar company this path leads to (the brand's company when via is "brand").
+  companyId: z.string(),
+  companyName: z.string()
+});
+
+export const contactWarmPaths = defineAction({
+  name: "contactWarmPaths",
+  description:
+    "List the radar companies and target brands a contact can introduce you to, with why: they work at it (matched by domain or name) or were linked to it by hand. Same rules as findWarmPath.",
+  kind: "read",
+  input: z.object({ contactId: id }),
+  output: z.object({ paths: z.array(contactWarmPathSchema) }),
+  async handler(input, db) {
+    const [contact] = await db
+      .select({ id: contacts.id })
+      .from(contacts)
+      .where(eq(contacts.id, input.contactId));
+    if (!contact) throw new ActionError("not_found", "Contact not found");
+    const paths = (await collectWarmPaths(db, { contactId: contact.id }))
+      .map(({ contact: _contact, ...p }) => p)
+      .sort(
+        (a, b) =>
+          a.companyName.localeCompare(b.companyName) ||
+          a.via.localeCompare(b.via) ||
+          a.target.localeCompare(b.target)
+      );
+    return { paths };
   }
 });
 

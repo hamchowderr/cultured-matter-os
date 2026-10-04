@@ -20,6 +20,9 @@ export async function getCompany(input: In<typeof A.getCompany>) {
 export async function radarFacets(input: In<typeof A.radarFacets>) {
   return toResult(() => A.radarFacets.run(input));
 }
+export async function radarFindsByWeek(input: In<typeof A.radarFindsByWeek>) {
+  return toResult(() => A.radarFindsByWeek.run(input));
+}
 export async function starCompany(input: In<typeof A.starCompany>) {
   return toResult(() => A.starCompany.run(input));
 }
@@ -38,6 +41,9 @@ export async function searchGrants(input: In<typeof A.searchGrants>) {
 export async function setGrantStatus(input: In<typeof A.setGrantStatus>) {
   return toResult(() => A.setGrantStatus.run(input));
 }
+export async function tasksDueBetween(input: In<typeof A.tasksDueBetween>) {
+  return toResult(() => A.tasksDueBetween.run(input));
+}
 export async function listActivity(input: In<typeof A.listActivity>) {
   return toResult(() => A.listActivity.run(input));
 }
@@ -55,6 +61,9 @@ export async function findWarmPath(input: In<typeof A.findWarmPath>) {
 }
 export async function countWarmPaths(input: In<typeof A.countWarmPaths>) {
   return toResult(() => A.countWarmPaths.run(input));
+}
+export async function contactWarmPaths(input: In<typeof A.contactWarmPaths>) {
+  return toResult(() => A.contactWarmPaths.run(input));
 }
 export async function listPairings(input: In<typeof A.listPairings>) {
   return toResult(() => A.listPairings.run(input));
@@ -98,6 +107,12 @@ export async function createProject(input: In<typeof A.createProject>) {
 export async function updateProject(input: In<typeof A.updateProject>) {
   return toResult(() => A.updateProject.run(input));
 }
+export async function deleteProject(input: In<typeof A.deleteProject>) {
+  return toResult(() => A.deleteProject.run(input));
+}
+export async function listTasks(input: In<typeof A.listTasks>) {
+  return toResult(() => A.listTasks.run(input));
+}
 export async function updateTask(input: In<typeof A.updateTask>) {
   return toResult(() => A.updateTask.run(input));
 }
@@ -139,4 +154,137 @@ export async function listContactEmails(input: In<typeof A.listContactEmails>) {
 }
 export async function draftFollowUp(input: In<typeof A.draftFollowUp>) {
   return toResult(() => A.draftFollowUp.run(input));
+}
+// The Inbox camera button: a photo (fields "photo" and "caption") from the signed-in session,
+// stored the same way as iPhone Shortcut photos.
+export async function captureInboxPhoto(form: FormData) {
+  return toResult(async () => {
+    const capture = await import("@/lib/capture");
+    return capture.captureInboxPhoto(form);
+  });
+}
+export async function setupStatus(input: In<typeof A.setupStatus>) {
+  return toResult(() => A.setupStatus.run(input));
+}
+
+// The header bell. Who is asking and the Radar baseline come from the request, not the client.
+async function notificationContext() {
+  const [{ cookies }, { getSession }, { RADAR_BASELINE_COOKIE }] = await Promise.all([
+    import("next/headers"),
+    import("@/lib/session"),
+    import("@/app/(app)/radar/constants")
+  ]);
+  const session = await getSession();
+  const baselineRaw = (await cookies()).get(RADAR_BASELINE_COOKIE)?.value;
+  const baseline = Number(baselineRaw);
+  return {
+    userId: session?.user.id ?? "",
+    radarSince: baselineRaw && Number.isFinite(baseline) ? new Date(baseline) : undefined
+  };
+}
+export async function listNotifications() {
+  return toResult(async () => A.listNotifications.run(await notificationContext()));
+}
+export async function markNotificationsRead(input: { itemIds: string[] }) {
+  return toResult(async () => {
+    const { userId } = await notificationContext();
+    return A.markNotificationsRead.run({ userId, itemIds: input.itemIds });
+  });
+}
+
+// Settings: the calendar feed link and the daily email. The user comes from the session.
+async function sessionUserId() {
+  const { getSession } = await import("@/lib/session");
+  return (await getSession())?.user.id ?? "";
+}
+export async function getUserSettings() {
+  return toResult(async () => A.getUserSettings.run({ userId: await sessionUserId() }));
+}
+export async function resetCalendarLink() {
+  return toResult(async () => A.resetCalendarLink.run({ userId: await sessionUserId() }));
+}
+export async function setDailyEmail(input: { enabled: boolean }) {
+  return toResult(async () =>
+    A.setDailyEmail.run({ userId: await sessionUserId(), enabled: input.enabled })
+  );
+}
+// The Business / Personal / All switch on Today and Projects, remembered per user.
+export async function setWorkScope(input: Omit<In<typeof A.setWorkScope>, "userId">) {
+  return toResult(async () => A.setWorkScope.run({ ...input, userId: await sessionUserId() }));
+}
+export async function markTourSeen(input: Omit<In<typeof A.markTourSeen>, "userId">) {
+  return toResult(async () => A.markTourSeen.run({ ...input, userId: await sessionUserId() }));
+}
+
+// Push notifications. The device's subscription comes from the browser; the user from the session.
+type BrowserSubscription = { endpoint: string; keys: { p256dh: string; auth: string } };
+export async function pushStatus(input: { endpoint?: string } = {}) {
+  return toResult(async () =>
+    A.pushStatus.run({ userId: await sessionUserId(), endpoint: input.endpoint })
+  );
+}
+export async function savePushSubscription(input: BrowserSubscription) {
+  return toResult(async () => {
+    const { headers } = await import("next/headers");
+    const userAgent = (await headers()).get("user-agent") ?? undefined;
+    return A.savePushSubscription.run({
+      userId: await sessionUserId(),
+      endpoint: input.endpoint,
+      keys: input.keys,
+      userAgent
+    });
+  });
+}
+export async function removePushSubscription(input: { endpoint: string }) {
+  return toResult(async () =>
+    A.removePushSubscription.run({ userId: await sessionUserId(), endpoint: input.endpoint })
+  );
+}
+export async function setPushPreferences(input: {
+  daily?: boolean;
+  replies?: boolean;
+  approvals?: boolean;
+}) {
+  return toResult(async () =>
+    A.setPushPreferences.run({ ...input, userId: await sessionUserId() })
+  );
+}
+// Settings' "Send a test": one notification to this device only.
+export async function sendTestPush(input: { endpoint: string }) {
+  return toResult(async () => {
+    const [{ sendPush }, { db }] = await Promise.all([import("@/lib/push"), import("@/db")]);
+    const result = await sendPush(
+      db,
+      "test",
+      {
+        title: "Notifications are on",
+        body: "This is how Cultured Matter will reach you.",
+        url: "/settings",
+        tag: "test"
+      },
+      { userId: await sessionUserId(), endpoint: input.endpoint }
+    );
+    if (result.skipped === "Push is not configured") {
+      throw new A.ActionError("unavailable", "Notifications are not set up on the server yet.");
+    }
+    if (result.sent === 0) {
+      throw new A.ActionError(
+        "unavailable",
+        result.removed
+          ? "This device no longer accepts notifications. Allow them again."
+          : "The test notification could not be sent."
+      );
+    }
+    return result;
+  });
+}
+
+export async function searchNotes(input: In<typeof A.searchNotes>) {
+  return toResult(() => A.searchNotes.run(input));
+}
+export async function getNote(input: In<typeof A.getNote>) {
+  return toResult(() => A.getNote.run(input));
+}
+export async function fileNoteToInbox(input: In<typeof A.fileNoteToInbox>) {
+  return toResult(() => A.fileNoteToInbox.run(input));
 }

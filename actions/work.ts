@@ -3,10 +3,10 @@ import { z } from "zod/v4";
 
 import { approvals, captures, projects, tasks } from "@/db/schema";
 import type { Executor } from "@/db";
-import { graphSession } from "@/lib/graph";
+import { googleSession } from "@/lib/google";
 import { ActionError, defineAction } from "./define";
-import { OUTLOOK_DRAFT, saveOutlookDraft } from "./outlook";
-import { approvalSchema, captureSchema, id, taskSchema } from "./schemas";
+import { GMAIL_DRAFT, saveGmailDraft } from "./outlook";
+import { approvalSchema, captureSchema, id, taskPriority, taskSchema } from "./schemas";
 
 const taskStatus = z.enum(["todo", "in_progress", "waiting", "replied", "done"]);
 
@@ -16,6 +16,7 @@ const newTask = z.object({
   parentTaskId: id.optional(),
   notes: z.string().trim().max(5000).optional(),
   status: taskStatus.default("todo"),
+  priority: taskPriority.default("medium"),
   dueDate: z.coerce.date().optional()
 });
 
@@ -126,7 +127,8 @@ export const classifyCapture = defineAction({
 
 export const createTask = defineAction({
   name: "createTask",
-  description: "Create a task, optionally in a project, as a subtask, or with a due date.",
+  description:
+    "Create a task, optionally in a project, as a subtask, with a due date or a priority (low, medium, high, urgent; default medium).",
   kind: "write",
   input: newTask,
   output: taskSchema,
@@ -179,7 +181,12 @@ export const requestApproval = defineAction({
     entityType: "approval",
     entityId: approval.id,
     summary: `Requested approval: ${approval.summary}`
-  })
+  }),
+  // Tell her phone right away.
+  async after(_input, approval, db) {
+    const { sendPush, approvalPush } = await import("@/lib/push");
+    await sendPush(db, "approvals", approvalPush(approval));
+  }
 });
 
 export const decideApproval = defineAction({
@@ -193,14 +200,14 @@ export const decideApproval = defineAction({
     note: z.string().trim().max(500).optional()
   }),
   output: approvalSchema,
-  // Kinds that call Microsoft get their token before the transaction opens.
+  // Kinds that call Google get their token before the transaction opens.
   async prepare(input, db) {
     if (input.decision !== "approve") return undefined;
     const [pending] = await db
       .select({ action: approvals.action })
       .from(approvals)
       .where(and(eq(approvals.id, input.approvalId), eq(approvals.status, "pending")));
-    return pending?.action === OUTLOOK_DRAFT ? { graph: await graphSession(db) } : undefined;
+    return pending?.action === GMAIL_DRAFT ? { google: await googleSession(db) } : undefined;
   },
   async handler(input, db, prepared) {
     // Only a pending row matches, so two decisions on the same item cannot both win.
@@ -215,9 +222,9 @@ export const decideApproval = defineAction({
     if (row) {
       // Carry out the approved action per kind (row.action). A failure throws and the
       // approval stays pending.
-      if (row.status === "approved" && row.action === OUTLOOK_DRAFT) {
+      if (row.status === "approved" && row.action === GMAIL_DRAFT) {
         if (!prepared) throw new ActionError("conflict", "Try approving again");
-        const result = await saveOutlookDraft(db, prepared.graph, row.payload);
+        const result = await saveGmailDraft(db, prepared.google, row.payload);
         const [done] = await db
           .update(approvals)
           .set({ result })

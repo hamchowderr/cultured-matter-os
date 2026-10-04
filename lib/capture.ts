@@ -3,13 +3,15 @@ import { get, put } from "@vercel/blob";
 import busboy from "busboy";
 import { eq } from "drizzle-orm";
 
-import type { ActionContext } from "@/actions/define";
+import { type ActionContext, ActionError } from "@/actions/define";
 import { createCapture } from "@/actions/work";
 import { captures } from "@/db/schema";
 
 // Vercel caps a function request body at 4.5 MB, so a larger photo never reaches this code.
 // The same limit here gives a clear message when running elsewhere.
 export const MAX_PHOTO_BYTES = 4.5 * 1024 * 1024;
+// Same limit as createCapture's body.
+const MAX_CAPTION = 10_000;
 
 type Upload = typeof put;
 export type CaptureDeps = { ctx?: ActionContext; upload?: Upload };
@@ -28,14 +30,19 @@ function keyMatches(given: string, expected: string) {
 // The key comes from the Authorization header or, more reliably from a Shortcut, a "key" field
 // in the Form or JSON body. Pasting into a header can carry hidden characters that make iOS drop
 // the request; a body field tolerates them. "Bearer " and surrounding whitespace are ignored.
-function authorized(request: Request, bodyKey?: string) {
+// Shared with the Apple Notes import (lib/apple-notes.ts).
+export function authorized(request: Request, bodyKey?: string) {
   const expected = process.env.CAPTURE_TOKEN;
   if (!expected) return false;
   const header = request.headers.get("authorization") ?? "";
   const match = /^Bearer\s+(.+)$/i.exec(header.trim());
-  const given = match?.[1] ?? bodyKey?.replace(/^\s*Bearer\s+/i, "");
-  return !!given?.trim() && keyMatches(given.trim(), expected);
+  const given = cleanKey(match?.[1] ?? bodyKey?.replace(/^\s*Bearer\s+/i, "") ?? "");
+  return !!given && keyMatches(given, cleanKey(expected));
 }
+
+// A key never contains spaces. Pasting it on an iPhone can add line breaks, no-break spaces or
+// zero-width characters, so all of those are dropped before comparing.
+const cleanKey = (key: string) => key.replace(/[\s\u00a0\u200b-\u200d\u2060\ufeff]/g, "");
 
 const EXT: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -73,12 +80,12 @@ async function fromFile(file: Blob): Promise<{ text?: string; photo?: Blob }> {
   return { text: new TextDecoder().decode(bytes) };
 }
 
-type FormEntry = [name: string, value: string | Blob];
+export type FormEntry = [name: string, value: string | Blob];
 
 // Form bodies. Multipart goes through busboy: the platform's Request.formData() rejects the
 // multipart bodies iPhone Shortcuts sends with photos ("Failed to parse body as FormData").
-function readForm(type: string, raw: Uint8Array): Promise<FormEntry[]> {
-  if (!type.includes("multipart/form-data")) {
+export function readForm(type: string, raw: Uint8Array): Promise<FormEntry[]> {
+  if (!type.toLowerCase().includes("multipart/form-data")) {
     const params = new URLSearchParams(new TextDecoder().decode(raw));
     return Promise.resolve([...params.entries()]);
   }
@@ -102,7 +109,8 @@ function readForm(type: string, raw: Uint8Array): Promise<FormEntry[]> {
 // The Shortcut can send JSON ({"text": "..."}), a Form (fields "text" and "photo"), plain text,
 // or the photo itself as the whole request body ("File"). The body is already read in full.
 async function parse(type: string, raw: Uint8Array): Promise<Parsed> {
-  if (type.includes("application/json")) {
+  const lower = type.toLowerCase();
+  if (lower.includes("application/json")) {
     const json = JSON.parse(new TextDecoder().decode(raw)) as Record<string, unknown> | null;
     const value = TEXT_FIELDS.map((k) => json?.[k]).find((v) => v != null);
     const fields = Object.entries(json ?? {}).map(([name, v]) => ({
@@ -113,7 +121,7 @@ async function parse(type: string, raw: Uint8Array): Promise<Parsed> {
     const key = typeof json?.key === "string" ? json.key : undefined;
     return { body: value == null ? "" : String(value), photo: null, key, fields };
   }
-  if (type.includes("multipart/form-data") || type.includes("application/x-www-form-urlencoded")) {
+  if (lower.includes("multipart/form-data") || lower.includes("application/x-www-form-urlencoded")) {
     let body = "";
     let photo: Blob | null = null;
     let key: string | undefined;
@@ -150,11 +158,38 @@ async function parse(type: string, raw: Uint8Array): Promise<Parsed> {
   };
 }
 
+type Stored = { ok: true; pathname: string } | { ok: false; status: number; message: string };
+
+// Saves a photo to the private Blob store under captures/. The iPhone Shortcut endpoint and the
+// Inbox camera button both store photos through here.
+async function storePhoto(photo: Blob, upload: Upload = put, tooBigHint: string): Promise<Stored> {
+  const contentType = (photo.type || "").toLowerCase();
+  if (!contentType.startsWith("image/")) {
+    return { ok: false, status: 415, message: "That file isn't a photo." };
+  }
+  if (photo.size > MAX_PHOTO_BYTES) {
+    return { ok: false, status: 413, message: `That photo is too big. ${tooBigHint}` };
+  }
+  const ext = EXT[contentType] ?? "jpg";
+  try {
+    const stored = await upload(`captures/photo.${ext}`, photo, {
+      access: "private",
+      addRandomSuffix: true,
+      contentType
+    });
+    return { ok: true, pathname: stored.pathname };
+  } catch (e) {
+    console.error("Capture photo upload failed", e);
+    return { ok: false, status: 502, message: "Couldn't save the photo. Try again in a minute." };
+  }
+}
+
 export async function handleCapture(request: Request, deps: CaptureDeps = {}) {
   // Read the whole request before answering. Replying while the iPhone is still sending makes
   // iOS report "network connection lost" instead of showing the reply.
   const raw = new Uint8Array(await request.arrayBuffer().catch(() => new ArrayBuffer(0)));
-  const type = (request.headers.get("content-type") ?? "").toLowerCase();
+  // Not lowercased: the multipart boundary is case-sensitive.
+  const type = request.headers.get("content-type") ?? "";
   let parsed: Parsed | null = null;
   let parseError: unknown;
   try {
@@ -180,24 +215,9 @@ export async function handleCapture(request: Request, deps: CaptureDeps = {}) {
 
   let imagePath: string | undefined;
   if (photo) {
-    const contentType = (photo.type || "").toLowerCase();
-    if (!contentType.startsWith("image/")) return text("That file isn't a photo.", 415);
-    if (photo.size > MAX_PHOTO_BYTES) {
-      return text("That photo is too big. Add a Resize Image step to the Shortcut.", 413);
-    }
-    const upload = deps.upload ?? put;
-    const ext = EXT[contentType] ?? "jpg";
-    try {
-      const stored = await upload(`captures/photo.${ext}`, photo, {
-        access: "private",
-        addRandomSuffix: true,
-        contentType
-      });
-      imagePath = stored.pathname;
-    } catch (e) {
-      console.error("Capture photo upload failed", e);
-      return text("Couldn't save the photo. Try again in a minute.", 502);
-    }
+    const stored = await storePhoto(photo, deps.upload, "Add a Resize Image step to the Shortcut.");
+    if (!stored.ok) return text(stored.message, stored.status);
+    imagePath = stored.pathname;
   }
 
   await createCapture.run(
@@ -206,6 +226,26 @@ export async function handleCapture(request: Request, deps: CaptureDeps = {}) {
   );
   // Plain text so the Shortcut's "Show Result" step reads it out as is.
   return text("Saved to your Inbox.", 201);
+}
+
+// A photo taken or picked with the Inbox camera button. The caller is a signed-in server action,
+// so no capture key is involved. The browser has already resized it and turned it into a JPEG;
+// one it could not convert (HEIC in a desktop browser without HEIC support) arrives as picked.
+export async function captureInboxPhoto(form: FormData, deps: CaptureDeps = {}) {
+  const photo = form.get("photo");
+  const caption = form.get("caption");
+  if (!(photo instanceof Blob) || photo.size === 0) {
+    throw new ActionError("invalid", "Choose a photo first.");
+  }
+  const body = typeof caption === "string" ? caption.trim().slice(0, MAX_CAPTION) : "";
+  const stored = await storePhoto(photo, deps.upload, "Try a smaller one.");
+  if (!stored.ok) {
+    throw new ActionError(stored.status === 502 ? "unavailable" : "invalid", stored.message);
+  }
+  return createCapture.run(
+    { body: body || "Photo", imagePath: stored.pathname, source: "web" },
+    deps.ctx
+  );
 }
 
 // Streams a capture's photo from the private Blob store. The caller checks the session first.

@@ -8,7 +8,8 @@ export const ENTITY_TYPES = [
   { value: "project", label: "Project" },
   { value: "task", label: "Task" },
   { value: "capture", label: "Inbox" },
-  { value: "approval", label: "Approval" }
+  { value: "approval", label: "Approval" },
+  { value: "note", label: "Note" }
 ] as const;
 
 export function entityLabel(type: string) {
@@ -53,6 +54,9 @@ export function activityHref(row: Linkable): string | null {
     case "approval":
       // Open approvals are decided on Today.
       return e ? "/today" : null;
+    case "note":
+      // Imports log the batch, not one note.
+      return "/archive/notes";
     default:
       return null;
   }

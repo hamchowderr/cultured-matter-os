@@ -1,9 +1,24 @@
-import { and, asc, eq, getTableColumns, gte, like, lte, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  getTableColumns,
+  gte,
+  isNotNull,
+  isNull,
+  like,
+  lt,
+  lte,
+  ne,
+  or,
+  sql
+} from "drizzle-orm";
 import { z } from "zod/v4";
 
-import { grants } from "@/db/schema";
+import { grants, projects, tasks } from "@/db/schema";
+import { HOME_TIME_ZONE, startOfDayIn } from "@/lib/time";
 import { ActionError, defineAction } from "./define";
-import { grantSchema, id, limit } from "./schemas";
+import { grantSchema, id, limit, taskSchema } from "./schemas";
 
 const grantStatus = z.enum(["watching", "applying", "submitted", "passed"]);
 const { raw: _raw, ...grantColumns } = getTableColumns(grants);
@@ -11,13 +26,14 @@ const { raw: _raw, ...grantColumns } = getTableColumns(grants);
 export const searchGrants = defineAction({
   name: "searchGrants",
   description:
-    "Search grants by text, board status, for-profit eligibility, or deadline window. Soonest deadline first; rolling grants last.",
+    "Search grants by text, board status, for-profit eligibility, or deadline window. Soonest deadline first; rolling grants last. hideClosed leaves out grants whose deadline has passed unless they are on the board (have a status).",
   kind: "read",
   input: z.object({
     query: z.string().trim().optional(),
     status: grantStatus.optional(),
     forProfitOnly: z.boolean().default(false),
     closingWithinDays: z.number().int().min(1).max(365).optional(),
+    hideClosed: z.boolean().default(false),
     limit
   }),
   output: z.object({ grants: z.array(grantSchema) }),
@@ -41,6 +57,14 @@ export const searchGrants = defineAction({
             ? and(
                 gte(grants.deadline, now),
                 lte(grants.deadline, new Date(now.getTime() + input.closingWithinDays * 86_400_000))
+              )
+            : undefined,
+          // "Closed" on a card means the deadline was before today, so the cut is start of today.
+          input.hideClosed
+            ? or(
+                isNotNull(grants.status),
+                isNull(grants.deadline),
+                gte(grants.deadline, startOfDayIn(HOME_TIME_ZONE, now))
               )
             : undefined
         )
@@ -71,4 +95,33 @@ export const setGrantStatus = defineAction({
     entityId: grant.id,
     summary: `Moved ${grant.title} to ${input.status}`
   })
+});
+
+export const tasksDueBetween = defineAction({
+  name: "tasksDueBetween",
+  description:
+    "Open tasks with a due date inside a date window, with their project names. Feeds the Grants deadline calendar.",
+  kind: "read",
+  input: z
+    .object({
+      from: z.coerce.date(),
+      to: z.coerce.date(),
+      limit: z.number().int().min(1).max(500).default(500)
+    })
+    .refine((v) => v.from < v.to, { message: "from must be before to" }),
+  output: z.object({
+    tasks: z.array(taskSchema.extend({ projectName: z.string().nullable() }))
+  }),
+  async handler(input, db) {
+    const rows = await db
+      .select({ task: tasks, projectName: projects.name })
+      .from(tasks)
+      .leftJoin(projects, eq(tasks.projectId, projects.id))
+      .where(
+        and(ne(tasks.status, "done"), gte(tasks.dueDate, input.from), lt(tasks.dueDate, input.to))
+      )
+      .orderBy(asc(tasks.dueDate))
+      .limit(input.limit);
+    return { tasks: rows.map((r) => ({ ...r.task, projectName: r.projectName })) };
+  }
 });

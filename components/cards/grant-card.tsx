@@ -36,7 +36,7 @@ export function GrantCard({ grant, onStatusChange, now = new Date(), className }
   const urgent = days != null && days >= 0 && days <= 14;
 
   return (
-    <article className={cn("bg-card flex flex-col gap-3 rounded-lg border p-4", className)}>
+    <article className={cn("bg-muted/40 flex flex-col gap-3 rounded-lg p-4", className)}>
       <header className="space-y-1">
         <h3 className="leading-snug font-semibold">
           {grant.url ? (

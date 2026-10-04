@@ -1,13 +1,17 @@
 import { cookies } from "next/headers";
 
 import { countWarmPaths, radarFacets, searchCompanies } from "@/actions/server";
+import { ListTransition } from "@/components/layout/list-transition";
 import { PageHeader } from "@/components/layout/page-shell";
+import { MONITORS } from "@/ingest/monitors/pages";
+import { RADAR_SOURCES } from "@/ingest/radar/run";
 import { CATEGORIES } from "@/lib/categories";
 import { STAGE_GROUPS, type StageGroup } from "@/lib/stages";
 import { generateMeta } from "@/lib/utils";
 import { RADAR_BASELINE_COOKIE, RADAR_VIEWS, type RadarView } from "./constants";
-import { RadarFilters } from "./radar-filters";
+import { RadarTabs, RadarToolbar } from "./radar-filters";
 import { RadarList } from "./radar-list";
+import { RadarSummary } from "./radar-summary";
 import { VisitMarker } from "./visit-marker";
 
 export async function generateMetadata() {
@@ -18,6 +22,10 @@ export async function generateMetadata() {
 }
 
 const PAGE_SIZE = 24;
+
+// Built from the feeds and watched pages Radar actually reads, so it can't go stale.
+const SOURCE_NAMES = [...RADAR_SOURCES, ...MONITORS].map((s) => s.name);
+const SOURCES_LINE = `Early-stage climate and materials startups from ${SOURCE_NAMES.length} free sources: ${SOURCE_NAMES.slice(0, -1).join(", ")} and ${SOURCE_NAMES.at(-1)}.`;
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -56,29 +64,36 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     : null;
 
   return (
-    <div className="space-y-6">
-      <VisitMarker />
-      <PageHeader
-        title="Radar"
-        description="Early-stage climate and materials startups from SOSV, Greentown Labs, Y Combinator and CTVC."
-      />
-      <RadarFilters
-        filters={{ view, category, stage, source, query, newOnly }}
-        facets={facets.ok ? facets.data : null}
-        hasBaseline={!!baseline}
-      />
-      {list.ok ? (
-        <RadarList
-          companies={list.data.companies}
-          total={list.data.total}
-          page={page}
-          pageSize={PAGE_SIZE}
-          newSince={baseline ?? null}
-          warmPathCounts={counts?.ok ? counts.data.counts : undefined}
+    <ListTransition>
+      <div className="space-y-4 lg:space-y-6">
+        <VisitMarker />
+        <PageHeader title="Radar" description={SOURCES_LINE} tourId="radar-heading" />
+        {facets.ok && <RadarSummary facets={facets.data} />}
+        <RadarTabs
+          filters={{ view, category, stage, source, query, newOnly }}
+          facets={facets.ok ? facets.data : null}
         />
-      ) : (
-        <p className="text-destructive text-sm">Couldn’t load companies: {list.error.message}</p>
-      )}
-    </div>
+        {list.ok ? (
+          <RadarList
+            toolbar={
+              <RadarToolbar
+                filters={{ view, category, stage, source, query, newOnly }}
+                facets={facets.ok ? facets.data : null}
+                hasBaseline={!!baseline}
+              />
+            }
+            companies={list.data.companies}
+            total={list.data.total}
+            page={page}
+            pageSize={PAGE_SIZE}
+            newSince={baseline ?? null}
+            warmPathCounts={counts?.ok ? counts.data.counts : undefined}
+            radarEmpty={facets.ok && facets.data.total === 0}
+          />
+        ) : (
+          <p className="text-destructive text-sm">Couldn’t load companies: {list.error.message}</p>
+        )}
+      </div>
+    </ListTransition>
   );
 }

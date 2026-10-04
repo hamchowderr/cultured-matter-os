@@ -1,7 +1,8 @@
+import { cookies } from "next/headers";
+
 import { listCaptures, listProjects } from "@/actions/server";
-import { PageHeader } from "@/components/layout/page-shell";
 import { generateMeta } from "@/lib/utils";
-import { InboxView } from "./inbox-view";
+import { Inbox } from "./components/inbox";
 
 export async function generateMetadata() {
   return generateMeta({
@@ -12,43 +13,45 @@ export async function generateMetadata() {
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
-const KINDS = ["task", "idea", "reference"] as const;
+
+const LAYOUT_COOKIE = "react-resizable-panels:layout:inbox";
 
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
-  const filed = one(sp.view) === "filed";
-  const kind = KINDS.find((k) => k === one(sp.kind));
-  const tier = [1, 2, 3].find((n) => String(n) === one(sp.tier));
+  const layout = (await cookies()).get(LAYOUT_COOKIE);
+  let defaultLayout: Record<string, number> | undefined;
+  try {
+    defaultLayout = layout ? JSON.parse(layout.value) : undefined;
+  } catch {
+    defaultLayout = undefined;
+  }
 
-  const [list, projects] = await Promise.all([
-    listCaptures({ filed, kind: filed ? kind : undefined, tier: filed ? tier : undefined }),
+  const [toSort, filed, projects] = await Promise.all([
+    listCaptures({ filed: false, limit: 200 }),
+    listCaptures({ filed: true, limit: 200 }),
     listProjects({})
   ]);
 
+  if (!toSort.ok || !filed.ok) {
+    const error = !toSort.ok ? toSort.error : !filed.ok ? filed.error : null;
+    return <p className="text-destructive text-sm">Couldn’t load the inbox: {error?.message}</p>;
+  }
+
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Inbox"
-        description="Jot anything down, then sort it: a task for a project, an idea, or a reference, with a tier from 1 (most important) to 3."
+    <div className="bg-card ring-foreground/10 h-(--content-full-height) overflow-hidden rounded-xl ring-1">
+      <Inbox
+        toSort={toSort.data.captures}
+        filed={filed.data.captures}
+        unfiled={toSort.data.unfiled}
+        projects={
+          projects.ok
+            ? projects.data.projects.map((p) => ({ id: p.id, name: p.name, business: p.business }))
+            : []
+        }
+        initialTab={one(sp.view) === "filed" ? "filed" : "sort"}
+        defaultLayout={defaultLayout}
+        cookieID={LAYOUT_COOKIE}
       />
-      {list.ok ? (
-        <InboxView
-          captures={list.data.captures}
-          unfiled={list.data.unfiled}
-          projects={
-            projects.ok
-              ? projects.data.projects.map((p) => ({
-                  id: p.id,
-                  name: p.name,
-                  business: p.business
-                }))
-              : []
-          }
-          filters={{ filed, kind, tier }}
-        />
-      ) : (
-        <p className="text-destructive text-sm">Couldn’t load the inbox: {list.error.message}</p>
-      )}
     </div>
   );
 }

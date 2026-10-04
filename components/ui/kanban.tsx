@@ -216,8 +216,12 @@ function KanbanRoot<T>(props: KanbanRootProps<T>) {
   const lastOverIdRef = React.useRef<UniqueIdentifier | null>(null);
   const hasMovedRef = React.useRef(false);
   const sensors = useSensors(
-    useSensor(MouseSensor),
-    useSensor(TouchSensor),
+    // Without an activation distance every mousedown starts a drag, which
+    // swallows the subsequent click, so item onClick handlers never fire.
+    // A drag starts only after the pointer moves, so a plain click still reaches the item.
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    // Touch waits for a short press so a tap opens and a swipe scrolls.
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
     useSensor(KeyboardSensor, {
       coordinateGetter
     })
@@ -342,10 +346,26 @@ function KanbanRoot<T>(props: KanbanRootProps<T>) {
         const activeItem = activeItems[activeIndex];
         if (!activeItem) return;
 
+        // Insert where the pointer is, not at the end: when hovering an item,
+        // drop before or after it depending on which half the card overlaps.
+        let newIndex: number;
+        if (over.id in value) {
+          newIndex = overItems.length;
+        } else {
+          const overIndex = overItems.findIndex((item) => getItemValue(item) === over.id);
+          const isBelowOverItem =
+            active.rect.current.translated &&
+            active.rect.current.translated.top > over.rect.top + over.rect.height / 2;
+          newIndex = overIndex >= 0 ? overIndex + (isBelowOverItem ? 1 : 0) : overItems.length;
+        }
+
+        const newOverItems = [...overItems];
+        newOverItems.splice(newIndex, 0, activeItem);
+
         const updatedItems = {
           ...value,
           [activeColumn]: activeItems.filter((item) => getItemValue(item) !== active.id),
-          [overColumn]: [...overItems, activeItem]
+          [overColumn]: newOverItems
         };
 
         onValueChange?.(updatedItems);
@@ -612,7 +632,8 @@ const KanbanBoard = React.forwardRef<HTMLDivElement, KanbanBoardProps>((props, f
           context.orientation === "horizontal"
             ? horizontalListSortingStrategy
             : verticalListSortingStrategy
-        }>
+        }
+      >
         <BoardPrimitive
           aria-orientation={context.orientation}
           data-orientation={context.orientation}
@@ -734,7 +755,8 @@ const KanbanColumn = React.forwardRef<HTMLDivElement, KanbanColumnProps>((props,
           context.orientation === "horizontal"
             ? horizontalListSortingStrategy
             : verticalListSortingStrategy
-        }>
+        }
+      >
         <ColumnPrimitive
           id={id}
           data-disabled={disabled}
@@ -748,7 +770,7 @@ const KanbanColumn = React.forwardRef<HTMLDivElement, KanbanColumnProps>((props,
           className={cn(
             "bg-muted flex size-full flex-col gap-2 rounded-lg p-2.5 aria-disabled:pointer-events-none aria-disabled:opacity-50",
             {
-              "touch-none select-none": asHandle,
+              "touch-manipulation select-none": asHandle,
               "cursor-default": context.flatCursor,
               "data-dragging:cursor-grabbing": !context.flatCursor,
               "cursor-grab": !isDragging && asHandle && !context.flatCursor,
@@ -902,7 +924,7 @@ const KanbanItem = React.forwardRef<HTMLDivElement, KanbanItemProps>((props, for
         className={cn(
           "focus-visible:ring-ring focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:outline-hidden",
           {
-            "touch-none select-none": asHandle,
+            "touch-manipulation select-none": asHandle,
             "cursor-default": context.flatCursor,
             "data-dragging:cursor-grabbing": !context.flatCursor,
             "cursor-grab": !isDragging && asHandle && !context.flatCursor,
@@ -973,8 +995,10 @@ const dropAnimation: DropAnimation = {
   })
 };
 
-interface KanbanOverlayProps
-  extends Omit<React.ComponentPropsWithoutRef<typeof DragOverlay>, "children"> {
+interface KanbanOverlayProps extends Omit<
+  React.ComponentPropsWithoutRef<typeof DragOverlay>,
+  "children"
+> {
   container?: Element | DocumentFragment | null;
   children?:
     | ((params: { value: UniqueIdentifier; variant: "column" | "item" }) => React.ReactNode)
@@ -1000,7 +1024,8 @@ function KanbanOverlay(props: KanbanOverlayProps) {
       dropAnimation={dropAnimation}
       modifiers={context.modifiers}
       className={cn(!context.flatCursor && "cursor-grabbing")}
-      {...overlayProps}>
+      {...overlayProps}
+    >
       <KanbanOverlayContext.Provider value={true}>
         {context.activeId && children
           ? typeof children === "function"

@@ -60,7 +60,7 @@ export function NewsletterBar({
   const people = `${status.subscribed.toLocaleString()} ${status.subscribed === 1 ? "person" : "people"}`;
 
   return (
-    <div className="bg-muted/40 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-sm">
+    <div className="bg-muted/40 flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 text-sm">
       <MailIcon className="text-muted-foreground size-4" />
       <button
         type="button"

@@ -36,16 +36,19 @@ describe("registry", () => {
         "searchCompanies",
         "getCompany",
         "radarFacets",
+        "radarFindsByWeek",
         "starCompany",
         "resetCompany",
         "shortlistCompany",
         "passCompany",
         "searchGrants",
         "setGrantStatus",
+        "tasksDueBetween",
         "listActivity",
         "searchContacts",
         "findWarmPath",
         "countWarmPaths",
+        "contactWarmPaths",
         "listPairings",
         "addPairing",
         "removePairing",
@@ -59,8 +62,10 @@ describe("registry", () => {
         "createTask",
         "setTaskStatus",
         "listProjects",
+        "listTasks",
         "getProject",
         "createProject",
+        "deleteProject",
         "updateProject",
         "updateTask",
         "linkTaskToProject",
@@ -72,10 +77,24 @@ describe("registry", () => {
         "setNewsletter",
         "newsletterStatus",
         "outlookStatus",
+        "setupStatus",
         "syncOutlook",
         "listContactEmails",
         "draftFollowUp",
-        "checkOutlookReplies"
+        "checkOutlookReplies",
+        "listNotifications",
+        "markNotificationsRead",
+        "getUserSettings",
+        "resetCalendarLink",
+        "setDailyEmail",
+        "setWorkScope",
+        "newGrantsSince",
+        "dailySummary",
+        "pushStatus",
+        "setPushPreferences",
+        "searchNotes",
+        "getNote",
+        "fileNoteToInbox"
       ].sort()
     );
     for (const a of A.allActions) {
@@ -145,6 +164,32 @@ describe("radar", () => {
 
     const bySource = await A.searchCompanies.run({ sourceSlug: "sosv" }, ctx());
     expect(bySource.companies.map((c) => c.name)).toEqual(["Glowcell"]);
+
+    await seedCompany({ name: "Glowtwo", categories: ["Beauty"] });
+    const facets = await A.radarFacets.run({}, ctx());
+    expect(facets.categories[0]).toEqual({ name: "Beauty", count: 2 });
+    expect(facets.categories).toContainEqual({ name: "Industry", count: 1 });
+
+    // Passed companies don't count toward categories.
+    await seedCompany({ name: "Glowgone", categories: ["Beauty", "Dropped"], status: "passed" });
+    const after = await A.radarFacets.run({}, ctx());
+    expect(after.categories[0]).toEqual({ name: "Beauty", count: 2 });
+    expect(after.categories.some((c) => c.name === "Dropped")).toBe(false);
+  });
+
+  it("counts first finds per week, oldest first", async () => {
+    // A fixed "now" far from the other tests' companies keeps the windows to this test's rows.
+    const now = new Date("2030-01-29T12:00:00Z");
+    const day = 86_400_000;
+    const ago = (days: number) => new Date(now.getTime() - days * day);
+    await seedCompany({ name: "Weekly A", firstSeenAt: ago(1) });
+    await seedCompany({ name: "Weekly B", firstSeenAt: ago(2) });
+    await seedCompany({ name: "Weekly C", firstSeenAt: ago(9) });
+    await seedCompany({ name: "Weekly D", firstSeenAt: ago(40) });
+
+    const { weeks } = await A.radarFindsByWeek.run({ weeks: 4, now }, ctx());
+    expect(weeks.map((w) => w.count)).toEqual([0, 0, 1, 2]);
+    expect(weeks[3].start.getTime()).toBe(now.getTime() - 7 * day);
   });
 
   it("rejects bad input", async () => {
@@ -191,6 +236,54 @@ describe("grants", () => {
     );
     expect(moved.status).toBe("applying");
     expect((await logFor(moved.id))[0].summary).toBe("Moved Soon to applying");
+  });
+
+  it("hides closed grants that are not on the board when asked", async () => {
+    const [src] = await db.select().from(t.sources).where(eq(t.sources.slug, "grants-gov"));
+    const day = 86_400_000;
+    const past = new Date(Date.now() - 5 * day);
+    const base = { sourceId: src.id, raw: {}, firstSeenAt: new Date(), forProfitEligible: true };
+    await db.insert(t.grants).values([
+      { ...base, externalId: "closed-found", title: "Closed found", deadline: past },
+      {
+        ...base,
+        externalId: "closed-submitted",
+        title: "Closed submitted",
+        deadline: past,
+        status: "submitted"
+      }
+    ]);
+    const titles = async (hideClosed: boolean) =>
+      (await A.searchGrants.run({ query: "Closed", hideClosed }, ctx())).grants.map((g) => g.title);
+    expect(await titles(false)).toEqual(
+      expect.arrayContaining(["Closed found", "Closed submitted"])
+    );
+    expect(await titles(true)).toEqual(["Closed submitted"]);
+    // Open and rolling grants stay.
+    const open = await A.searchGrants.run({ hideClosed: true }, ctx());
+    expect(open.grants.map((g) => g.title)).toEqual(
+      expect.arrayContaining(["Soon", "Late", "Rolling fund"])
+    );
+  });
+
+  it("lists open tasks due inside a window for the deadline calendar", async () => {
+    const day = 86_400_000;
+    const now = Date.now();
+    await db
+      .insert(t.tasks)
+      .values([
+        { title: "Cal in window", dueDate: new Date(now + 3 * day) },
+        { title: "Cal done", dueDate: new Date(now + 3 * day), status: "done" },
+        { title: "Cal outside", dueDate: new Date(now + 90 * day) },
+        { title: "Cal undated" }
+      ]);
+    const { tasks } = await A.tasksDueBetween.run(
+      { from: new Date(now), to: new Date(now + 30 * day) },
+      ctx()
+    );
+    const titles = tasks.map((x) => x.title).filter((x) => x.startsWith("Cal "));
+    expect(titles).toEqual(["Cal in window"]);
+    expect(tasks[0]).toHaveProperty("projectName");
   });
 });
 
@@ -248,6 +341,38 @@ describe("people", () => {
     expect(r.contacts.map((c) => c.fullName)).toEqual(["Fay Sector"]);
     const q = await A.searchContacts.run({ query: "Loom" }, ctx());
     expect(q.contacts.map((c) => c.fullName)).toEqual(["Fay Sector"]);
+  });
+
+  it("sorts contacts by name, company or role, blanks last", async () => {
+    await db.insert(t.contacts).values([
+      {
+        fullName: "Sol A",
+        company: "Zeta",
+        position: "CEO",
+        sectors: ["sortme"],
+        source: "manual"
+      },
+      {
+        fullName: "Sol B",
+        company: "Alpha",
+        position: null,
+        sectors: ["sortme"],
+        source: "manual"
+      },
+      { fullName: "Sol C", company: null, position: "Buyer", sectors: ["sortme"], source: "manual" }
+    ]);
+    const names = async (input: Parameters<typeof A.searchContacts.run>[0]) =>
+      (await A.searchContacts.run({ sector: "sortme", ...input }, ctx())).contacts.map(
+        (c) => c.fullName
+      );
+    // Default stays alphabetical by name, as before.
+    expect(await names({})).toEqual(["Sol A", "Sol B", "Sol C"]);
+    expect(await names({ dir: "desc" })).toEqual(["Sol C", "Sol B", "Sol A"]);
+    expect(await names({ sort: "company" })).toEqual(["Sol B", "Sol A", "Sol C"]);
+    expect(await names({ sort: "company", dir: "desc" })).toEqual(["Sol A", "Sol B", "Sol C"]);
+    expect(await names({ sort: "role" })).toEqual(["Sol C", "Sol A", "Sol B"]);
+    // Paging follows the sort.
+    expect(await names({ sort: "company", limit: 1, offset: 1 })).toEqual(["Sol A"]);
   });
 });
 

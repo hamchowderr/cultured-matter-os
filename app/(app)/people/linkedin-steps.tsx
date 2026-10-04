@@ -9,7 +9,7 @@ export function LinkedInSteps({ className }: { className?: string }) {
   return (
     <ol className={cn("list-decimal space-y-2 pl-5 text-left text-sm", className)}>
       <li>
-        Open{" "}
+        Use a computer. The LinkedIn app on a phone can&apos;t do this. Open{" "}
         <a
           href={SETTINGS_URL}
           target="_blank"
@@ -25,11 +25,13 @@ export function LinkedInSteps({ className }: { className?: string }) {
         Click <strong>Get a copy of your data</strong>.
       </li>
       <li>
-        Choose <strong>Connections</strong> only, then click <strong>Request archive</strong>.
+        Choose <strong>Download larger data archive, including connections…</strong> (the first
+        option), then click <strong>Request archive</strong>.
       </li>
-      <li>LinkedIn emails you a download link. It can take up to 48 hours.</li>
+      <li>LinkedIn emails you when the file is ready. This can take up to a day.</li>
       <li>
-        Download the file, open the zip, and upload <strong>Connections.csv</strong> here.
+        Download the file from the link in that email and unzip it. Upload the{" "}
+        <strong>Connections.csv</strong> file from inside it here.
       </li>
     </ol>
   );

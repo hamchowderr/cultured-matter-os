@@ -11,6 +11,7 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { daysUntil, formatDue } from "@/lib/format";
+import { priorities } from "@/lib/task-priority";
 import { cn } from "@/lib/utils";
 
 type TaskStatus = Task["status"];
@@ -44,9 +45,14 @@ export function TaskCard({
 }: TaskCardProps) {
   const done = task.status === "done";
   const overdue = !done && task.dueDate != null && daysUntil(task.dueDate, now) < 0;
+  // Only high and urgent are shown; low and medium would be noise on every card.
+  const priority =
+    task.priority === "high" || task.priority === "urgent"
+      ? priorities.find((p) => p.value === task.priority)
+      : undefined;
 
   return (
-    <article className={cn("bg-card flex items-start gap-3 rounded-lg border p-4", className)}>
+    <article className={cn("bg-muted/40 flex items-start gap-3 rounded-lg p-4", className)}>
       <Checkbox
         className="mt-0.5"
         checked={done}
@@ -65,6 +71,12 @@ export function TaskCard({
           )}
         </h3>
         <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+          {priority && (
+            <span className="inline-flex items-center gap-1">
+              <priority.icon className="size-3.5" />
+              {priority.label}
+            </span>
+          )}
           {projectName && <span>{projectName}</span>}
           {task.dueDate && (
             <span className={cn(overdue && "text-destructive font-medium")}>

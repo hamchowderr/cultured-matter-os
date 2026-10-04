@@ -105,7 +105,7 @@ export function WarmPaths({
         {paths === null ? (
           <p className="text-muted-foreground text-sm">Loading…</p>
         ) : groups.length === 0 ? (
-          <div className="text-muted-foreground flex gap-3 rounded-md border border-dashed p-4 text-sm">
+          <div className="bg-muted/40 text-muted-foreground flex gap-3 rounded-lg p-4 text-sm">
             <UsersIcon className="mt-0.5 size-4 shrink-0" />
             <p>
               None of your contacts connect to {company.name} yet. Add a target brand below, or link
@@ -331,7 +331,7 @@ function LinkContact({
     <section className="space-y-2">
       <h3 className="text-sm font-medium">Link a contact by hand</h3>
       {picked ? (
-        <form onSubmit={link} className="space-y-2 rounded-md border p-3">
+        <form onSubmit={link} className="bg-muted/40 space-y-2 rounded-lg p-3">
           <p className="text-sm">
             <span className="font-medium">{picked.fullName}</span>
             {picked.company && <span className="text-muted-foreground"> · {picked.company}</span>}

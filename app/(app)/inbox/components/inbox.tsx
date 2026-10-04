@@ -1,0 +1,393 @@
+"use client";
+
+import * as React from "react";
+import { CameraIcon, ImagesIcon, Loader2Icon, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { type Layout } from "react-resizable-panels";
+import { toast } from "sonner";
+
+import { captureInboxPhoto, createCapture } from "@/actions/server";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { photoToJpeg } from "@/lib/photo-to-jpeg";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+
+import { IphonePanel } from "../iphone-panel";
+import { type Capture, KIND_LABEL, type Project, useInboxStore } from "../use-inbox";
+import { CaptureDisplay } from "./capture-display";
+import { CaptureDisplayMobile } from "./capture-display-mobile";
+import { CaptureList } from "./capture-list";
+
+type Tab = "sort" | "filed";
+
+const DEFAULT_LAYOUT: Layout = {
+  "list-panel": 40,
+  "display-panel": 60
+};
+
+function matches(c: Capture, q: string) {
+  if (!q) return true;
+  const hay = [
+    c.body,
+    c.kind ? KIND_LABEL[c.kind] : "",
+    c.projectName ?? "",
+    c.tier ? `tier ${c.tier}` : ""
+  ]
+    .join(" ")
+    .toLowerCase();
+  return q
+    .toLowerCase()
+    .split(/\s+/)
+    .every((word) => hay.includes(word));
+}
+
+// Adapted from the kit's mail app: the folder nav and account switcher are gone, the middle
+// panel lists captures and the right panel is the reading pane with the filing controls.
+export function Inbox({
+  toSort,
+  filed,
+  unfiled,
+  projects,
+  initialTab,
+  defaultLayout = DEFAULT_LAYOUT,
+  cookieID
+}: {
+  toSort: Capture[];
+  filed: Capture[];
+  unfiled: number;
+  projects: Project[];
+  initialTab: Tab;
+  defaultLayout?: Layout;
+  cookieID: string;
+}) {
+  const router = useRouter();
+  const isMobile = useIsMobile();
+  const { selectedId, setSelectedId } = useInboxStore();
+  const [tab, setTab] = React.useState<Tab>(initialTab);
+  const [query, setQuery] = React.useState("");
+  const [pending, startTransition] = React.useTransition();
+
+  const all = tab === "filed" ? filed : toSort;
+  const items = React.useMemo(() => all.filter((c) => matches(c, query.trim())), [all, query]);
+  const selected = [...toSort, ...filed].find((c) => c.id === selectedId) ?? null;
+
+  // Start with the newest item open on a wide screen. On a phone the list comes first and the
+  // drawer opens only on a tap. useIsMobile reads false on the first render, so the width is
+  // checked directly here.
+  React.useEffect(() => {
+    const phone = window.matchMedia("(max-width: 767px)").matches;
+    if (phone) setSelectedId(null);
+    else if (!selectedId && items[0]) setSelectedId(items[0].id);
+  }, []);
+
+  function changeTab(next: Tab) {
+    setTab(next);
+    const url = new URL(window.location.href);
+    if (next === "filed") url.searchParams.set("view", "filed");
+    else url.searchParams.delete("view");
+    window.history.replaceState(null, "", url);
+    const first = (next === "filed" ? filed : toSort)[0];
+    setSelectedId(isMobile ? null : (first?.id ?? null));
+  }
+
+  const refresh = () => startTransition(() => router.refresh());
+
+  // After filing from "To sort", move on to the next item still waiting.
+  function onFiled(id: string) {
+    if (tab === "sort") {
+      const i = items.findIndex((c) => c.id === id);
+      const next = items[i + 1] ?? items[i - 1];
+      setSelectedId(isMobile ? null : (next?.id ?? null));
+    }
+    refresh();
+  }
+
+  function onCaptured(capture: Capture) {
+    if (tab !== "sort") changeTab("sort");
+    setQuery("");
+    if (!isMobile) setSelectedId(capture.id);
+    refresh();
+  }
+
+  return (
+    <TooltipProvider delayDuration={0}>
+      <ResizablePanelGroup
+        orientation="horizontal"
+        defaultLayout={defaultLayout}
+        id={cookieID}
+        onLayoutChange={(layout) => {
+          document.cookie = `${cookieID}=${JSON.stringify(layout)}; path=/;`;
+        }}
+        className={cn("items-stretch transition-opacity", pending && "opacity-80")}
+      >
+        <ResizablePanel id="list-panel" minSize="25%">
+          <Tabs
+            value={tab}
+            className="flex h-full flex-col gap-0"
+            onValueChange={(value) => changeTab(value as Tab)}
+          >
+            <div className="flex items-center px-4 py-2">
+              <h1 className="text-xl font-bold">Inbox</h1>
+              <TabsList className="ml-auto" data-tour-step-id="inbox-tabs">
+                <TabsTrigger value="sort">
+                  To sort <span className="text-muted-foreground ml-1 tabular-nums">{unfiled}</span>
+                </TabsTrigger>
+                <TabsTrigger value="filed">Filed</TabsTrigger>
+              </TabsList>
+            </div>
+            <div className="space-y-3 px-4 pt-2 pb-4">
+              <QuickCapture onCaptured={onCaptured} />
+              <form onSubmit={(e) => e.preventDefault()}>
+                <InputGroup>
+                  <InputGroupAddon>
+                    <Search />
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    placeholder="Search"
+                    aria-label="Search the inbox"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </InputGroup>
+              </form>
+            </div>
+            <div className="min-h-0 flex-1" data-tour-step-id="inbox-list">
+              <CaptureList
+                items={items}
+                empty={
+                  query.trim()
+                    ? "Nothing matches that search."
+                    : tab === "filed"
+                      ? "Nothing filed yet. Items you sort show up here."
+                      : "Everything is sorted. Capture something above."
+                }
+              />
+            </div>
+            <div className="p-3" data-tour-step-id="inbox-iphone">
+              <IphonePanel />
+            </div>
+          </Tabs>
+        </ResizablePanel>
+        <ResizableHandle hidden={isMobile} withHandle />
+        <ResizablePanel
+          id="display-panel"
+          hidden={isMobile}
+          minSize="30%"
+          data-tour-step-id="inbox-detail"
+        >
+          {!isMobile && <CaptureDisplay capture={selected} projects={projects} onFiled={onFiled} />}
+        </ResizablePanel>
+      </ResizablePanelGroup>
+      {isMobile && (
+        <CaptureDisplayMobile capture={selected} projects={projects} onFiled={onFiled} />
+      )}
+    </TooltipProvider>
+  );
+}
+
+function QuickCapture({ onCaptured }: { onCaptured: (capture: Capture) => void }) {
+  const [body, setBody] = React.useState("");
+  const [saving, setSaving] = React.useState(false);
+
+  async function capture() {
+    if (!body.trim() || saving) return;
+    setSaving(true);
+    const result = await createCapture({ body: body.trim() });
+    setSaving(false);
+    if (!result.ok) return toast.error(result.error.message);
+    setBody("");
+    toast.success("Captured");
+    onCaptured({ ...result.data, projectName: null });
+  }
+
+  // Text typed before taking a photo becomes its caption, so it is used up once the photo saves.
+  function afterPhoto(capture: Capture) {
+    setBody("");
+    onCaptured(capture);
+  }
+
+  return (
+    <form
+      className="space-y-2"
+      data-tour-step-id="inbox-capture"
+      onSubmit={(e) => {
+        e.preventDefault();
+        capture();
+      }}
+    >
+      <Textarea
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            capture();
+          }
+        }}
+        rows={2}
+        className="min-h-16"
+        placeholder="What’s on your mind? A lead, an idea, a link, something to do…"
+        aria-label="Capture"
+      />
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-muted-foreground text-xs max-md:hidden">Ctrl + Enter to capture</span>
+        <div className="ms-auto flex items-center gap-2">
+          <PhotoCapture caption={body} onCaptured={afterPhoto} />
+          <Button type="submit" size="sm" disabled={saving || !body.trim()}>
+            Capture
+          </Button>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+// The camera button. On a phone it opens the back camera (capture="environment"); a second
+// button picks from the photo library, since the camera input skips the library. On a computer
+// the camera button is a plain file picker. The photo is shrunk and made a JPEG in the browser,
+// then saved through the same private Blob store as iPhone Shortcut photos.
+function PhotoCapture({
+  caption,
+  onCaptured
+}: {
+  caption: string;
+  onCaptured: (capture: Capture) => void;
+}) {
+  const cameraRef = React.useRef<HTMLInputElement>(null);
+  const libraryRef = React.useRef<HTMLInputElement>(null);
+  const [photo, setPhoto] = React.useState<{ blob: Blob; url: string } | null>(null);
+  const [text, setText] = React.useState("");
+  const [busy, setBusy] = React.useState<"preparing" | "saving" | null>(null);
+
+  React.useEffect(() => {
+    if (!photo) return;
+    return () => URL.revokeObjectURL(photo.url);
+  }, [photo]);
+
+  async function picked(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setBusy("preparing");
+    try {
+      const { blob } = await photoToJpeg(file);
+      setPhoto({ blob, url: URL.createObjectURL(blob) });
+      setText(caption.trim());
+    } catch {
+      toast.error("Couldn’t read that photo. Try another one.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function save() {
+    if (!photo || busy) return;
+    setBusy("saving");
+    const form = new FormData();
+    const ext = photo.blob.type === "image/jpeg" ? "jpg" : "img";
+    form.append("photo", photo.blob, `photo.${ext}`);
+    form.append("caption", text.trim());
+    const result = await captureInboxPhoto(form);
+    setBusy(null);
+    if (!result.ok) return toast.error(result.error.message);
+    setPhoto(null);
+    setText("");
+    toast.success("Photo saved");
+    onCaptured({ ...result.data, projectName: null });
+  }
+
+  const inputProps = {
+    type: "file",
+    accept: "image/*",
+    className: "sr-only",
+    tabIndex: -1,
+    "aria-hidden": true,
+    onChange: picked
+  } as const;
+
+  return (
+    <>
+      <input ref={cameraRef} capture="environment" data-testid="camera-input" {...inputProps} />
+      <input ref={libraryRef} data-testid="library-input" {...inputProps} />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="pointer-fine:hidden"
+        aria-label="Choose a photo from your library"
+        disabled={!!busy}
+        onClick={() => libraryRef.current?.click()}
+      >
+        <ImagesIcon />
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        aria-label="Take a photo"
+        data-tour-step-id="inbox-camera"
+        disabled={!!busy}
+        onClick={() => cameraRef.current?.click()}
+      >
+        {busy === "preparing" ? <Loader2Icon className="animate-spin" /> : <CameraIcon />}
+        Photo
+      </Button>
+
+      <Dialog open={!!photo} onOpenChange={(open) => !open && !busy && setPhoto(null)}>
+        <DialogContent
+          className="sm:max-w-md"
+          // No keyboard popping up over the photo on a phone; the caption is optional.
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>Add this photo to the Inbox</DialogTitle>
+            <DialogDescription>Add a caption if you like. You can skip it.</DialogDescription>
+          </DialogHeader>
+          {photo && (
+            <img
+              src={photo.url}
+              alt="The photo to add"
+              className="bg-muted max-h-[45vh] w-full rounded-md border object-contain"
+            />
+          )}
+          <Input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                save();
+              }
+            }}
+            maxLength={10_000}
+            placeholder="Caption (optional)"
+            aria-label="Caption"
+          />
+          <DialogFooter>
+            <Button variant="ghost" disabled={!!busy} onClick={() => setPhoto(null)}>
+              Cancel
+            </Button>
+            <Button disabled={!!busy} onClick={save}>
+              {busy === "saving" && <Loader2Icon className="animate-spin" />}
+              Save photo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

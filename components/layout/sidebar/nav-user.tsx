@@ -1,6 +1,13 @@
 "use client";
 
-import { ChevronsUpDownIcon, LogOutIcon } from "lucide-react";
+import {
+  ChevronsUpDownIcon,
+  CircleHelpIcon,
+  CompassIcon,
+  LogOutIcon,
+  SettingsIcon
+} from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -13,13 +20,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar
-} from "@/components/ui/sidebar";
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import { useAppTours } from "@/components/tours/app-tours";
 import { authClient } from "@/lib/auth-client";
+
+// Lets the account menu finish closing before a tour measures the page.
+const MENU_CLOSE_MS = 200;
 
 export type SidebarUser = { name: string; email: string; image?: string | null };
 
@@ -32,8 +38,8 @@ function initials(user: SidebarUser) {
 // Signed-in account and sign out, pinned to the bottom of the sidebar.
 export function NavUser({ user }: { user: SidebarUser }) {
   const router = useRouter();
-  const { isMobile } = useSidebar();
   const [signingOut, setSigningOut] = useState(false);
+  const { pageTour, startTour } = useAppTours();
 
   async function signOut() {
     setSigningOut(true);
@@ -64,6 +70,7 @@ export function NavUser({ user }: { user: SidebarUser }) {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent"
               aria-label="Account"
+              data-tour-step-id="tour-account"
             >
               {avatar}
               {identity}
@@ -71,15 +78,32 @@ export function NavUser({ user }: { user: SidebarUser }) {
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            side={isMobile ? "bottom" : "right"}
-            align="end"
-            sideOffset={4}
-            className="w-60"
+            side="top"
+            align="start"
+            sideOffset={6}
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
           >
             <DropdownMenuLabel className="flex items-center gap-2 font-normal">
               {avatar}
               {identity}
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/settings">
+                <SettingsIcon />
+                Settings
+              </Link>
+            </DropdownMenuItem>
+            {pageTour && (
+              <DropdownMenuItem onSelect={() => startTour(pageTour.id, MENU_CLOSE_MS)}>
+                <CompassIcon />
+                Take a tour of this page
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onSelect={() => startTour("welcome", MENU_CLOSE_MS)}>
+              <CircleHelpIcon />
+              Show the welcome tour again
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={signOut} disabled={signingOut}>
               <LogOutIcon />

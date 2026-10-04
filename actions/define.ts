@@ -19,9 +19,9 @@ export class ActionError extends Error {
       | "invalid"
       | "conflict"
       | "unauthorized"
-      // Microsoft hasn't granted the Outlook permissions yet; the UI offers "Connect Outlook".
-      | "outlook_not_connected"
-      // An outside service (e.g. Microsoft Graph) failed.
+      // Google hasn't granted the Gmail and Contacts permissions yet; the UI offers "Connect Google".
+      | "google_not_connected"
+      // An outside service (e.g. Gmail) failed.
       | "unavailable",
     message: string
   ) {
@@ -41,12 +41,15 @@ type ActionConfig<I extends z.ZodType, O extends z.ZodType, P = undefined> = {
   | { kind: "read"; handler: Handler<z.output<I>, z.input<O>> }
   | {
       kind: "write";
-      // Optional step that runs before the transaction opens: network calls (Microsoft Graph,
+      // Optional step that runs before the transaction opens: network calls (Gmail, People API,
       // token refresh) must not hold the database lock. Its result is passed to the handler.
       prepare?: (input: z.output<I>, db: Database) => Promise<P>;
       handler: (input: z.output<I>, db: Executor, prepared: P) => Promise<z.input<O>>;
       // Every write lands in activity_log, in the same transaction.
       log: (input: z.output<I>, result: z.output<O>) => LogEntry;
+      // Optional step that runs after the transaction commits (e.g. a push notification about
+      // what was just written). It never undoes the write: a failure is logged and swallowed.
+      after?: (input: z.output<I>, result: z.output<O>, db: Database) => Promise<void>;
     }
 );
 
@@ -76,7 +79,7 @@ export function defineAction<I extends z.ZodType, O extends z.ZodType, P = undef
       }
 
       const prepared = (config.prepare ? await config.prepare(input, db) : undefined) as P;
-      return db.transaction(async (tx) => {
+      const committed = await db.transaction(async (tx) => {
         const result = config.output.parse(await config.handler(input, tx, prepared));
         const entry = config.log(input, result);
         await tx.insert(activityLog).values({
@@ -88,6 +91,14 @@ export function defineAction<I extends z.ZodType, O extends z.ZodType, P = undef
         });
         return result;
       });
+      if (config.after) {
+        try {
+          await config.after(input, committed, db);
+        } catch (e) {
+          console.error(`${config.name}: follow-up step failed`, e);
+        }
+      }
+      return committed;
     }
   };
 }

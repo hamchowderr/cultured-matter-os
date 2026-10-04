@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
-@plugin "tailwindcss-animate";
-
 @custom-variant dark (&:is(.dark *));
+
+@import "./themes.css";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 /* Calm, Notion-like palette: warm neutrals, one blue accent. */
 :root {
@@ -50,18 +52,6 @@
   --sidebar-ring: var(--accent-blue);
 
   --display-weight: 600;
-
-  --fc-button-bg-color: var(--primary);
-  --fc-button-hover-bg-color: var(--primary);
-  --fc-button-active-bg-color: var(--primary);
-  --fc-button-hover-border-color: transparent;
-  --fc-button-active-border-color: transparent;
-  --fc-button-border-color: transparent;
-  --fc-event-border-color: transparent;
-  --fc-event-text-color: oklch(1 0 0);
-  --fc-border-color: var(--border);
-  --fc-page-bg-color: var(--muted);
-  --fc-today-bg-color: var(--muted);
 }
 
 .dark {
@@ -143,6 +133,16 @@
   --font-display: var(--display-family);
   --display-weight: var(--display-weight);
   --font-sans: var(--text-family);
+  --font-heading: var(--text-family);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* A font chosen in the theme settings ([data-theme-font] in themes.css sets --font-sans)
+   replaces the default Inter text family. */
+[data-theme-font]:not([data-theme-font="default"]) {
+  --text-family: var(--font-sans);
 }
 
 * {
@@ -161,6 +161,21 @@
 
   .font-display {
     font-weight: var(--display-weight);
+  }
+
+  /* Touch screens: every button reaches at least 44 × 44 px without changing how it looks. The
+     extra area is invisible and centred on the button. Buttons placed with absolute, fixed or
+     sticky keep their own positioning. */
+  @media (pointer: coarse) {
+    [data-slot="button"]:not(.absolute):not(.fixed):not(.sticky) {
+      position: relative;
+    }
+    [data-slot="button"]::after {
+      content: "";
+      position: absolute;
+      inset-block: min(0px, calc((100% - 44px) / 2));
+      inset-inline: min(0px, calc((100% - 44px) / 2));
+    }
   }
 
   [data-slot="button"],
