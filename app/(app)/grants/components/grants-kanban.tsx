@@ -541,54 +541,111 @@ function GrantsTable({ columns, onOpen }: { columns: Columns; onOpen: (grant: Gr
   return (
     <Card>
       <CardContent className="p-0">
-        <Table className="lg:min-w-[860px] lg:table-fixed [&_td:first-child]:ps-(--card-spacing) [&_td:last-child]:pe-(--card-spacing) [&_th:first-child]:ps-(--card-spacing) [&_th:last-child]:pe-(--card-spacing)">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Grant</TableHead>
-              <TableHead className="w-28 max-md:hidden">Board</TableHead>
-              <TableHead className="w-36">Deadline</TableHead>
-              <TableHead className="w-36 max-sm:hidden">Amount</TableHead>
-              <TableHead className="w-40 max-lg:hidden">Eligibility</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 ? (
+        {/* Phones: one stacked row per grant, like Tasks, so nothing scrolls sideways. */}
+        <ul className="divide-y md:hidden" aria-label="Grants">
+          {rows.length === 0 ? (
+            <li className="text-muted-foreground py-8 text-center text-sm">
+              No grants match these filters.
+            </li>
+          ) : (
+            rows.map(({ grant, label }) => (
+              <GrantItem key={grant.id} grant={grant} label={label} onOpen={onOpen} />
+            ))
+          )}
+        </ul>
+
+        <div className="max-md:hidden">
+          <Table className="lg:min-w-[860px] lg:table-fixed [&_td:first-child]:ps-(--card-spacing) [&_td:last-child]:pe-(--card-spacing) [&_th:first-child]:ps-(--card-spacing) [&_th:last-child]:pe-(--card-spacing)">
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
-                  No grants match these filters.
-                </TableCell>
+                <TableHead>Grant</TableHead>
+                <TableHead className="w-28">Board</TableHead>
+                <TableHead className="w-36">Deadline</TableHead>
+                <TableHead className="w-36">Amount</TableHead>
+                <TableHead className="w-40 max-lg:hidden">Eligibility</TableHead>
               </TableRow>
-            ) : (
-              rows.map(({ grant, label }) => (
-                <TableRow key={grant.id} className="cursor-pointer" onClick={() => onOpen(grant)}>
-                  <TableCell className="whitespace-normal">
-                    <div className="min-w-0">
-                      <div className="font-medium lg:truncate">{grant.title}</div>
-                      {grant.agency && (
-                        <div className="text-muted-foreground truncate text-xs">{grant.agency}</div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="max-md:hidden">
-                    <Badge variant="outline">{label}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={isUrgent(grant) ? "warning" : "outline"}>
-                      {formatDeadline(grant.deadline)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground whitespace-nowrap max-sm:hidden">
-                    {formatAmount(grant.amountMin, grant.amountMax) ?? "-"}
-                  </TableCell>
-                  <TableCell className="max-lg:hidden">
-                    <EligibilityBadge grant={grant} />
+            </TableHeader>
+            <TableBody>
+              {rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
+                    No grants match these filters.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                rows.map(({ grant, label }) => (
+                  <TableRow key={grant.id} className="cursor-pointer" onClick={() => onOpen(grant)}>
+                    <TableCell className="whitespace-normal">
+                      <div className="min-w-0">
+                        <div className="font-medium lg:truncate">{grant.title}</div>
+                        {grant.agency && (
+                          <div className="text-muted-foreground text-xs lg:truncate">
+                            {grant.agency}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{label}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={isUrgent(grant) ? "warning" : "outline"}>
+                        {formatDeadline(grant.deadline)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground whitespace-nowrap">
+                      {formatAmount(grant.amountMin, grant.amountMax) ?? "-"}
+                    </TableCell>
+                    <TableCell className="max-lg:hidden">
+                      <EligibilityBadge grant={grant} />
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
+  );
+}
+
+function GrantItem({
+  grant,
+  label,
+  onOpen
+}: {
+  grant: Grant;
+  label: string;
+  onOpen: (grant: Grant) => void;
+}) {
+  const amount = formatAmount(grant.amountMin, grant.amountMax);
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onOpen(grant)}
+        className="hover:bg-muted/50 block w-full min-w-0 space-y-1 px-(--card-spacing) py-3 text-left transition-colors"
+      >
+        <span className="line-clamp-2 font-medium">{grant.title}</span>
+        {grant.agency && (
+          <span className="text-muted-foreground block truncate text-xs">{grant.agency}</span>
+        )}
+        <span className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-1 text-xs">
+          <Badge variant={isUrgent(grant) ? "warning" : "outline"}>
+            <CalendarDaysIcon />
+            {formatDeadline(grant.deadline)}
+          </Badge>
+          {amount && (
+            <span className="flex items-center gap-1 whitespace-nowrap">
+              <CoinsIcon className="size-3.5" />
+              {amount}
+            </span>
+          )}
+          <Badge variant="outline">{label}</Badge>
+          <EligibilityBadge grant={grant} />
+        </span>
+      </button>
+    </li>
   );
 }
