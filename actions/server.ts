@@ -143,11 +143,11 @@ export async function newsletterStatus(input: In<typeof A.newsletterStatus>) {
 export async function syncNewsletter() {
   return toResult(() => runNewsletterSync());
 }
-export async function outlookStatus(input: In<typeof A.outlookStatus>) {
-  return toResult(() => A.outlookStatus.run(input));
+export async function googleStatus(input: In<typeof A.googleStatus>) {
+  return toResult(() => A.googleStatus.run(input));
 }
-export async function syncOutlook(input: In<typeof A.syncOutlook>) {
-  return toResult(() => A.syncOutlook.run(input));
+export async function syncGoogle(input: In<typeof A.syncGoogle>) {
+  return toResult(() => A.syncGoogle.run(input));
 }
 export async function listContactEmails(input: In<typeof A.listContactEmails>) {
   return toResult(() => A.listContactEmails.run(input));

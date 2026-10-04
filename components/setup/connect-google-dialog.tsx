@@ -3,7 +3,7 @@
 import { ArrowRightLeftIcon, CheckIcon, MailIcon } from "lucide-react";
 import { useState } from "react";
 
-import { connectOutlook } from "@/components/outlook/connect-outlook-button";
+import { connectGoogle } from "@/components/google/connect-google-button";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -85,7 +85,7 @@ export function ConnectGoogleDialog() {
             disabled={pending}
             onClick={async () => {
               setPending(true);
-              await connectOutlook();
+              await connectGoogle();
               setPending(false);
             }}
           >

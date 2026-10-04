@@ -5,7 +5,7 @@ import { approvals, captures, projects, tasks } from "@/db/schema";
 import type { Executor } from "@/db";
 import { googleSession } from "@/lib/google";
 import { ActionError, defineAction } from "./define";
-import { GMAIL_DRAFT, saveGmailDraft } from "./outlook";
+import { GMAIL_DRAFT, saveGmailDraft } from "./gmail";
 import { approvalSchema, captureSchema, id, taskPriority, taskSchema } from "./schemas";
 
 const taskStatus = z.enum(["todo", "in_progress", "waiting", "replied", "done"]);

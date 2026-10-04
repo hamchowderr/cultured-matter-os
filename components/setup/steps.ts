@@ -8,7 +8,7 @@ import {
 
 import type { SetupStatus } from "@/actions/setup";
 
-export type StepId = "linkedin" | "outlook" | "iphone" | "newsletter";
+export type StepId = "linkedin" | "google" | "iphone" | "newsletter";
 
 export type Step = {
   id: StepId;
@@ -25,7 +25,7 @@ export type Step = {
 // The four things to set up, in the order she does them. Shared by Today and Settings.
 export const STEPS: Step[] = [
   {
-    id: "outlook",
+    id: "google",
     icon: MailIcon,
     title: "Connect Google",
     description: "See recent emails with each person and save follow-up drafts in Gmail.",
@@ -78,8 +78,8 @@ export function stepSummary(id: StepId, status: SetupStatus): string {
       return status.linkedin.done
         ? `${status.linkedin.contacts} ${status.linkedin.contacts === 1 ? "person" : "people"} from LinkedIn`
         : describe("linkedin");
-    case "outlook":
-      return status.outlook.done ? "Connected" : describe("outlook");
+    case "google":
+      return status.google.done ? "Connected" : describe("google");
     case "iphone":
       return status.iphone.lastCaptureAt
         ? `Last capture from your iPhone on ${day.format(status.iphone.lastCaptureAt)}`

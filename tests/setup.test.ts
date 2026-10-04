@@ -40,7 +40,7 @@ describe("setupStatus", () => {
     noFluent();
     expect(await A.setupStatus.run({}, ctx())).toEqual({
       linkedin: { done: false, contacts: 0 },
-      outlook: { done: false },
+      google: { done: false },
       iphone: { done: false, lastCaptureAt: null },
       newsletter: { done: false },
       done: 0,
@@ -96,11 +96,11 @@ describe("setupStatus", () => {
       scope: "openid,email,profile",
       updatedAt: new Date()
     });
-    expect((await A.setupStatus.run({}, ctx())).outlook).toEqual({ done: false });
+    expect((await A.setupStatus.run({}, ctx())).google).toEqual({ done: false });
 
     await db.update(t.accounts).set({ scope: GRANTED }).where(eq(t.accounts.id, "acc1"));
     const status = await A.setupStatus.run({}, ctx());
-    expect(status.outlook).toEqual({ done: true });
+    expect(status.google).toEqual({ done: true });
     expect(status.done).toBe(3);
   });
 

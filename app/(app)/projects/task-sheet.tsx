@@ -12,7 +12,7 @@ import {
   updateTask
 } from "@/actions/server";
 import { taskStatusLabel } from "@/components/cards";
-import { FollowUpDialog } from "@/components/outlook/follow-up-dialog";
+import { FollowUpDialog } from "@/components/google/follow-up-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
