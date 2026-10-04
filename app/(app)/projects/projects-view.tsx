@@ -5,17 +5,30 @@
 // is the kit's project list; Tasks is the kit's tasks data table.
 
 import { type ColumnFiltersState } from "@tanstack/react-table";
-import { FolderKanbanIcon, PlusIcon } from "lucide-react";
+import { FolderKanbanIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { setTaskStatus, updateProject } from "@/actions/server";
+import { deleteProject, setTaskStatus, updateProject } from "@/actions/server";
 import { ComingSoon, PageHeader } from "@/components/layout/page-shell";
+import { ScopeSwitch } from "@/components/layout/scope-switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { isPersonal, PERSONAL_BUSINESS, type WorkScope } from "@/lib/personal";
 import type { ActivityPoint, ProjectStats } from "@/lib/project-stats";
 import { cn } from "@/lib/utils";
 import { AddTaskDrawer } from "./components/add-task-drawer";
@@ -41,6 +54,7 @@ import {
 export type View = "overview" | "projects" | "tasks";
 
 export function ProjectsView({
+  scope,
   view,
   projectId,
   dueSoon,
@@ -51,6 +65,8 @@ export function ProjectsView({
   stats,
   activity
 }: {
+  // The Business / Personal / All switch; the server already narrowed the data to it.
+  scope: WorkScope;
   view: View;
   projectId: string | null;
   dueSoon: boolean;
@@ -84,7 +100,17 @@ export function ProjectsView({
   const current = projects.find((p) => p.id === projectId) ?? null;
   const openProjects = projects.filter((p) => p.status !== "done");
   const listed = showDone ? projects : openProjects;
-  const businesses = [...new Set(projects.map((p) => p.business))];
+  // Choices for a new project's business: Personal first on the Personal side, offered last
+  // on All, left out on Business.
+  const existing = [...new Set(projects.map((p) => p.business))].filter((b) => !isPersonal(b));
+  const businesses =
+    scope === "personal"
+      ? [PERSONAL_BUSINESS]
+      : scope === "business"
+        ? existing.length
+          ? existing
+          : ["Cultured Matter"]
+        : [...(existing.length ? existing : ["Cultured Matter"]), PERSONAL_BUSINESS];
 
   // Earliest due date among each project's open tasks, counting tasks linked in.
   const nextDue = useMemo(() => {
@@ -125,6 +151,15 @@ export function ProjectsView({
     },
     [refresh]
   );
+  const removeProject = useCallback(
+    async (project: ProjectSummary) => {
+      const result = await deleteProject({ projectId: project.id });
+      if (!result.ok) return toast.error(result.error.message);
+      toast.success(`Deleted ${project.name}`);
+      go({ view: "projects", p: undefined, due: undefined });
+    },
+    [params]
+  );
   const showProject = useCallback(
     (id: string) => go({ view: "tasks", p: id, due: undefined }),
     [params]
@@ -162,11 +197,19 @@ export function ProjectsView({
         }
         className="space-y-4 lg:space-y-6"
       >
-        <TabsList className="z-10" data-tour-step-id="projects-tabs">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="projects">Projects</TabsTrigger>
-          <TabsTrigger value="tasks">Tasks</TabsTrigger>
-        </TabsList>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <TabsList className="z-10" data-tour-step-id="projects-tabs">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="projects">Projects</TabsTrigger>
+            <TabsTrigger value="tasks">Tasks</TabsTrigger>
+          </TabsList>
+          <ScopeSwitch
+            scope={scope}
+            tourId="projects-scope"
+            // A project from the other side would keep the page on All; drop it.
+            onChanged={() => router.push(href({ p: undefined }), { scroll: false })}
+          />
+        </div>
 
         <TabsContent value="overview" className="space-y-4 lg:space-y-6">
           {projects.length === 0 ? (
@@ -226,17 +269,26 @@ export function ProjectsView({
                   Show tasks from all projects
                 </Link>
               </div>
-              <NativeSelect
-                size="sm"
-                className="w-auto"
-                value={current.status}
-                onChange={(e) => setProjectStatus(current, e.target.value as ProjectStatus)}
-                aria-label="Project status"
-              >
-                <NativeSelectOption value="active">Active</NativeSelectOption>
-                <NativeSelectOption value="paused">Paused</NativeSelectOption>
-                <NativeSelectOption value="done">Finished</NativeSelectOption>
-              </NativeSelect>
+              <div className="flex items-center gap-2">
+                <NativeSelect
+                  size="sm"
+                  className="w-auto"
+                  value={current.status}
+                  onChange={(e) => setProjectStatus(current, e.target.value as ProjectStatus)}
+                  aria-label="Project status"
+                >
+                  <NativeSelectOption value="active">Active</NativeSelectOption>
+                  <NativeSelectOption value="paused">Paused</NativeSelectOption>
+                  <NativeSelectOption value="done">Finished</NativeSelectOption>
+                </NativeSelect>
+                {/* Only an empty project can go, e.g. a suggested personal one she doesn't need. */}
+                {current.open + current.done === 0 && (
+                  <DeleteProjectButton
+                    name={current.name}
+                    onConfirm={() => removeProject(current)}
+                  />
+                )}
+              </div>
             </header>
           )}
           <DataTable
@@ -278,6 +330,31 @@ export function ProjectsView({
         onChanged={refresh}
       />
     </div>
+  );
+}
+
+function DeleteProjectButton({ name, onConfirm }: { name: string; onConfirm: () => void }) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline" size="sm" aria-label={`Delete ${name}`}>
+          <Trash2Icon />
+          Delete
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete {name}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This project has no tasks. Deleting it removes it from your list.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>Delete</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 

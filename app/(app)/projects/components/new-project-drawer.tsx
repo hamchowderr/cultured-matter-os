@@ -30,8 +30,9 @@ export function NewProjectDrawer({
   const [business, setBusiness] = useState(businesses[0]);
   const [saving, setSaving] = useState(false);
 
+  // Each time it opens, start on the first choice (Personal when the switch is on Personal).
   useEffect(() => {
-    if (open && !business) setBusiness(businesses[0]);
+    if (open) setBusiness(businesses[0]);
   }, [open]);
 
   async function submit(e: React.FormEvent) {
@@ -55,7 +56,8 @@ export function NewProjectDrawer({
         <DrawerHeader>
           <DrawerTitle>New project</DrawerTitle>
           <DrawerDescription>
-            Projects sit under a business. Type a new business name to add one.
+            Projects sit under a business, or under Personal for life admin. Type a new business
+            name to add one.
           </DrawerDescription>
         </DrawerHeader>
         <form onSubmit={submit} className="space-y-6 overflow-y-auto p-4 pt-0">
@@ -69,7 +71,7 @@ export function NewProjectDrawer({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="project-business">Business</Label>
+            <Label htmlFor="project-business">Business or Personal</Label>
             <Input
               id="project-business"
               list="businesses"

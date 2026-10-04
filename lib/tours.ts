@@ -88,6 +88,11 @@ export const TOURS: TourDef[] = [
     steps: [
       at("today-heading", "Today", "Start here each day. This page shows what needs you today."),
       at(
+        "today-scope",
+        "Business or personal",
+        "Show business, personal, or both. The app remembers your choice."
+      ),
+      at(
         "today-stats",
         "At a glance",
         "Tasks due this week, grants closing soon, new Radar finds and decisions waiting for you. Tap a box to go there."
@@ -159,6 +164,11 @@ export const TOURS: TourDef[] = [
         "projects-tabs",
         "Three views",
         "Overview shows the big picture. Projects lists each project. Tasks lists every task."
+      ),
+      at(
+        "projects-scope",
+        "Business or personal",
+        "Show business projects, personal ones, or both. Personal is for meals, errands, travel and River."
       ),
       at("projects-reminders", "Coming up", "Tasks due soon. Tick one off when it's done.")
     ]

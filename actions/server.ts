@@ -107,6 +107,9 @@ export async function createProject(input: In<typeof A.createProject>) {
 export async function updateProject(input: In<typeof A.updateProject>) {
   return toResult(() => A.updateProject.run(input));
 }
+export async function deleteProject(input: In<typeof A.deleteProject>) {
+  return toResult(() => A.deleteProject.run(input));
+}
 export async function listTasks(input: In<typeof A.listTasks>) {
   return toResult(() => A.listTasks.run(input));
 }
@@ -204,6 +207,10 @@ export async function setDailyEmail(input: { enabled: boolean }) {
   return toResult(async () =>
     A.setDailyEmail.run({ userId: await sessionUserId(), enabled: input.enabled })
   );
+}
+// The Business / Personal / All switch on Today and Projects, remembered per user.
+export async function setWorkScope(input: Omit<In<typeof A.setWorkScope>, "userId">) {
+  return toResult(async () => A.setWorkScope.run({ ...input, userId: await sessionUserId() }));
 }
 export async function markTourSeen(input: Omit<In<typeof A.markTourSeen>, "userId">) {
   return toResult(async () => A.markTourSeen.run({ ...input, userId: await sessionUserId() }));
