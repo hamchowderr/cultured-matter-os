@@ -24,6 +24,7 @@ import {
 } from "./projects";
 import {
   addPairing,
+  contactWarmPaths,
   countWarmPaths,
   findWarmPath,
   importContacts,
@@ -95,6 +96,7 @@ export {
   searchContacts,
   findWarmPath,
   countWarmPaths,
+  contactWarmPaths,
   listPairings,
   addPairing,
   removePairing,
@@ -165,6 +167,7 @@ export const allActions = [
   searchContacts,
   findWarmPath,
   countWarmPaths,
+  contactWarmPaths,
   listPairings,
   addPairing,
   removePairing,

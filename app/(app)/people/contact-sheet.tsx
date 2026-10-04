@@ -6,6 +6,7 @@ import {
   CheckIcon,
   CopyIcon,
   ExternalLinkIcon,
+  HandshakeIcon,
   LinkedinIcon,
   MailIcon,
   PencilIcon
@@ -40,6 +41,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { formatDate, initials } from "@/lib/format";
 import { sourceLabel } from "./contacts-table";
 import { ContactEmails } from "./outlook";
+import { ContactWarmPaths } from "./warm-paths";
 
 function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = React.useState(false);
@@ -245,6 +247,14 @@ export function ContactSheet({
                 </TableBody>
               </Table>
             </div>
+
+            <section className="space-y-2">
+              <h3 className="flex items-center gap-2 text-sm font-medium">
+                <HandshakeIcon className="text-muted-foreground size-4" />
+                Can introduce you to
+              </h3>
+              <ContactWarmPaths contactId={contact.id} />
+            </section>
 
             <section className="space-y-2">
               <h3 className="flex items-center gap-2 text-sm font-medium">

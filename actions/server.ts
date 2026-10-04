@@ -62,6 +62,9 @@ export async function findWarmPath(input: In<typeof A.findWarmPath>) {
 export async function countWarmPaths(input: In<typeof A.countWarmPaths>) {
   return toResult(() => A.countWarmPaths.run(input));
 }
+export async function contactWarmPaths(input: In<typeof A.contactWarmPaths>) {
+  return toResult(() => A.contactWarmPaths.run(input));
+}
 export async function listPairings(input: In<typeof A.listPairings>) {
   return toResult(() => A.listPairings.run(input));
 }

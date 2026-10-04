@@ -48,6 +48,7 @@ describe("registry", () => {
         "searchContacts",
         "findWarmPath",
         "countWarmPaths",
+        "contactWarmPaths",
         "listPairings",
         "addPairing",
         "removePairing",
