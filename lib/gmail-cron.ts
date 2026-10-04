@@ -1,6 +1,6 @@
 import { and, eq, isNotNull } from "drizzle-orm";
 
-import { checkOutlookReplies } from "@/actions";
+import { checkGmailReplies } from "@/actions";
 import { ActionError } from "@/actions/define";
 import { db } from "@/db";
 import { tasks } from "@/db/schema";
@@ -15,7 +15,7 @@ export async function runGmailReplyCheck() {
     .limit(1);
   if (!watching) return { ok: true as const, checked: 0, replied: 0 };
   try {
-    const result = await checkOutlookReplies.run({});
+    const result = await checkGmailReplies.run({});
     return { ok: true as const, checked: result.checked, replied: result.replied.length };
   } catch (e) {
     if (e instanceof ActionError && e.code === "google_not_connected") {

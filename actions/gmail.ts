@@ -23,9 +23,7 @@ import {
 import { ActionError, defineAction } from "./define";
 import { approvalSchema, id } from "./schemas";
 
-// Gmail and Google Contacts for People. The action names (outlookStatus, syncOutlook,
-// checkOutlookReplies) are kept from the Outlook version so screens built in parallel keep
-// compiling; everything behind them talks to Google.
+// Gmail and Google Contacts for People.
 
 // ---------------------------------------------------------------- Google shapes
 
@@ -226,8 +224,8 @@ async function contactsByEmail(db: Executor) {
   return new Map(rows.map((r) => [r.email!.toLowerCase(), r.id]));
 }
 
-export const syncOutlook = defineAction({
-  name: "syncOutlook",
+export const syncGoogle = defineAction({
+  name: "syncGoogle",
   description:
     "Import Google contacts and people she emailed with recently in Gmail into People (matched by email, never duplicated), and log recent emails with each contact. One-way: nothing is changed in Gmail or Google Contacts.",
   kind: "write",
@@ -323,8 +321,8 @@ export const listContactEmails = defineAction({
   }
 });
 
-export const outlookStatus = defineAction({
-  name: "outlookStatus",
+export const googleStatus = defineAction({
+  name: "googleStatus",
   description:
     "Whether Google is connected, i.e. Google granted the Gmail and Contacts permissions.",
   kind: "read",
@@ -451,8 +449,8 @@ export function threadHasReply(messages: GmailMessage[], me: Set<string>) {
   return lastOut > 0 && lastIn > lastOut;
 }
 
-export const checkOutlookReplies = defineAction({
-  name: "checkOutlookReplies",
+export const checkGmailReplies = defineAction({
+  name: "checkGmailReplies",
   description:
     "Look at the Gmail thread of every task waiting for a response and move it to replied when a reply has arrived.",
   kind: "write",

@@ -7,7 +7,7 @@ export const ICON_BACKGROUND = "#37352f";
 export const ICON_FOREGROUND = "#ffffff";
 
 // Full-bleed square: iOS and Android round the corners themselves. The letters sit well inside
-// the central 80% so the same image also works as a maskable icon.
+// the middle 80% so the same image also works as a maskable icon.
 export function monogramIcon(size: number) {
   return new ImageResponse(
     <div

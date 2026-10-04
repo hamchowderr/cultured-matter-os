@@ -290,8 +290,7 @@ export const tasks = sqliteTable(
       .default("medium"),
     dueDate: integer("due_date", { mode: "timestamp_ms" }),
     // The Gmail thread of a follow-up drafted from this task; the daily reply check watches it.
-    // The column keeps its name from the Outlook version (no table rewrite needed).
-    emailThreadId: text("outlook_conversation_id"),
+    emailThreadId: text("email_thread_id"),
     completedAt: integer("completed_at", { mode: "timestamp_ms" }),
     createdAt: createdAt(),
     updatedAt: updatedAt()

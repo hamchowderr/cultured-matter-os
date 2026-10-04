@@ -55,12 +55,12 @@ import {
   setNewsletter
 } from "./newsletter";
 import {
-  checkOutlookReplies,
+  checkGmailReplies,
   draftFollowUp,
   listContactEmails,
-  outlookStatus,
-  syncOutlook
-} from "./outlook";
+  googleStatus,
+  syncGoogle
+} from "./gmail";
 import { setupStatus } from "./setup";
 import { listNotifications, markNotificationsRead } from "./notifications";
 import {
@@ -131,12 +131,12 @@ export {
   recordNewsletterSync,
   newsletterSignup,
   newsletterUnsubscribe,
-  outlookStatus,
+  googleStatus,
   setupStatus,
-  syncOutlook,
+  syncGoogle,
   listContactEmails,
   draftFollowUp,
-  checkOutlookReplies,
+  checkGmailReplies,
   listNotifications,
   markNotificationsRead,
   getUserSettings,
@@ -204,12 +204,12 @@ export const allActions = [
   dueTasks,
   setNewsletter,
   newsletterStatus,
-  outlookStatus,
+  googleStatus,
   setupStatus,
-  syncOutlook,
+  syncGoogle,
   listContactEmails,
   draftFollowUp,
-  checkOutlookReplies,
+  checkGmailReplies,
   listNotifications,
   markNotificationsRead,
   getUserSettings,

@@ -14,7 +14,7 @@ import {
 import * as React from "react";
 
 import type { Contact } from "@/actions/schemas";
-import { FollowUpDialog } from "@/components/outlook/follow-up-dialog";
+import { FollowUpDialog } from "@/components/google/follow-up-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { CATEGORIES } from "@/lib/categories";
 import { formatDate, initials } from "@/lib/format";
 import { sourceLabel } from "./contacts-table";
-import { ContactEmails } from "./outlook";
+import { ContactEmails } from "./google-sync";
 import { ContactWarmPaths } from "./warm-paths";
 
 function CopyButton({ value, label }: { value: string; label: string }) {

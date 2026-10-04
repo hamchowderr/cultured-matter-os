@@ -1,4 +1,4 @@
-import { newsletterStatus, outlookStatus, searchContacts } from "@/actions/server";
+import { newsletterStatus, googleStatus, searchContacts } from "@/actions/server";
 import { PageHeader } from "@/components/layout/page-shell";
 import { generateMeta } from "@/lib/utils";
 import type { SortDir, SortKey } from "./contacts-table";
@@ -27,7 +27,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const dir: SortDir = one(sp.dir) === "desc" ? "desc" : "asc";
   const page = Math.max(1, Number(one(sp.page)) || 1);
 
-  const [result, status, outlook] = await Promise.all([
+  const [result, status, google] = await Promise.all([
     searchContacts({
       query,
       sector,
@@ -38,7 +38,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
       offset: (page - 1) * PAGE_SIZE
     }),
     newsletterStatus({}),
-    outlookStatus({})
+    googleStatus({})
   ]);
 
   return (
@@ -58,7 +58,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
           sort={sort}
           dir={dir}
           newsletter={status.ok ? status.data : null}
-          outlookConnected={outlook.ok && outlook.data.connected}
+          googleConnected={google.ok && google.data.connected}
         />
       ) : (
         <p className="text-destructive text-sm">Couldn’t load contacts: {result.error.message}</p>

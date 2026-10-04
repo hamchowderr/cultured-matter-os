@@ -6,7 +6,7 @@ const getAccessToken = vi.hoisted(() => vi.fn(async () => ({ accessToken: "test-
 vi.mock("@/lib/auth", () => ({ auth: { api: { getAccessToken } } }));
 
 import * as A from "@/actions";
-import { threadHasReply, type GmailMessage } from "@/actions/outlook";
+import { threadHasReply, type GmailMessage } from "@/actions/gmail";
 import type { Database } from "@/db";
 import * as t from "@/db/schema";
 import { GOOGLE_SCOPES } from "@/lib/google-scopes";
@@ -98,22 +98,22 @@ const msg = (
 
 describe("Google connection", () => {
   it("asks to connect when Google hasn't granted Gmail and Contacts", async () => {
-    expect(await A.outlookStatus.run({}, ctx())).toEqual({
+    expect(await A.googleStatus.run({}, ctx())).toEqual({
       connected: false,
       missingScopes: [...GOOGLE_SCOPES]
     });
-    await expect(A.syncOutlook.run({}, ctx())).rejects.toMatchObject({
+    await expect(A.syncGoogle.run({}, ctx())).rejects.toMatchObject({
       code: "google_not_connected"
     });
     expect(calls).toHaveLength(0);
 
     await grantScopes();
-    expect(await A.outlookStatus.run({}, ctx())).toEqual({ connected: true, missingScopes: [] });
+    expect(await A.googleStatus.run({}, ctx())).toEqual({ connected: true, missingScopes: [] });
   });
 
   it("asks to connect again when the refresh token no longer works", async () => {
     getAccessToken.mockRejectedValueOnce(new Error("invalid_grant"));
-    await expect(A.syncOutlook.run({}, ctx())).rejects.toMatchObject({
+    await expect(A.syncGoogle.run({}, ctx())).rejects.toMatchObject({
       code: "google_not_connected"
     });
     expect(calls).toHaveLength(0);
@@ -121,13 +121,13 @@ describe("Google connection", () => {
 
   it("asks to connect again when Google refuses the token", async () => {
     routes[`${GMAIL}/profile`] = () => json({ error: { code: 401 } }, 401);
-    await expect(A.syncOutlook.run({}, ctx())).rejects.toMatchObject({
+    await expect(A.syncGoogle.run({}, ctx())).rejects.toMatchObject({
       code: "google_not_connected"
     });
   });
 });
 
-describe("syncOutlook (Gmail and Google Contacts)", () => {
+describe("syncGoogle (Gmail and Google Contacts)", () => {
   const messages: Record<string, GmailMessage> = {
     "m-in-1": msg("m-in-1", {
       thread: "c1",
@@ -215,7 +215,7 @@ describe("syncOutlook (Gmail and Google Contacts)", () => {
       source: "linkedin_csv"
     });
 
-    const first = await A.syncOutlook.run({}, ctx());
+    const first = await A.syncGoogle.run({}, ctx());
     expect(first).toEqual({ created: 3, matched: 1, emailsLogged: 5 });
 
     const list = calls.filter((c) => c.url.pathname.endsWith("/users/me/messages"));
@@ -257,7 +257,7 @@ describe("syncOutlook (Gmail and Google Contacts)", () => {
     });
 
     // Running again adds nothing.
-    const again = await A.syncOutlook.run({}, ctx());
+    const again = await A.syncGoogle.run({}, ctx());
     expect(again).toEqual({ created: 0, matched: 4, emailsLogged: 0 });
     expect(await db.select().from(t.contacts)).toHaveLength(4);
     expect(await db.select().from(t.contactEmails)).toHaveLength(5);
@@ -281,7 +281,7 @@ describe("syncOutlook (Gmail and Google Contacts)", () => {
     const log = await db
       .select()
       .from(t.activityLog)
-      .where(eq(t.activityLog.action, "syncOutlook"));
+      .where(eq(t.activityLog.action, "syncGoogle"));
     expect(log[0].summary).toBe("Synced Gmail: 3 new people, 5 emails logged");
   });
 });
@@ -427,7 +427,7 @@ describe("Reply check", () => {
     routes[`${GMAIL}/threads/thread-lena`] = () => json({ messages: [sent(day(2)), got(day(1))] });
     routes[`${GMAIL}/threads/thread-priya`] = () => json({ messages: [sent(day(2))] });
 
-    const result = await A.checkOutlookReplies.run({}, ctx());
+    const result = await A.checkGmailReplies.run({}, ctx());
     expect(result.checked).toBe(3);
     expect(result.replied.map((r) => r.title)).toEqual(["Ask Lena about Soliome"]);
     const threadCall = calls.find((c) => c.url.pathname.endsWith("/threads/thread-lena"))!;
@@ -440,19 +440,19 @@ describe("Reply check", () => {
     const log = await db
       .select()
       .from(t.activityLog)
-      .where(eq(t.activityLog.action, "checkOutlookReplies"));
+      .where(eq(t.activityLog.action, "checkGmailReplies"));
     expect(log[0].summary).toBe('Replies arrived: "Ask Lena about Soliome"');
   });
 
   it("skips Google entirely when nothing is waiting", async () => {
     await db.update(t.tasks).set({ status: "done" });
-    const result = await A.checkOutlookReplies.run({}, ctx());
+    const result = await A.checkGmailReplies.run({}, ctx());
     expect(result).toEqual({ checked: 0, replied: [] });
     expect(calls).toHaveLength(0);
   });
 });
 
-describe("syncOutlook skips her own addresses", () => {
+describe("syncGoogle skips her own addresses", () => {
   const OTHER_OWN = "admin@otherown.io";
 
   beforeEach(() => {
@@ -490,7 +490,7 @@ describe("syncOutlook skips her own addresses", () => {
   afterAll(() => vi.unstubAllEnvs());
 
   it("never imports the signed-in address or any address in ALLOWED_EMAILS", async () => {
-    await A.syncOutlook.run({}, ctx());
+    await A.syncGoogle.run({}, ctx());
     const emails = (await db.select().from(t.contacts)).map((p) => p.email);
     expect(emails).toContain("newfriend@kelp.co");
     expect(emails).not.toContain(OTHER_OWN);

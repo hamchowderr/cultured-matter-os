@@ -32,7 +32,7 @@ import { ContactSheet } from "./contact-sheet";
 import { ContactsTable, type SortDir, type SortKey } from "./contacts-table";
 import { LinkedInSteps } from "./linkedin-steps";
 import { NewsletterBar, type NewsletterStatus } from "./newsletter-bar";
-import { OutlookSync } from "./outlook";
+import { GoogleSync } from "./google-sync";
 
 const NEWSLETTER_CHIPS = [
   { value: undefined, label: "Everyone" },
@@ -49,7 +49,7 @@ export function PeopleView({
   sort,
   dir,
   newsletter,
-  outlookConnected
+  googleConnected
 }: {
   contacts: Contact[];
   total: number;
@@ -59,7 +59,7 @@ export function PeopleView({
   sort: SortKey;
   dir: SortDir;
   newsletter: NewsletterStatus | null;
-  outlookConnected: boolean;
+  googleConnected: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -187,10 +187,10 @@ export function PeopleView({
     </>
   );
 
-  const outlookButton = (
+  const googleButton = (
     <span className="inline-flex" data-tour-step-id="people-google">
-      <OutlookSync
-        connected={outlookConnected}
+      <GoogleSync
+        connected={googleConnected}
         onSynced={() => startTransition(() => router.refresh())}
       />
     </span>
@@ -212,7 +212,7 @@ export function PeopleView({
           <LinkedInSteps />
           <div className="flex flex-wrap justify-center gap-2">
             {importButton}
-            {outlookButton}
+            {googleButton}
           </div>
         </EmptyContent>
       </Empty>
@@ -248,7 +248,7 @@ export function PeopleView({
               <LinkedInSteps />
             </PopoverContent>
           </Popover>
-          {outlookButton}
+          {googleButton}
           {importButton}
         </div>
       </div>

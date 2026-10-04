@@ -10,8 +10,7 @@ import { authClient } from "@/lib/auth-client";
 import { GOOGLE_SCOPES } from "@/lib/google-scopes";
 
 // Asks Google for the Gmail and Contacts permissions on the account she already signed in with.
-// (Export names kept from the Outlook version so other screens keep importing them.)
-export async function connectOutlook() {
+export async function connectGoogle() {
   const back = window.location.pathname;
   const { error } = await authClient.linkSocial({
     provider: "google",
@@ -23,7 +22,7 @@ export async function connectOutlook() {
   if (error) toast.error("Couldn't reach Google. Please try again.");
 }
 
-export function ConnectOutlookButton({ size = "sm" }: { size?: "sm" | "default" }) {
+export function ConnectGoogleButton({ size = "sm" }: { size?: "sm" | "default" }) {
   const [pending, setPending] = useState(false);
   return (
     <Button
@@ -32,7 +31,7 @@ export function ConnectOutlookButton({ size = "sm" }: { size?: "sm" | "default" 
       disabled={pending}
       onClick={async () => {
         setPending(true);
-        await connectOutlook();
+        await connectGoogle();
         setPending(false);
       }}
     >

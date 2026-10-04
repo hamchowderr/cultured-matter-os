@@ -60,7 +60,7 @@ export default async function Page() {
 
   function action(step: Step, done: boolean) {
     if (done) return <LinkAction href={step.doneHref} label={step.doneLabel} />;
-    if (step.id === "outlook") return <ConnectGoogleDialog />;
+    if (step.id === "google") return <ConnectGoogleDialog />;
     // The newsletter connects once her newsletter site exists; nothing for her to do yet.
     if (step.id === "newsletter") return null;
     return <LinkAction href={step.href} label={step.todoLabel} />;
@@ -141,7 +141,7 @@ export default async function Page() {
             <DailyEmailCard
               enabled={settings.data.dailyEmail}
               email={user.email}
-              googleConnected={status.ok ? status.data.outlook.done : true}
+              googleConnected={status.ok ? status.data.google.done : true}
             />
           </div>
         </section>

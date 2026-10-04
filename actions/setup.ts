@@ -5,13 +5,13 @@ import type { Database } from "@/db";
 import { activityLog, contacts } from "@/db/schema";
 import { defineAction } from "./define";
 import { newsletterStatus } from "./newsletter";
-import { outlookStatus } from "./outlook";
+import { googleStatus } from "./gmail";
 
-export const SETUP_STEPS = ["linkedin", "outlook", "iphone", "newsletter"] as const;
+export const SETUP_STEPS = ["linkedin", "google", "iphone", "newsletter"] as const;
 
 export const setupStatusSchema = z.object({
   linkedin: z.object({ done: z.boolean(), contacts: z.number() }),
-  outlook: z.object({ done: z.boolean() }),
+  google: z.object({ done: z.boolean() }),
   iphone: z.object({ done: z.boolean(), lastCaptureAt: z.date().nullable() }),
   newsletter: z.object({ done: z.boolean() }),
   done: z.number(),
@@ -29,7 +29,7 @@ export const setupStatus = defineAction({
   async handler(_input, db) {
     // Read actions never run inside a transaction, so this executor is the database itself.
     const ctx = { db: db as Database };
-    const [[linkedin], [iphone], outlook, newsletter] = await Promise.all([
+    const [[linkedin], [iphone], google, newsletter] = await Promise.all([
       db.select({ n: count() }).from(contacts).where(eq(contacts.source, "linkedin_csv")),
       // createCapture records where a capture came from in its activity entry.
       db
@@ -41,12 +41,12 @@ export const setupStatus = defineAction({
             sql`json_extract(${activityLog.data}, '$.source') = 'iphone'`
           )
         ),
-      outlookStatus.run({}, ctx),
+      googleStatus.run({}, ctx),
       newsletterStatus.run({}, ctx)
     ]);
     const steps = {
       linkedin: { done: linkedin.n > 0, contacts: linkedin.n },
-      outlook: { done: outlook.connected },
+      google: { done: google.connected },
       iphone: { done: iphone.last != null, lastCaptureAt: iphone.last ?? null },
       newsletter: { done: newsletter.connected }
     };

@@ -5,14 +5,14 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { listContactEmails, syncOutlook } from "@/actions/server";
-import type { ContactEmail } from "@/actions/outlook";
-import { ConnectOutlookButton, connectOutlook } from "@/components/outlook/connect-outlook-button";
+import { listContactEmails, syncGoogle } from "@/actions/server";
+import type { ContactEmail } from "@/actions/gmail";
+import { ConnectGoogleButton, connectGoogle } from "@/components/google/connect-google-button";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 
 // "Sync Gmail" once connected, "Connect Google" until Google grants Gmail and Contacts.
-export function OutlookSync({ connected, onSynced }: { connected: boolean; onSynced: () => void }) {
+export function GoogleSync({ connected, onSynced }: { connected: boolean; onSynced: () => void }) {
   const [syncing, setSyncing] = useState(false);
   const params = useSearchParams();
   const router = useRouter();
@@ -30,16 +30,16 @@ export function OutlookSync({ connected, onSynced }: { connected: boolean; onSyn
     router.replace(next.size ? `${pathname}?${next}` : pathname, { scroll: false });
   }, [params]);
 
-  if (!connected) return <ConnectOutlookButton />;
+  if (!connected) return <ConnectGoogleButton />;
 
   async function sync() {
     setSyncing(true);
-    const result = await syncOutlook({});
+    const result = await syncGoogle({});
     setSyncing(false);
     if (!result.ok) {
       if (result.error.code === "google_not_connected") {
         return toast.error(result.error.message, {
-          action: { label: "Connect Google", onClick: () => connectOutlook() }
+          action: { label: "Connect Google", onClick: () => connectGoogle() }
         });
       }
       return toast.error(result.error.message);

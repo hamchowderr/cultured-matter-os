@@ -330,7 +330,7 @@ describe("Gmail replies", () => {
     );
     await db.update(t.tasks).set({ emailThreadId: "thread-lena" }).where(eq(t.tasks.id, task.id));
 
-    const result = await A.checkOutlookReplies.run({}, ctx());
+    const result = await A.checkGmailReplies.run({}, ctx());
     expect(result.replied.map((r) => r.title)).toEqual(["Ask Lena about Soliome"]);
     expect(payloads()).toEqual([
       expect.objectContaining({
@@ -343,7 +343,7 @@ describe("Gmail replies", () => {
 
     // Nothing new on the next check: no push.
     sendNotification.mockClear();
-    await A.checkOutlookReplies.run({}, ctx());
+    await A.checkGmailReplies.run({}, ctx());
     expect(sendNotification).not.toHaveBeenCalled();
   });
 
