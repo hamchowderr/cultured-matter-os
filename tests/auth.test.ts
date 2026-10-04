@@ -7,6 +7,14 @@ import * as t from "@/db/schema";
 import { ACCOUNT_NOT_ALLOWED, isAllowedEmail, parseAllowedEmails } from "@/lib/allowed-emails";
 import { freshDb } from "./test-db";
 
+// lib/auth must load after the test database exists (below), but loading Better Auth there
+// counts against the hook timeout and crawls under full-suite load. Load the packages now,
+// while the file is collected, so the later import only evaluates lib/auth itself.
+import "@better-auth/drizzle-adapter";
+import "better-auth";
+import "better-auth/api";
+import "better-auth/next-js";
+
 // The real session lookup needs a Next.js request; each test decides what it returns.
 const getSession = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/session", () => ({ getSession }));
