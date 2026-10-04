@@ -128,6 +128,11 @@ describe("tour definitions", () => {
     }
   });
 
+  it("shows the Inbox camera button right after the capture box", () => {
+    const targets = getTour("inbox")!.steps.map((s) => s.variants[0].target);
+    expect(targets.slice(0, 2)).toEqual(["inbox-capture", "inbox-camera"]);
+  });
+
   it("keeps each step short", () => {
     for (const tour of TOURS) {
       for (const step of tour.steps) {

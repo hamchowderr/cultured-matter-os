@@ -1,14 +1,24 @@
 "use client";
 
 import * as React from "react";
-import { Search } from "lucide-react";
+import { CameraIcon, ImagesIcon, Loader2Icon, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type Layout } from "react-resizable-panels";
 import { toast } from "sonner";
 
-import { createCapture } from "@/actions/server";
+import { captureInboxPhoto, createCapture } from "@/actions/server";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { photoToJpeg } from "@/lib/photo-to-jpeg";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -204,6 +214,12 @@ function QuickCapture({ onCaptured }: { onCaptured: (capture: Capture) => void }
     onCaptured({ ...result.data, projectName: null });
   }
 
+  // Text typed before taking a photo becomes its caption, so it is used up once the photo saves.
+  function afterPhoto(capture: Capture) {
+    setBody("");
+    onCaptured(capture);
+  }
+
   return (
     <form
       className="space-y-2"
@@ -228,11 +244,150 @@ function QuickCapture({ onCaptured }: { onCaptured: (capture: Capture) => void }
         aria-label="Capture"
       />
       <div className="flex items-center justify-between gap-2">
-        <span className="text-muted-foreground text-xs">Ctrl + Enter to capture</span>
-        <Button type="submit" size="sm" disabled={saving || !body.trim()}>
-          Capture
-        </Button>
+        <span className="text-muted-foreground text-xs max-md:hidden">Ctrl + Enter to capture</span>
+        <div className="ms-auto flex items-center gap-2">
+          <PhotoCapture caption={body} onCaptured={afterPhoto} />
+          <Button type="submit" size="sm" disabled={saving || !body.trim()}>
+            Capture
+          </Button>
+        </div>
       </div>
     </form>
+  );
+}
+
+// The camera button. On a phone it opens the back camera (capture="environment"); a second
+// button picks from the photo library, since the camera input skips the library. On a computer
+// the camera button is a plain file picker. The photo is shrunk and made a JPEG in the browser,
+// then saved through the same private Blob store as iPhone Shortcut photos.
+function PhotoCapture({
+  caption,
+  onCaptured
+}: {
+  caption: string;
+  onCaptured: (capture: Capture) => void;
+}) {
+  const cameraRef = React.useRef<HTMLInputElement>(null);
+  const libraryRef = React.useRef<HTMLInputElement>(null);
+  const [photo, setPhoto] = React.useState<{ blob: Blob; url: string } | null>(null);
+  const [text, setText] = React.useState("");
+  const [busy, setBusy] = React.useState<"preparing" | "saving" | null>(null);
+
+  React.useEffect(() => {
+    if (!photo) return;
+    return () => URL.revokeObjectURL(photo.url);
+  }, [photo]);
+
+  async function picked(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setBusy("preparing");
+    try {
+      const { blob } = await photoToJpeg(file);
+      setPhoto({ blob, url: URL.createObjectURL(blob) });
+      setText(caption.trim());
+    } catch {
+      toast.error("Couldn’t read that photo. Try another one.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function save() {
+    if (!photo || busy) return;
+    setBusy("saving");
+    const form = new FormData();
+    const ext = photo.blob.type === "image/jpeg" ? "jpg" : "img";
+    form.append("photo", photo.blob, `photo.${ext}`);
+    form.append("caption", text.trim());
+    const result = await captureInboxPhoto(form);
+    setBusy(null);
+    if (!result.ok) return toast.error(result.error.message);
+    setPhoto(null);
+    setText("");
+    toast.success("Photo saved");
+    onCaptured({ ...result.data, projectName: null });
+  }
+
+  const inputProps = {
+    type: "file",
+    accept: "image/*",
+    className: "sr-only",
+    tabIndex: -1,
+    "aria-hidden": true,
+    onChange: picked
+  } as const;
+
+  return (
+    <>
+      <input ref={cameraRef} capture="environment" data-testid="camera-input" {...inputProps} />
+      <input ref={libraryRef} data-testid="library-input" {...inputProps} />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="pointer-fine:hidden"
+        aria-label="Choose a photo from your library"
+        disabled={!!busy}
+        onClick={() => libraryRef.current?.click()}
+      >
+        <ImagesIcon />
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        aria-label="Take a photo"
+        data-tour-step-id="inbox-camera"
+        disabled={!!busy}
+        onClick={() => cameraRef.current?.click()}
+      >
+        {busy === "preparing" ? <Loader2Icon className="animate-spin" /> : <CameraIcon />}
+        Photo
+      </Button>
+
+      <Dialog open={!!photo} onOpenChange={(open) => !open && !busy && setPhoto(null)}>
+        <DialogContent
+          className="sm:max-w-md"
+          // No keyboard popping up over the photo on a phone; the caption is optional.
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>Add this photo to the Inbox</DialogTitle>
+            <DialogDescription>Add a caption if you like. You can skip it.</DialogDescription>
+          </DialogHeader>
+          {photo && (
+            <img
+              src={photo.url}
+              alt="The photo to add"
+              className="bg-muted max-h-[45vh] w-full rounded-md border object-contain"
+            />
+          )}
+          <Input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                save();
+              }
+            }}
+            maxLength={10_000}
+            placeholder="Caption (optional)"
+            aria-label="Caption"
+          />
+          <DialogFooter>
+            <Button variant="ghost" disabled={!!busy} onClick={() => setPhoto(null)}>
+              Cancel
+            </Button>
+            <Button disabled={!!busy} onClick={save}>
+              {busy === "saving" && <Loader2Icon className="animate-spin" />}
+              Save photo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

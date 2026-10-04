@@ -121,6 +121,11 @@ export const TOURS: TourDef[] = [
         "Type anything here: an idea, a lead, a link or a to-do. Tap Capture to save it."
       ),
       at(
+        "inbox-camera",
+        "Snap a photo",
+        "Tap Photo to take a picture of a page or a whiteboard. Add a caption if you like."
+      ),
+      at(
         "inbox-tabs",
         "To sort and Filed",
         "New things wait in To sort. Once you decide what they are, they move to Filed."

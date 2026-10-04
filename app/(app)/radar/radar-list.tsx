@@ -35,7 +35,14 @@ import { CompactPager } from "@/components/layout/compact-pager";
 import { ListLink, ListRegion } from "@/components/layout/list-transition";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -283,7 +290,15 @@ export function RadarList({
       </Dialog>
 
       <Sheet open={!!detail} onOpenChange={(open) => !open && setDetail(null)}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+        {/* Focus the sheet itself on open, not its first field: focusing the Brand name input
+            pops the iPhone keyboard over the company. */}
+        <SheetContent
+          className="w-full overflow-y-auto outline-none sm:max-w-lg"
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement | null)?.focus({ preventScroll: true });
+          }}
+        >
           {detail && (
             <CompanyDetail
               company={detail.company}
@@ -462,7 +477,10 @@ function CompaniesTable({
         {companies.map((c) => (
           <li
             key={c.id}
-            className={cn("space-y-2 px-(--card-spacing) py-3", c.status === "passed" && "opacity-60")}
+            className={cn(
+              "space-y-2 px-(--card-spacing) py-3",
+              c.status === "passed" && "opacity-60"
+            )}
           >
             <button
               type="button"
@@ -566,7 +584,12 @@ function TriageActions({
 }: {
   company: RadarCompany;
   busy: boolean;
-  handlers: { onStar: RowHandler; onShortlist: RowHandler; onPass: RowHandler; onReset: RowHandler };
+  handlers: {
+    onStar: RowHandler;
+    onShortlist: RowHandler;
+    onPass: RowHandler;
+    onReset: RowHandler;
+  };
   iconOnly?: boolean;
   showStatus?: boolean;
   className?: string;
@@ -584,7 +607,12 @@ function TriageActions({
         </Badge>
       )}
       {c.status !== "new" && (
-        <TriageButton label="Undo" icon={Undo2Icon} busy={busy} onClick={() => handlers.onReset(c)} />
+        <TriageButton
+          label="Undo"
+          icon={Undo2Icon}
+          busy={busy}
+          onClick={() => handlers.onReset(c)}
+        />
       )}
       {c.status !== "passed" && (
         <TriageButton label="Pass" icon={XIcon} busy={busy} onClick={() => handlers.onPass(c)} />
@@ -601,7 +629,12 @@ function TriageActions({
             onClick={() => handlers.onShortlist(c)}
           />
         ) : (
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => handlers.onShortlist(c)}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy}
+            onClick={() => handlers.onShortlist(c)}
+          >
             <BookmarkPlusIcon />
             Shortlist
           </Button>

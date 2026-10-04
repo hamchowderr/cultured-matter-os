@@ -139,16 +139,21 @@ export function TourButton() {
     <Button
       variant="ghost"
       size="sm"
-      className="relative"
       onClick={() => startTour(pageTour.id)}
       aria-label={`Take a tour of ${pageTour.label}`}
       data-tour-step-id="tour-start"
     >
-      <CompassIcon />
+      {/* The dot sits on the compass icon, so it never covers the label. */}
+      <span className="relative inline-flex">
+        <CompassIcon />
+        {fresh && (
+          <span
+            className="bg-primary ring-background absolute -top-0.5 -right-0.5 size-2 rounded-full ring-2"
+            aria-hidden
+          />
+        )}
+      </span>
       <span className="hidden min-[400px]:inline">Take a tour</span>
-      {fresh && (
-        <span className="bg-primary absolute top-1 right-1 size-2 rounded-full" aria-hidden />
-      )}
     </Button>
   );
 }

@@ -207,14 +207,15 @@ function FilingForm({
   );
 }
 
-// Photos sent from the iPhone Shortcut, served from private Blob storage to the signed-in user.
+// Photos from the iPhone Shortcut or the Inbox camera button, served from private Blob storage to
+// the signed-in user.
 function CapturePhoto({ captureId }: { captureId: string }) {
   const src = `/api/photos/${captureId}`;
   return (
     <a href={src} target="_blank" rel="noreferrer" className="block" title="Open the full photo">
       <img
         src={src}
-        alt="Photo sent from the iPhone"
+        alt="Captured photo"
         loading="lazy"
         className="bg-muted w-full rounded-md border object-contain"
       />
