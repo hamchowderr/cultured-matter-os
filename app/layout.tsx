@@ -1,4 +1,5 @@
 import React from "react";
+import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "next-themes";
@@ -8,9 +9,37 @@ import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 
 import { ActiveThemeProvider } from "@/components/active-theme";
-import { DEFAULT_THEME, type ThemeType } from "@/lib/themes";
+import { DEFAULT_THEME, STATUS_BAR_COLORS, type ThemeType } from "@/lib/themes";
+import { PwaSetup } from "@/components/pwa-setup";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+
+// Install-to-home-screen metadata. The manifest (app/manifest.ts) and the icons (app/icon.tsx,
+// app/apple-icon.tsx) are linked by Next itself.
+export const metadata: Metadata = {
+  title: "Cultured Matter",
+  applicationName: "Cultured Matter",
+  appleWebApp: {
+    capable: true,
+    title: "Cultured",
+    // "default" lets iOS draw an opaque status bar above the page in the theme colour below,
+    // so its text stays readable in both the light and dark theme.
+    statusBarStyle: "default"
+  },
+  formatDetection: { telephone: false }
+};
+
+// viewport-fit=cover hands the full screen to the page; the header, the content area, sheets and
+// drawers pad themselves with env(safe-area-inset-*) to clear the Dynamic Island and home bar.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: STATUS_BAR_COLORS.light },
+    { media: "(prefers-color-scheme: dark)", color: STATUS_BAR_COLORS.dark }
+  ]
+};
 
 export default async function RootLayout({
   children
@@ -55,7 +84,12 @@ export default async function RootLayout({
             {/* Kit v2 tooltips no longer wrap their own provider, so one sits at the root. */}
             <TooltipProvider>
               {children}
-              <Toaster position="top-center" richColors />
+              <Toaster
+                position="top-center"
+                richColors
+                mobileOffset={{ top: "calc(env(safe-area-inset-top) + 16px)" }}
+              />
+              <PwaSetup />
               <NextTopLoader
                 color="var(--primary)"
                 showSpinner={false}

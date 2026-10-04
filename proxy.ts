@@ -16,7 +16,9 @@ export const config = {
     // Everything except: Better Auth's own routes, cron routes (they check CRON_SECRET),
     // the public newsletter signup and webhook (they guard themselves), the iPhone capture
     // endpoint (it checks CAPTURE_TOKEN), the calendar feed (the token in its path is the key),
-    // the sign-in page, Next.js internals and static files (any path with a file extension).
-    "/((?!api/auth|api/cron|api/newsletter/signup|api/newsletter/webhook|api/capture|api/calendar/|sign-in|_next/static|_next/image|favicon.ico|.*\\.[\\w]+$).*)"
+    // the sign-in page, the install pieces (the generated app icons and the offline page; the
+    // manifest and service worker are files), Next.js internals and static files (any path with
+    // a file extension).
+    "/((?!api/auth|api/cron|api/newsletter/signup|api/newsletter/webhook|api/capture|api/calendar/|sign-in|icon/|apple-icon$|offline$|_next/static|_next/image|favicon.ico|.*\\.[\\w]+$).*)"
   ]
 };

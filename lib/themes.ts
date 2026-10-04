@@ -12,6 +12,10 @@ export const DEFAULT_THEME = {
   displayFont: "default"
 } as const;
 
+// Browser and iPhone status-bar colour per theme: the calm palette's paper (globals.css :root and
+// .dark). Used by the root layout's viewport export and components/pwa-setup.tsx.
+export const STATUS_BAR_COLORS = { light: "#ffffff", dark: "#191919" } as const;
+
 export const SIDEBAR_VARIANTS = ["inset", "sidebar", "floating"] as const;
 
 export type SidebarVariant = (typeof SIDEBAR_VARIANTS)[number];
