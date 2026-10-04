@@ -17,8 +17,7 @@ import {
 import {
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar
+  SidebarMenuItem
 } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth-client";
 
@@ -33,7 +32,6 @@ function initials(user: SidebarUser) {
 // Signed-in account and sign out, pinned to the bottom of the sidebar.
 export function NavUser({ user }: { user: SidebarUser }) {
   const router = useRouter();
-  const { isMobile } = useSidebar();
   const [signingOut, setSigningOut] = useState(false);
 
   async function signOut() {
@@ -72,10 +70,10 @@ export function NavUser({ user }: { user: SidebarUser }) {
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            side={isMobile ? "bottom" : "right"}
-            align="end"
-            sideOffset={4}
-            className="w-60"
+            side="top"
+            align="start"
+            sideOffset={6}
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
           >
             <DropdownMenuLabel className="flex items-center gap-2 font-normal">
               {avatar}
