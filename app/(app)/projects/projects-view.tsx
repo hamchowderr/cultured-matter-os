@@ -140,9 +140,10 @@ export function ProjectsView({
       <div className="mb-4 flex flex-row flex-wrap items-center justify-between gap-2 space-y-2">
         <PageHeader
           title="Projects"
+          tourId="projects-heading"
           description="Businesses, their projects, and the tasks in each. A task can show up in more than one project."
         />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" data-tour-step-id="projects-add">
           <Button variant="outline" onClick={() => setNewProjectOpen(true)}>
             <PlusIcon />
             New project
@@ -161,7 +162,7 @@ export function ProjectsView({
         }
         className="space-y-4 lg:space-y-6"
       >
-        <TabsList className="z-10">
+        <TabsList className="z-10" data-tour-step-id="projects-tabs">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="projects">Projects</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>

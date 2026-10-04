@@ -45,6 +45,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     <div className="space-y-6">
       <PageHeader
         title="People"
+        tourId="people-heading"
         description="Your LinkedIn and Google contacts. Search by name, company or role, and tag people by sector."
       />
       {result.ok ? (

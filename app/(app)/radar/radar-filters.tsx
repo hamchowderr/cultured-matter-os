@@ -79,7 +79,10 @@ export function RadarTabs({ filters, facets }: Omit<Props, "hasBaseline">) {
       value={filters.view}
       onValueChange={(v) => update({ view: v === "review" ? undefined : v })}
     >
-      <div className="-mx-1 [scrollbar-width:none] overflow-x-auto px-1">
+      <div
+        className="-mx-1 [scrollbar-width:none] overflow-x-auto px-1"
+        data-tour-step-id="radar-tabs"
+      >
         <TabsList className="w-max">
           {RADAR_VIEWS.map((v) => {
             const n = count(v.statuses);
@@ -130,6 +133,7 @@ export function RadarToolbar({ filters, facets, hasBaseline }: Props) {
           value={filters.category ?? ""}
           onChange={(e) => update({ category: e.target.value || undefined })}
           aria-label="Category"
+          data-tour-step-id={stacked ? undefined : "radar-controls"}
         >
           <NativeSelectOption value="">All categories</NativeSelectOption>
           {CATEGORIES.map((c) => (
@@ -204,7 +208,10 @@ export function RadarToolbar({ filters, facets, hasBaseline }: Props) {
 
   return (
     <div className="flex min-h-14 flex-wrap items-center gap-2 px-(--card-spacing) pb-3">
-      <InputGroup className="w-full max-w-64 shrink-0 max-md:max-w-none max-md:flex-1">
+      <InputGroup
+        className="w-full max-w-64 shrink-0 max-md:max-w-none max-md:flex-1"
+        data-tour-step-id="radar-search"
+      >
         <InputGroupInput
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -218,7 +225,7 @@ export function RadarToolbar({ filters, facets, hasBaseline }: Props) {
       <div className="contents max-md:hidden">{controls(false)}</div>
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="outline" className="md:hidden">
+          <Button variant="outline" className="md:hidden" data-tour-step-id="radar-filter-button">
             <SlidersHorizontalIcon />
             Filters
             {active > 0 && <span className="tabular-nums">{active}</span>}

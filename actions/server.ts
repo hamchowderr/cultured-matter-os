@@ -194,3 +194,6 @@ export async function setDailyEmail(input: { enabled: boolean }) {
     A.setDailyEmail.run({ userId: await sessionUserId(), enabled: input.enabled })
   );
 }
+export async function markTourSeen(input: Omit<In<typeof A.markTourSeen>, "userId">) {
+  return toResult(async () => A.markTourSeen.run({ ...input, userId: await sessionUserId() }));
+}

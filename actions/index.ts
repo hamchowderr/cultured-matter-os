@@ -65,6 +65,7 @@ import {
   calendarFeed,
   dailySummary,
   getUserSettings,
+  markTourSeen,
   newGrantsSince,
   recordDailySummary,
   resetCalendarLink,
@@ -128,6 +129,7 @@ export {
   getUserSettings,
   resetCalendarLink,
   setDailyEmail,
+  markTourSeen,
   calendarFeed,
   newGrantsSince,
   dailySummary,
@@ -190,8 +192,8 @@ export const allActions = [
   setDailyEmail,
   newGrantsSince,
   dailySummary
-  // Not tools: calendarFeed (keyed by the feed's secret token) and recordDailySummary (the cron's
-  // bookkeeping).
+  // Not tools: calendarFeed (keyed by the feed's secret token), recordDailySummary (the cron's
+  // bookkeeping) and markTourSeen (the guided tours' bookkeeping).
 ] as const;
 
 export { ActionError, type Action, type ActionResult } from "./define";

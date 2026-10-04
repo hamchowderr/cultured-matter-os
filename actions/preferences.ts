@@ -6,6 +6,7 @@ import { z } from "zod/v4";
 import type { Database, Executor } from "@/db";
 import { grants, projects, tasks, userSettings, users } from "@/db/schema";
 import { HOME_TIME_ZONE, startOfDayIn } from "@/lib/time";
+import { addSeen, getTour, parseSeen, TOURS, type TourId } from "@/lib/tours";
 import { defineAction } from "./define";
 import { listNotifications, type NotificationItem } from "./notifications";
 import { id } from "./schemas";
@@ -17,7 +18,8 @@ export const CALENDAR_GRANT_WINDOW_DAYS = 60;
 const settingsSchema = z.object({
   calendarToken: z.string().nullable(),
   dailyEmail: z.boolean(),
-  lastSummaryAt: z.date().nullable()
+  lastSummaryAt: z.date().nullable(),
+  toursSeen: z.array(z.string())
 });
 
 async function settingsRow(db: Executor, userId: string) {
@@ -39,7 +41,8 @@ export const getUserSettings = defineAction({
     return {
       calendarToken: row?.calendarToken ?? null,
       dailyEmail: row?.dailyEmail ?? false,
-      lastSummaryAt: row?.lastSummaryAt ?? null
+      lastSummaryAt: row?.lastSummaryAt ?? null,
+      toursSeen: parseSeen(row?.toursSeen)
     };
   }
 });
@@ -85,6 +88,31 @@ export const setDailyEmail = defineAction({
     entityType: "user_settings",
     entityId: input.userId,
     summary: r.dailyEmail ? "Turned the daily email on" : "Turned the daily email off"
+  })
+});
+
+const tourIds = TOURS.map((t) => t.id) as [TourId, ...TourId[]];
+
+export const markTourSeen = defineAction({
+  name: "markTourSeen",
+  description:
+    "Remember that she finished or skipped a guided tour. The welcome tour stops starting on its own once it is seen.",
+  kind: "write",
+  input: z.object({ userId: id, tourId: z.enum(tourIds), finished: z.boolean() }),
+  output: z.object({ toursSeen: z.array(z.string()) }),
+  async handler(input, db) {
+    const row = await settingsRow(db, input.userId);
+    const toursSeen = addSeen(parseSeen(row?.toursSeen), input.tourId);
+    await db
+      .insert(userSettings)
+      .values({ userId: input.userId, toursSeen })
+      .onConflictDoUpdate({ target: userSettings.userId, set: { toursSeen } });
+    return { toursSeen };
+  },
+  log: (input) => ({
+    entityType: "user_settings",
+    entityId: input.userId,
+    summary: `${input.finished ? "Finished" : "Skipped"} the ${getTour(input.tourId)?.label ?? input.tourId} tour`
   })
 });
 

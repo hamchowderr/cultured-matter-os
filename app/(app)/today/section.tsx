@@ -13,6 +13,7 @@ export function Section({
   href,
   linkLabel,
   id,
+  tourId,
   className,
   children
 }: {
@@ -21,11 +22,13 @@ export function Section({
   href: string;
   linkLabel: string;
   id?: string;
+  // The guided-tour step that points at this block (lib/tours.ts).
+  tourId?: string;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <Card id={id} className={cn("scroll-mt-20", className)}>
+    <Card id={id} data-tour-step-id={tourId} className={cn("scroll-mt-20", className)}>
       <CardHeader>
         <CardTitle className="flex items-center gap-1.5">
           {title}

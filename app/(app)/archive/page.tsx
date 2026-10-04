@@ -86,6 +86,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     <div className="mx-auto max-w-4xl space-y-4 lg:space-y-6">
       <PageHeader
         title="Archive"
+        tourId="archive-heading"
         description="Everything that has changed in the app, newest first: shortlists, passes, tasks, grants and more."
       />
       {!result.ok ? (
@@ -183,7 +184,7 @@ function Timeline({ entries }: { entries: ActivityEntry[] }) {
   const now = new Date();
   return (
     <div className="space-y-6">
-      {groupByDay(entries).map((group) => (
+      {groupByDay(entries).map((group, g) => (
         <section key={group.day} className="space-y-2">
           <h2 className="text-muted-foreground text-sm font-medium">
             {dayHeading(group.day, now)}
@@ -191,8 +192,13 @@ function Timeline({ entries }: { entries: ActivityEntry[] }) {
           <div className="bg-card ring-foreground/10 overflow-hidden rounded-xl ring-1">
             <Table>
               <TableBody>
-                {group.rows.map((e) => (
-                  <EntryRow key={e.id} entry={e} />
+                {group.rows.map((e, i) => (
+                  // The tour points at the newest entry.
+                  <EntryRow
+                    key={e.id}
+                    entry={e}
+                    tourId={g === 0 && i === 0 ? "archive-timeline" : undefined}
+                  />
                 ))}
               </TableBody>
             </Table>
@@ -203,12 +209,12 @@ function Timeline({ entries }: { entries: ActivityEntry[] }) {
   );
 }
 
-function EntryRow({ entry: e }: { entry: ActivityEntry }) {
+function EntryRow({ entry: e, tourId }: { entry: ActivityEntry; tourId?: string }) {
   const href = activityHref(e);
   const { icon: Icon, iconClass, dotClass } = KIND_STYLE[e.entityType] ?? FALLBACK_STYLE;
   const time = timeIn(e.at);
   return (
-    <TableRow>
+    <TableRow data-tour-step-id={tourId}>
       <TableCell className="w-full whitespace-normal">
         <div className="flex gap-4 p-2">
           <div

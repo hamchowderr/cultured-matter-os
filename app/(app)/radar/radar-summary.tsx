@@ -44,7 +44,7 @@ function TopCategories({
   const topSum = top.reduce((sum, c) => sum + c.count, 0);
 
   return (
-    <Card>
+    <Card data-tour-step-id="radar-summary">
       <CardHeader>
         <CardTitle className="flex items-center gap-1.5">
           Top categories

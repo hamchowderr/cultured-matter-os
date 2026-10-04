@@ -175,7 +175,12 @@ export function PeopleView({
         className="hidden"
         onChange={(e) => onFile(e.target.files?.[0])}
       />
-      <Button size="sm" onClick={() => fileRef.current?.click()} disabled={importing}>
+      <Button
+        size="sm"
+        onClick={() => fileRef.current?.click()}
+        disabled={importing}
+        data-tour-step-id="people-import"
+      >
         <UploadIcon />
         {importing ? "Importing…" : "Import LinkedIn connections"}
       </Button>
@@ -183,10 +188,12 @@ export function PeopleView({
   );
 
   const outlookButton = (
-    <OutlookSync
-      connected={outlookConnected}
-      onSynced={() => startTransition(() => router.refresh())}
-    />
+    <span className="inline-flex" data-tour-step-id="people-google">
+      <OutlookSync
+        connected={outlookConnected}
+        onSynced={() => startTransition(() => router.refresh())}
+      />
+    </span>
   );
 
   if (total === 0 && !filtered) {
@@ -215,7 +222,7 @@ export function PeopleView({
   return (
     <div className={cn("space-y-4 transition-opacity", pending && "opacity-70")}>
       <div className="flex flex-wrap items-center gap-2">
-        <InputGroup className="h-8 w-full sm:w-64">
+        <InputGroup className="h-8 w-full sm:w-64" data-tour-step-id="people-search">
           <InputGroupInput
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -246,7 +253,10 @@ export function PeopleView({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+      <div
+        className="flex flex-wrap items-center gap-x-6 gap-y-2"
+        data-tour-step-id="people-filters"
+      >
         <div className="max-w-full overflow-x-auto">
           <ButtonGroup aria-label="Newsletter">
             {NEWSLETTER_CHIPS.map((chip) => (

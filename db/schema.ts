@@ -366,6 +366,12 @@ export const userSettings = sqliteTable("user_settings", {
   dailyEmail: integer("daily_email", { mode: "boolean" }).notNull().default(false),
   // When the last daily summary went out; the next one covers what is new since then.
   lastSummaryAt: integer("last_summary_at", { mode: "timestamp_ms" }),
+  // Guided tours she has finished or skipped (ids from lib/tours.ts). The welcome tour starts
+  // on its own until "welcome" is in here.
+  toursSeen: text("tours_seen", { mode: "json" })
+    .$type<string[]>()
+    .notNull()
+    .default(sql`'[]'`),
   createdAt: createdAt(),
   updatedAt: updatedAt()
 });

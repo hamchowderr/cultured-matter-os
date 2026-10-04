@@ -9,9 +9,18 @@ import {
   EmptyTitle
 } from "@/components/ui/empty";
 
-export function PageHeader({ title, description }: { title: string; description: string }) {
+export function PageHeader({
+  title,
+  description,
+  tourId
+}: {
+  title: string;
+  description: string;
+  // The guided-tour step that points at this heading (lib/tours.ts).
+  tourId?: string;
+}) {
   return (
-    <div className="space-y-1">
+    <div className="space-y-1" data-tour-step-id={tourId}>
       <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
       <ClampedText className="text-muted-foreground text-sm">{description}</ClampedText>
     </div>

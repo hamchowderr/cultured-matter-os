@@ -36,7 +36,7 @@ export default function Search() {
 
   return (
     <div className="lg:flex-1">
-      <div className="relative hidden max-w-sm flex-1 lg:block">
+      <div className="relative hidden max-w-sm flex-1 lg:block" data-tour-step-id="tour-search">
         <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
         <Input
           className="h-9 w-full cursor-pointer rounded-md border pr-4 pl-10 text-sm shadow-xs"
@@ -50,7 +50,13 @@ export default function Search() {
         </div>
       </div>
       <div className="block lg:hidden">
-        <Button size="icon" variant="ghost" onClick={() => setOpen(true)}>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => setOpen(true)}
+          aria-label="Search"
+          data-tour-step-id="tour-search"
+        >
           <SearchIcon />
         </Button>
       </div>
@@ -72,7 +78,8 @@ export default function Search() {
                     onSelect={() => {
                       setOpen(false);
                       router.push(item.href);
-                    }}>
+                    }}
+                  >
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
                   </CommandItem>
