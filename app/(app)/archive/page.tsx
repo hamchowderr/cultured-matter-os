@@ -5,6 +5,7 @@ import {
   InboxIcon,
   LandmarkIcon,
   ListChecksIcon,
+  NotebookPenIcon,
   RadarIcon,
   ShieldCheckIcon,
   UsersIcon,
@@ -41,6 +42,7 @@ import {
 } from "@/lib/activity";
 import { cn, generateMeta } from "@/lib/utils";
 import { ArchiveFilters } from "./archive-filters";
+import { ArchiveTabs } from "./archive-tabs";
 
 export async function generateMetadata() {
   return generateMeta({
@@ -89,6 +91,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         tourId="archive-heading"
         description="Everything that has changed in the app, newest first: shortlists, passes, tasks, grants and more."
       />
+      <ArchiveTabs current="activity" />
       {!result.ok ? (
         <p className="text-destructive text-sm">
           Couldn’t load the archive: {result.error.message}
@@ -172,6 +175,11 @@ const KIND_STYLE: Record<string, { icon: LucideIcon; iconClass: string; dotClass
     icon: ShieldCheckIcon,
     iconClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
     dotClass: "bg-amber-500"
+  },
+  note: {
+    icon: NotebookPenIcon,
+    iconClass: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
+    dotClass: "bg-yellow-500"
   }
 };
 const FALLBACK_STYLE = {

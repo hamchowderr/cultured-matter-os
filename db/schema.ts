@@ -402,6 +402,37 @@ export const pushSubscriptions = sqliteTable(
   (t) => [index("push_subscriptions_user_idx").on(t.userId)]
 );
 
+// ---------------------------------------------------------------- Notes archive
+
+// Notes imported from Apple Notes by a Shortcut (lib/apple-notes.ts, docs/apple-notes-shortcut.md).
+// Shortcuts exposes no stable note id, so a note is recognised again by its creation time (to the
+// second) plus its title: dedupe_key. A re-run updates the row when the note was edited since.
+export const notes = sqliteTable(
+  "notes",
+  {
+    id: id(),
+    dedupeKey: text("dedupe_key").notNull().unique(),
+    title: text("title").notNull(),
+    // Plain text. Locked notes arrive with the title only, so this can be empty.
+    body: text("body").notNull().default(""),
+    folder: text("folder"),
+    noteCreatedAt: integer("note_created_at", { mode: "timestamp_ms" }),
+    noteModifiedAt: integer("note_modified_at", { mode: "timestamp_ms" }),
+    source: text("source").notNull().default("apple_notes"),
+    // Left empty for now: later AI suggestions fill these in.
+    kind: text("kind", { enum: ["task", "idea", "reference"] }),
+    tier: integer("tier"),
+    projectId: text("project_id").references(() => projects.id, { onDelete: "set null" }),
+    sector: text("sector"),
+    personal: integer("personal", { mode: "boolean" }),
+    // The Inbox item made from this note with "File to Inbox".
+    captureId: text("capture_id").references(() => captures.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt()
+  },
+  (t) => [index("notes_created_idx").on(t.noteCreatedAt), index("notes_folder_idx").on(t.folder)]
+);
+
 // ---------------------------------------------------------------- Log
 
 export const activityLog = sqliteTable(
