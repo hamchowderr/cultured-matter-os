@@ -43,7 +43,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
       <PageHeader
         title="Grants"
         tourId="grants-heading"
-        description="Federal and California grants, soonest deadline first. Drag a grant across the board as you work on it, or see deadlines by month on the calendar."
+        description="Federal and California grants, soonest deadline first. Move a grant across the board as you work on it, or see deadlines by month on the calendar."
       />
       {result.ok ? (
         <GrantsKanban

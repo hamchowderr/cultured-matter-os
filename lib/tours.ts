@@ -259,11 +259,22 @@ export const TOURS: TourDef[] = [
         "Filters",
         "Show only grants closing soon, add grants for nonprofits only, or show closed ones."
       ),
-      at(
-        "grants-board",
-        "Your board",
-        "Drag a grant from column to column as you work on it. Tap a grant to see the details."
-      )
+      {
+        variants: [
+          {
+            target: "grants-board",
+            title: "Your board",
+            content:
+              "Drag a grant from column to column as you work on it, or open it and change its column there."
+          },
+          {
+            target: "grants-column",
+            title: "Your board",
+            content:
+              "Pick a column above to see its grants. Tap a grant to see the details and move it to another column."
+          }
+        ]
+      }
     ]
   },
   {

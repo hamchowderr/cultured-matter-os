@@ -74,16 +74,28 @@ export function RadarTabs({ filters, facets }: Omit<Props, "hasBaseline">) {
         : facets.total
       : null;
 
+  const setView = (v: string) => update({ view: v === "review" ? undefined : v });
+
+  // Five views with counts don't fit a phone, so phones get one select instead of tabs.
   return (
-    <Tabs
-      value={filters.view}
-      onValueChange={(v) => update({ view: v === "review" ? undefined : v })}
-    >
-      <div
-        className="-mx-1 [scrollbar-width:none] overflow-x-auto px-1"
-        data-tour-step-id="radar-tabs"
+    <div data-tour-step-id="radar-tabs">
+      <NativeSelect
+        className="w-full sm:hidden"
+        value={filters.view}
+        onChange={(e) => setView(e.target.value)}
+        aria-label="Show"
       >
-        <TabsList className="w-max">
+        {RADAR_VIEWS.map((v) => {
+          const n = count(v.statuses);
+          return (
+            <NativeSelectOption key={v.value} value={v.value}>
+              {n != null ? `${v.label} (${n})` : v.label}
+            </NativeSelectOption>
+          );
+        })}
+      </NativeSelect>
+      <Tabs className="hidden sm:flex" value={filters.view} onValueChange={setView}>
+        <TabsList>
           {RADAR_VIEWS.map((v) => {
             const n = count(v.statuses);
             return (
@@ -94,8 +106,8 @@ export function RadarTabs({ filters, facets }: Omit<Props, "hasBaseline">) {
             );
           })}
         </TabsList>
-      </div>
-    </Tabs>
+      </Tabs>
+    </div>
   );
 }
 

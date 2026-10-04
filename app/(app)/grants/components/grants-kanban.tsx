@@ -26,6 +26,7 @@ import {
   CommandSeparator
 } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import * as Kanban from "@/components/ui/kanban";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -39,6 +40,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { daysUntil, formatAmount, formatDeadline } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { GrantDrawer } from "./grant-drawer";
 import { GrantsCalendar, type CalendarTask } from "./grants-calendar";
@@ -134,6 +136,21 @@ export default function GrantsKanban({
     setTab(v as typeof view);
     const qs = next.toString();
     window.history.replaceState(null, "", qs ? `${pathname}?${qs}` : pathname);
+  }
+
+  // Phones show one board column at a time; ?col= keeps the choice. Until she picks one, the
+  // first column with grants in it.
+  const isMobile = useIsMobile();
+  const [pickedColumn, setPickedColumn] = React.useState(() => params.get("col"));
+  const phoneColumn: ColumnKey =
+    COLUMNS.find((c) => c.key === pickedColumn)?.key ??
+    COLUMNS.find((c) => columns[c.key].length > 0)?.key ??
+    COLUMNS[0].key;
+  function changeColumn(v: string) {
+    const next = new URLSearchParams(window.location.search);
+    next.set("col", v);
+    setPickedColumn(v);
+    window.history.replaceState(null, "", `${pathname}?${next.toString()}`);
   }
 
   const activeFilters = [filters.closingSoon, filters.includeNonprofit, filters.showClosed].filter(
@@ -270,17 +287,12 @@ export default function GrantsKanban({
     <div className={cn("space-y-4 transition-opacity", pending && "opacity-70")}>
       <Tabs value={tab} onValueChange={changeTab} className="w-full">
         <div className="mb-2 flex justify-between gap-2">
-          <div
-            className="-mx-1 min-w-0 [scrollbar-width:none] overflow-x-auto px-1"
-            data-tour-step-id="grants-views"
-          >
-            <TabsList className="w-max">
-              <TabsTrigger value="board">Board</TabsTrigger>
-              <TabsTrigger value="list">List</TabsTrigger>
-              <TabsTrigger value="table">Table</TabsTrigger>
-              <TabsTrigger value="calendar">Calendar</TabsTrigger>
-            </TabsList>
-          </div>
+          <TabsList data-tour-step-id="grants-views">
+            <TabsTrigger value="board">Board</TabsTrigger>
+            <TabsTrigger value="list">List</TabsTrigger>
+            <TabsTrigger value="table">Table</TabsTrigger>
+            <TabsTrigger value="calendar">Calendar</TabsTrigger>
+          </TabsList>
 
           <div className="flex shrink-0 items-center gap-2">
             <span className="text-muted-foreground hidden text-sm sm:inline">
@@ -321,7 +333,20 @@ export default function GrantsKanban({
             <FilterDropdown />
           </div>
         </div>
-        <TabsContent value="board">
+        <TabsContent value="board" className="space-y-4">
+          {/* Five columns don't fit a phone, so phones pick one; the grant dialog moves a grant. */}
+          <NativeSelect
+            className="w-full md:hidden"
+            value={phoneColumn}
+            onChange={(e) => changeColumn(e.target.value)}
+            aria-label="Column"
+          >
+            {COLUMNS.map(({ key, label }) => (
+              <NativeSelectOption key={key} value={key}>
+                {label} ({columns[key].length})
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
           <Kanban.Root
             value={columns}
             onValueChange={onValueChange}
@@ -330,15 +355,26 @@ export default function GrantsKanban({
             onDragEnd={onDragEnd}
             onDragCancel={onDragCancel}
           >
-            <Kanban.Board className="flex w-full gap-4 overflow-x-auto pb-4 max-sm:snap-x max-sm:snap-mandatory">
+            <Kanban.Board className="flex w-full gap-4 pb-4 md:overflow-x-auto">
               {COLUMNS.map(({ key, label, hint }) => {
                 const items = columns[key];
                 return (
                   <Kanban.Column
                     key={key}
                     value={key}
-                    data-tour-step-id={key === COLUMNS[0].key ? "grants-board" : undefined}
-                    className="w-[300px] min-w-[300px] max-sm:w-full max-sm:min-w-full max-sm:snap-center lg:w-auto lg:min-w-[240px] lg:flex-1"
+                    data-tour-step-id={
+                      isMobile
+                        ? key === phoneColumn
+                          ? "grants-column"
+                          : undefined
+                        : key === COLUMNS[0].key
+                          ? "grants-board"
+                          : undefined
+                    }
+                    className={cn(
+                      "w-full min-w-0 md:w-[300px] md:min-w-[300px] lg:w-auto lg:min-w-[240px] lg:flex-1 xl:min-w-0",
+                      key !== phoneColumn && "max-md:hidden"
+                    )}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -361,7 +397,11 @@ export default function GrantsKanban({
                     ) : (
                       <div className="flex flex-col justify-center gap-4 pt-4">
                         <div className="text-muted-foreground text-sm">
-                          {key === "new" ? "No new grants." : "Drag a grant here."}
+                          {key === "new"
+                            ? "No new grants."
+                            : isMobile
+                              ? "No grants here."
+                              : "Drag a grant here."}
                         </div>
                       </div>
                     )}
@@ -412,16 +452,25 @@ const GrantKanbanCard = React.forwardRef<
   const urgent = days != null && days >= 0 && days <= 14;
 
   return (
-    <Card ref={ref} className={cn("cursor-pointer", className)} {...props} onClick={onOpen}>
+    <Card
+      ref={ref}
+      // Five columns share the board from xl, so the cards use the small padding there.
+      className={cn("cursor-pointer xl:[--card-spacing:--spacing(3)]", className)}
+      {...props}
+      onClick={onOpen}
+    >
       <CardContent className="space-y-3">
         <div className="space-y-1">
-          <div className="text-base leading-snug font-semibold">{grant.title}</div>
+          <div className="text-base leading-snug font-semibold wrap-break-word">{grant.title}</div>
           {grant.agency && (
             <p className="text-muted-foreground line-clamp-2 text-sm">{grant.agency}</p>
           )}
         </div>
         <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
-          <Badge variant={urgent ? "warning" : "outline"}>
+          <Badge
+            variant={urgent ? "warning" : "outline"}
+            className="h-auto max-w-full whitespace-normal"
+          >
             <CalendarDaysIcon />
             {formatDeadline(grant.deadline)}
           </Badge>
@@ -432,9 +481,10 @@ const GrantKanbanCard = React.forwardRef<
             </span>
           )}
         </div>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <EligibilityBadge grant={grant} />
           <Button
+            className="ms-auto"
             variant="ghost"
             size="icon-sm"
             aria-label={`Open ${grant.title}`}
@@ -541,54 +591,111 @@ function GrantsTable({ columns, onOpen }: { columns: Columns; onOpen: (grant: Gr
   return (
     <Card>
       <CardContent className="p-0">
-        <Table className="lg:min-w-[860px] lg:table-fixed [&_td:first-child]:ps-(--card-spacing) [&_td:last-child]:pe-(--card-spacing) [&_th:first-child]:ps-(--card-spacing) [&_th:last-child]:pe-(--card-spacing)">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Grant</TableHead>
-              <TableHead className="w-28 max-md:hidden">Board</TableHead>
-              <TableHead className="w-36">Deadline</TableHead>
-              <TableHead className="w-36 max-sm:hidden">Amount</TableHead>
-              <TableHead className="w-40 max-lg:hidden">Eligibility</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 ? (
+        {/* Phones: one stacked row per grant, like Tasks, so nothing scrolls sideways. */}
+        <ul className="divide-y md:hidden" aria-label="Grants">
+          {rows.length === 0 ? (
+            <li className="text-muted-foreground py-8 text-center text-sm">
+              No grants match these filters.
+            </li>
+          ) : (
+            rows.map(({ grant, label }) => (
+              <GrantItem key={grant.id} grant={grant} label={label} onOpen={onOpen} />
+            ))
+          )}
+        </ul>
+
+        <div className="max-md:hidden">
+          <Table className="lg:table-fixed xl:min-w-[860px] [&_td:first-child]:ps-(--card-spacing) [&_td:last-child]:pe-(--card-spacing) [&_th:first-child]:ps-(--card-spacing) [&_th:last-child]:pe-(--card-spacing)">
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
-                  No grants match these filters.
-                </TableCell>
+                <TableHead>Grant</TableHead>
+                <TableHead className="w-28">Board</TableHead>
+                <TableHead className="w-36">Deadline</TableHead>
+                <TableHead className="w-36">Amount</TableHead>
+                <TableHead className="w-40 max-xl:hidden">Eligibility</TableHead>
               </TableRow>
-            ) : (
-              rows.map(({ grant, label }) => (
-                <TableRow key={grant.id} className="cursor-pointer" onClick={() => onOpen(grant)}>
-                  <TableCell className="whitespace-normal">
-                    <div className="min-w-0">
-                      <div className="font-medium lg:truncate">{grant.title}</div>
-                      {grant.agency && (
-                        <div className="text-muted-foreground truncate text-xs">{grant.agency}</div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="max-md:hidden">
-                    <Badge variant="outline">{label}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={isUrgent(grant) ? "warning" : "outline"}>
-                      {formatDeadline(grant.deadline)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground whitespace-nowrap max-sm:hidden">
-                    {formatAmount(grant.amountMin, grant.amountMax) ?? "-"}
-                  </TableCell>
-                  <TableCell className="max-lg:hidden">
-                    <EligibilityBadge grant={grant} />
+            </TableHeader>
+            <TableBody>
+              {rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
+                    No grants match these filters.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                rows.map(({ grant, label }) => (
+                  <TableRow key={grant.id} className="cursor-pointer" onClick={() => onOpen(grant)}>
+                    <TableCell className="whitespace-normal">
+                      <div className="min-w-0">
+                        <div className="font-medium lg:truncate">{grant.title}</div>
+                        {grant.agency && (
+                          <div className="text-muted-foreground text-xs lg:truncate">
+                            {grant.agency}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{label}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={isUrgent(grant) ? "warning" : "outline"}>
+                        {formatDeadline(grant.deadline)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground whitespace-nowrap">
+                      {formatAmount(grant.amountMin, grant.amountMax) ?? "-"}
+                    </TableCell>
+                    <TableCell className="max-xl:hidden">
+                      <EligibilityBadge grant={grant} />
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
+  );
+}
+
+function GrantItem({
+  grant,
+  label,
+  onOpen
+}: {
+  grant: Grant;
+  label: string;
+  onOpen: (grant: Grant) => void;
+}) {
+  const amount = formatAmount(grant.amountMin, grant.amountMax);
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onOpen(grant)}
+        className="hover:bg-muted/50 block w-full min-w-0 space-y-1 px-(--card-spacing) py-3 text-left transition-colors"
+      >
+        <span className="line-clamp-2 font-medium">{grant.title}</span>
+        {grant.agency && (
+          <span className="text-muted-foreground block truncate text-xs">{grant.agency}</span>
+        )}
+        <span className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-1 text-xs">
+          <Badge variant={isUrgent(grant) ? "warning" : "outline"}>
+            <CalendarDaysIcon />
+            {formatDeadline(grant.deadline)}
+          </Badge>
+          {amount && (
+            <span className="flex items-center gap-1 whitespace-nowrap">
+              <CoinsIcon className="size-3.5" />
+              {amount}
+            </span>
+          )}
+          <Badge variant="outline">{label}</Badge>
+          <EligibilityBadge grant={grant} />
+        </span>
+      </button>
+    </li>
   );
 }
