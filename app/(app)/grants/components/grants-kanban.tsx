@@ -26,6 +26,7 @@ import {
   CommandSeparator
 } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import * as Kanban from "@/components/ui/kanban";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -39,6 +40,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { daysUntil, formatAmount, formatDeadline } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { GrantDrawer } from "./grant-drawer";
 import { GrantsCalendar, type CalendarTask } from "./grants-calendar";
@@ -134,6 +136,21 @@ export default function GrantsKanban({
     setTab(v as typeof view);
     const qs = next.toString();
     window.history.replaceState(null, "", qs ? `${pathname}?${qs}` : pathname);
+  }
+
+  // Phones show one board column at a time; ?col= keeps the choice. Until she picks one, the
+  // first column with grants in it.
+  const isMobile = useIsMobile();
+  const [pickedColumn, setPickedColumn] = React.useState(() => params.get("col"));
+  const phoneColumn: ColumnKey =
+    COLUMNS.find((c) => c.key === pickedColumn)?.key ??
+    COLUMNS.find((c) => columns[c.key].length > 0)?.key ??
+    COLUMNS[0].key;
+  function changeColumn(v: string) {
+    const next = new URLSearchParams(window.location.search);
+    next.set("col", v);
+    setPickedColumn(v);
+    window.history.replaceState(null, "", `${pathname}?${next.toString()}`);
   }
 
   const activeFilters = [filters.closingSoon, filters.includeNonprofit, filters.showClosed].filter(
@@ -270,17 +287,12 @@ export default function GrantsKanban({
     <div className={cn("space-y-4 transition-opacity", pending && "opacity-70")}>
       <Tabs value={tab} onValueChange={changeTab} className="w-full">
         <div className="mb-2 flex justify-between gap-2">
-          <div
-            className="-mx-1 min-w-0 [scrollbar-width:none] overflow-x-auto px-1"
-            data-tour-step-id="grants-views"
-          >
-            <TabsList className="w-max">
-              <TabsTrigger value="board">Board</TabsTrigger>
-              <TabsTrigger value="list">List</TabsTrigger>
-              <TabsTrigger value="table">Table</TabsTrigger>
-              <TabsTrigger value="calendar">Calendar</TabsTrigger>
-            </TabsList>
-          </div>
+          <TabsList data-tour-step-id="grants-views">
+            <TabsTrigger value="board">Board</TabsTrigger>
+            <TabsTrigger value="list">List</TabsTrigger>
+            <TabsTrigger value="table">Table</TabsTrigger>
+            <TabsTrigger value="calendar">Calendar</TabsTrigger>
+          </TabsList>
 
           <div className="flex shrink-0 items-center gap-2">
             <span className="text-muted-foreground hidden text-sm sm:inline">
@@ -321,7 +333,20 @@ export default function GrantsKanban({
             <FilterDropdown />
           </div>
         </div>
-        <TabsContent value="board">
+        <TabsContent value="board" className="space-y-4">
+          {/* Five columns don't fit a phone, so phones pick one; the grant dialog moves a grant. */}
+          <NativeSelect
+            className="w-full md:hidden"
+            value={phoneColumn}
+            onChange={(e) => changeColumn(e.target.value)}
+            aria-label="Column"
+          >
+            {COLUMNS.map(({ key, label }) => (
+              <NativeSelectOption key={key} value={key}>
+                {label} ({columns[key].length})
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
           <Kanban.Root
             value={columns}
             onValueChange={onValueChange}
@@ -330,15 +355,26 @@ export default function GrantsKanban({
             onDragEnd={onDragEnd}
             onDragCancel={onDragCancel}
           >
-            <Kanban.Board className="flex w-full gap-4 overflow-x-auto pb-4 max-sm:snap-x max-sm:snap-mandatory">
+            <Kanban.Board className="flex w-full gap-4 pb-4 md:overflow-x-auto">
               {COLUMNS.map(({ key, label, hint }) => {
                 const items = columns[key];
                 return (
                   <Kanban.Column
                     key={key}
                     value={key}
-                    data-tour-step-id={key === COLUMNS[0].key ? "grants-board" : undefined}
-                    className="w-[300px] min-w-[300px] max-sm:w-full max-sm:min-w-full max-sm:snap-center lg:w-auto lg:min-w-[240px] lg:flex-1"
+                    data-tour-step-id={
+                      isMobile
+                        ? key === phoneColumn
+                          ? "grants-column"
+                          : undefined
+                        : key === COLUMNS[0].key
+                          ? "grants-board"
+                          : undefined
+                    }
+                    className={cn(
+                      "w-full min-w-0 md:w-[300px] md:min-w-[300px] lg:w-auto lg:min-w-[240px] lg:flex-1",
+                      key !== phoneColumn && "max-md:hidden"
+                    )}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -361,7 +397,11 @@ export default function GrantsKanban({
                     ) : (
                       <div className="flex flex-col justify-center gap-4 pt-4">
                         <div className="text-muted-foreground text-sm">
-                          {key === "new" ? "No new grants." : "Drag a grant here."}
+                          {key === "new"
+                            ? "No new grants."
+                            : isMobile
+                              ? "No grants here."
+                              : "Drag a grant here."}
                         </div>
                       </div>
                     )}
@@ -555,14 +595,14 @@ function GrantsTable({ columns, onOpen }: { columns: Columns; onOpen: (grant: Gr
         </ul>
 
         <div className="max-md:hidden">
-          <Table className="lg:min-w-[860px] lg:table-fixed [&_td:first-child]:ps-(--card-spacing) [&_td:last-child]:pe-(--card-spacing) [&_th:first-child]:ps-(--card-spacing) [&_th:last-child]:pe-(--card-spacing)">
+          <Table className="lg:table-fixed xl:min-w-[860px] [&_td:first-child]:ps-(--card-spacing) [&_td:last-child]:pe-(--card-spacing) [&_th:first-child]:ps-(--card-spacing) [&_th:last-child]:pe-(--card-spacing)">
             <TableHeader>
               <TableRow>
                 <TableHead>Grant</TableHead>
                 <TableHead className="w-28">Board</TableHead>
                 <TableHead className="w-36">Deadline</TableHead>
                 <TableHead className="w-36">Amount</TableHead>
-                <TableHead className="w-40 max-lg:hidden">Eligibility</TableHead>
+                <TableHead className="w-40 max-xl:hidden">Eligibility</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -596,7 +636,7 @@ function GrantsTable({ columns, onOpen }: { columns: Columns; onOpen: (grant: Gr
                     <TableCell className="text-muted-foreground whitespace-nowrap">
                       {formatAmount(grant.amountMin, grant.amountMax) ?? "-"}
                     </TableCell>
-                    <TableCell className="max-lg:hidden">
+                    <TableCell className="max-xl:hidden">
                       <EligibilityBadge grant={grant} />
                     </TableCell>
                   </TableRow>
