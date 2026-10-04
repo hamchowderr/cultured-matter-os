@@ -45,7 +45,7 @@ function greeting(now: Date) {
   return hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 }
 
-// Layout from the UI kit's default dashboard (app/dashboard/(auth)/default): a heading row,
+// Layout from the UI kit's default dashboard (app/dashboard/(auth)/default, v2.0.0): a heading row,
 // a row of summary cards, then a three-column card grid.
 export default async function Page() {
   const now = new Date();
@@ -89,7 +89,7 @@ export default async function Page() {
     pending.length === 0 && taskCount === 0 && allClosing.length === 0 && finds.total === 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:space-y-6">
       <div className="flex flex-row flex-wrap items-end justify-between gap-2">
         <h1 className="text-xl font-bold tracking-tight lg:text-2xl">
           {greeting(now)}
@@ -98,7 +98,7 @@ export default async function Page() {
         <p className="text-muted-foreground text-sm">{dateLabel}</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
         <StatCard
           title="Tasks due this week"
           value={taskCount}
@@ -162,7 +162,7 @@ export default async function Page() {
         />
       )}
 
-      <div className="gap-4 space-y-4 lg:grid lg:grid-flow-row-dense lg:grid-cols-3 lg:space-y-0">
+      <div className="gap-4 space-y-4 lg:grid lg:grid-flow-row-dense lg:grid-cols-3 lg:gap-6 lg:space-y-0">
         {pending.length > 0 && <TodayApprovals approvals={pending} className="lg:col-span-2" />}
 
         {showChart && <RadarFindsCard weeks={weeks} timeZone={HOME_TIME_ZONE} />}

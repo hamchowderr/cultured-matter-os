@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 import { createTask } from "@/actions/server";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -21,7 +21,7 @@ import {
 import { priorities, type TaskPriority } from "@/lib/task-priority";
 import { fromDateInput, type ProjectSummary } from "../types";
 
-export function AddTaskDialog({
+export function AddTaskDrawer({
   open,
   onOpenChange,
   projects,
@@ -65,13 +65,13 @@ export function AddTaskDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <form onSubmit={handleAdd}>
-          <DialogHeader>
-            <DialogTitle>Add a task</DialogTitle>
-          </DialogHeader>
-          <div className="mt-4 grid space-y-6">
+    <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="w-full sm:max-w-md">
+        <DrawerHeader>
+          <DrawerTitle>Add a task</DrawerTitle>
+        </DrawerHeader>
+        <form onSubmit={handleAdd} className="space-y-6 overflow-y-auto p-4 pt-0">
+          <div className="grid space-y-6">
             <div className="grid gap-2">
               <Label htmlFor="new-task-title">Task</Label>
               <Input
@@ -129,13 +129,11 @@ export function AddTaskDialog({
               )}
             </div>
           </div>
-          <div className="mt-6 flex justify-end">
-            <Button type="submit" disabled={saving || !title.trim() || !projectId}>
-              Add task
-            </Button>
-          </div>
+          <Button className="w-full" type="submit" disabled={saving || !title.trim() || !projectId}>
+            Add task
+          </Button>
         </form>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   );
 }

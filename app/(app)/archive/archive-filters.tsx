@@ -1,12 +1,15 @@
 "use client";
 
 // Adapted from the filter bar of the shadcn UI kit notifications page
-// (pages/notifications/data-table.tsx): a wide search box and popover pickers.
+// (pages/notifications/data-table.tsx, v2.0.0): a wide search box and popover pickers.
 
-import { CalendarIcon, CheckIcon, ChevronDownIcon, SearchIcon } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { CalendarIcon, CheckIcon, ChevronDownIcon, SearchIcon, XIcon } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
+import { useListNavigation } from "@/components/layout/list-transition";
+
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -31,10 +34,9 @@ const shortDay = (day: string) =>
   });
 
 export function ArchiveFilters({ filters }: { filters: ArchiveFilterState }) {
-  const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const [pending, startTransition] = useTransition();
+  const { navigate } = useListNavigation();
   const [query, setQuery] = useState(filters.query ?? "");
   const [typeOpen, setTypeOpen] = useState(false);
 
@@ -45,7 +47,7 @@ export function ArchiveFilters({ filters }: { filters: ArchiveFilterState }) {
       else next.delete(k);
     }
     next.delete("page");
-    startTransition(() => router.replace(`${pathname}?${next.toString()}`, { scroll: false }));
+    navigate(`${pathname}?${next.toString()}`, { replace: true });
   }
 
   // Follow the URL when a link on the page (Clear filters) changes it.
@@ -69,27 +71,26 @@ export function ArchiveFilters({ filters }: { filters: ArchiveFilterState }) {
           : "Any date";
 
   return (
-    <div
-      className={cn(
-        "flex flex-wrap gap-3 transition-opacity sm:flex-nowrap",
-        pending && "opacity-60"
-      )}
-    >
-      <div className="relative w-full sm:grow">
-        <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+    <div className="flex flex-wrap gap-3">
+      <div className="relative min-w-48 grow">
+        <SearchIcon className="text-muted-foreground absolute start-3 top-1/2 size-4 -translate-y-1/2" />
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search what happened"
-          className="pl-9"
+          className="ps-9"
           aria-label="Search the archive"
         />
       </div>
       <Popover open={typeOpen} onOpenChange={setTypeOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" aria-label="Kind of change">
-            {filters.type ? entityLabel(filters.type) : "Everything"}
-            <ChevronDownIcon />
+            Kind
+            {filters.type ? (
+              <Badge variant="secondary">{entityLabel(filters.type)}</Badge>
+            ) : (
+              <ChevronDownIcon />
+            )}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-52 p-0" align="end">
@@ -125,8 +126,12 @@ export function ArchiveFilters({ filters }: { filters: ArchiveFilterState }) {
         <PopoverTrigger asChild>
           <Button variant="outline" aria-label="Date range">
             <CalendarIcon />
-            {dateLabel}
-            <ChevronDownIcon />
+            Date
+            {filters.from || filters.to ? (
+              <Badge variant="secondary">{dateLabel}</Badge>
+            ) : (
+              <ChevronDownIcon />
+            )}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-64 space-y-3" align="end">
@@ -170,7 +175,8 @@ export function ArchiveFilters({ filters }: { filters: ArchiveFilterState }) {
             update({ type: undefined, from: undefined, to: undefined, q: undefined });
           }}
         >
-          Clear filters
+          Reset
+          <XIcon />
         </Button>
       )}
     </div>

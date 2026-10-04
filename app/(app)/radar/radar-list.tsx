@@ -8,6 +8,8 @@ import {
 } from "@tanstack/react-table/legacy";
 import {
   BookmarkPlusIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   ExternalLinkIcon,
   RadarIcon,
   StarIcon,
@@ -18,7 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import {
@@ -29,6 +31,7 @@ import {
   starCompany
 } from "@/actions/server";
 import type { Company } from "@/actions/schemas";
+import { ListLink, ListRegion } from "@/components/layout/list-transition";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,6 +77,7 @@ type Detail = Extract<Awaited<ReturnType<typeof getCompany>>, { ok: true }>["dat
 type NoteAction = { kind: "shortlist" | "pass"; company: RadarCompany };
 
 export function RadarList({
+  toolbar,
   companies,
   total,
   page,
@@ -82,6 +86,8 @@ export function RadarList({
   warmPathCounts = {},
   radarEmpty = false
 }: {
+  // Search and filters, shown along the top of the card.
+  toolbar?: ReactNode;
   companies: RadarCompany[];
   total: number;
   page: number;
@@ -166,74 +172,71 @@ export function RadarList({
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Companies</CardTitle>
-          {/* The tab already shows the unfiltered count, so the total appears only when filtered. */}
-          {(hasFilters || pages > 1) && (
-            <CardDescription>
-              {[
-                hasFilters &&
-                  `${total.toLocaleString()} ${total === 1 ? "company matches" : "companies match"} your filters`,
-                pages > 1 && `page ${page} of ${pages}`
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </CardDescription>
-          )}
-        </CardHeader>
-        <CardContent>
-          {companies.length === 0 ? (
-            <RadarEmpty
-              radarEmpty={radarEmpty}
-              hasFilters={hasFilters}
-              clearHref={view ? `${pathname}?view=${view}` : pathname}
-              showAll={view !== "all"}
-            />
-          ) : (
-            <CompaniesTable
-              companies={companies}
-              newSince={newSince}
-              warmPathCounts={warmPathCounts}
-              busyId={busyId}
-              onOpen={openDetail}
-              onStar={(c) => run(c, () => starCompany({ companyId: c.id }), `Starred ${c.name}`)}
-              onShortlist={(c) => {
-                setNoteFor({ kind: "shortlist", company: c });
-                setNoteOpen(true);
-              }}
-              onPass={(c) => {
-                setNoteFor({ kind: "pass", company: c });
-                setNoteOpen(true);
-              }}
-              onReset={(c) =>
-                run(c, () => resetCompany({ companyId: c.id }), `Moved ${c.name} back to review`)
-              }
-            />
-          )}
-
-          {pages > 1 && (
-            <div className="flex items-center justify-end space-x-2 pt-4">
-              <div className="text-muted-foreground flex-1 text-sm tabular-nums">
-                Showing {((page - 1) * pageSize + 1).toLocaleString()} to{" "}
-                {Math.min(page * pageSize, total).toLocaleString()}
+      <ListRegion>
+        <Card>
+          <CardHeader>
+            <CardTitle>Companies</CardTitle>
+            {/* The tab already shows the unfiltered count, so the total appears only when filtered. */}
+            {hasFilters && (
+              <CardDescription>
+                {total.toLocaleString("en-US")}{" "}
+                {total === 1 ? "company matches" : "companies match"} your filters
+              </CardDescription>
+            )}
+          </CardHeader>
+          <CardContent className="flex flex-col p-0 [&_[data-slot=table-container]]:flex-1">
+            {toolbar}
+            {companies.length === 0 ? (
+              <div className="p-(--card-spacing)">
+                <RadarEmpty
+                  radarEmpty={radarEmpty}
+                  hasFilters={hasFilters}
+                  clearHref={view ? `${pathname}?view=${view}` : pathname}
+                  showAll={view !== "all"}
+                />
               </div>
-              <nav className="space-x-2" aria-label="Pages">
-                <Button size="sm" variant="outline" disabled={page <= 1} asChild={page > 1}>
-                  {page > 1 ? (
-                    <Link href={pageHref(page - 1)}>Previous</Link>
-                  ) : (
-                    <span>Previous</span>
-                  )}
-                </Button>
-                <Button size="sm" variant="outline" disabled={page >= pages} asChild={page < pages}>
-                  {page < pages ? <Link href={pageHref(page + 1)}>Next</Link> : <span>Next</span>}
-                </Button>
-              </nav>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            ) : (
+              <CompaniesTable
+                companies={companies}
+                newSince={newSince}
+                warmPathCounts={warmPathCounts}
+                busyId={busyId}
+                onOpen={openDetail}
+                onStar={(c) => run(c, () => starCompany({ companyId: c.id }), `Starred ${c.name}`)}
+                onShortlist={(c) => {
+                  setNoteFor({ kind: "shortlist", company: c });
+                  setNoteOpen(true);
+                }}
+                onPass={(c) => {
+                  setNoteFor({ kind: "pass", company: c });
+                  setNoteOpen(true);
+                }}
+                onReset={(c) =>
+                  run(c, () => resetCompany({ companyId: c.id }), `Moved ${c.name} back to review`)
+                }
+              />
+            )}
+
+            {total > 0 && (
+              <div className="flex items-center justify-end gap-2 border-t px-(--card-spacing) py-3">
+                <div className="text-muted-foreground flex-1 text-sm tabular-nums">
+                  {((page - 1) * pageSize + 1).toLocaleString("en-US")} -{" "}
+                  {Math.min(page * pageSize, total).toLocaleString("en-US")} of{" "}
+                  {total.toLocaleString("en-US")} {total === 1 ? "company" : "companies"}
+                </div>
+                <nav className="flex items-center gap-1" aria-label="Pages">
+                  <PageButton href={page > 1 ? pageHref(page - 1) : null} label="Previous page">
+                    <ChevronLeftIcon />
+                  </PageButton>
+                  <PageButton href={page < pages ? pageHref(page + 1) : null} label="Next page">
+                    <ChevronRightIcon />
+                  </PageButton>
+                </nav>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </ListRegion>
 
       <Dialog open={noteOpen} onOpenChange={setNoteOpen}>
         <DialogContent>
@@ -281,7 +284,7 @@ export function RadarList({
   );
 }
 
-// Adapted from the shadcn UI kit crm leads table (crm/components/leads.tsx). Paging and
+// Adapted from the shadcn UI kit crm leads table (crm/components/leads.tsx, v2.0.0). Paging and
 // filtering run on the server, so the table only renders the current page.
 
 const statusLabel: Record<Company["status"], string | null> = {
@@ -471,8 +474,8 @@ function CompaniesTable({
 
   return (
     <TooltipProvider>
-      <div className="overflow-hidden rounded-md border">
-        <Table>
+      <div>
+        <Table className="[&_td:first-child]:ps-(--card-spacing) [&_td:last-child]:pe-(--card-spacing) [&_th:first-child]:ps-(--card-spacing) [&_th:last-child]:pe-(--card-spacing)">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -518,6 +521,32 @@ function CompaniesTable({
   );
 }
 
+function PageButton({
+  href,
+  label,
+  children
+}: {
+  href: string | null;
+  label: string;
+  children: ReactNode;
+}) {
+  const inner = (
+    <>
+      <span className="sr-only">{label}</span>
+      {children}
+    </>
+  );
+  return href ? (
+    <Button variant="outline" size="icon-sm" asChild>
+      <ListLink href={href}>{inner}</ListLink>
+    </Button>
+  ) : (
+    <Button variant="outline" size="icon-sm" disabled>
+      {inner}
+    </Button>
+  );
+}
+
 function TriageButton({
   label,
   icon: Icon,
@@ -532,7 +561,7 @@ function TriageButton({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button size="icon" variant="ghost" className="size-8" disabled={busy} onClick={onClick}>
+        <Button size="icon-sm" variant="ghost" disabled={busy} onClick={onClick}>
           <Icon />
           <span className="sr-only">{label}</span>
         </Button>
@@ -585,12 +614,16 @@ function RadarEmpty({
         <EmptyContent className="flex-row justify-center gap-2">
           {hasFilters && (
             <Button size="sm" asChild>
-              <Link href={clearHref}>Clear filters</Link>
+              <ListLink href={clearHref} replace>
+                Clear filters
+              </ListLink>
             </Button>
           )}
           {showAll && (
             <Button size="sm" variant="outline" asChild>
-              <Link href="/radar?view=all">Show all companies</Link>
+              <ListLink href="/radar?view=all" replace>
+                Show all companies
+              </ListLink>
             </Button>
           )}
         </EmptyContent>

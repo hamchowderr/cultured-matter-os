@@ -1,21 +1,22 @@
 "use client";
 
-// Ported from the kit's project-management/components/table-recent-projects.tsx. Projects
+// Ported from the kit's project-management/components/table-recent-projects.tsx (v2.0.0). Projects
 // most recently changed come first; client becomes business, deadline becomes the next due
 // task, and progress is the share of the project's tasks that are done.
 
 import * as React from "react";
-import { ChevronDownIcon, ChevronLeft, ChevronRight, Ellipsis } from "lucide-react";
 import {
-  type ColumnFiltersState,
-  type SortingState,
-  type ColumnVisibilityState as VisibilityState,
-  flexRender
-} from "@tanstack/react-table";
+  CheckIcon,
+  ChevronLeft,
+  ChevronRight,
+  Ellipsis,
+  ListFilterIcon,
+  SearchIcon
+} from "lucide-react";
+import { type SortingState, flexRender } from "@tanstack/react-table";
 import {
   type LegacyColumnDef as ColumnDef,
   getCoreRowModel,
-  getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useLegacyTable as useReactTable
@@ -29,12 +30,13 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Progress } from "@/components/ui/progress";
 import {
   Table,
@@ -45,6 +47,7 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { formatDate, formatDue, initials } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { projectProgress, type ProjectSummary } from "../types";
 
 export type ProjectStatus = ProjectSummary["status"];
@@ -55,20 +58,26 @@ export const projectStatusLabel: Record<ProjectStatus, string> = {
   done: "Finished"
 };
 
-export const projectStatusClass: Record<ProjectStatus, string> = {
-  paused: "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200",
-  active: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200",
-  done: "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
+const projectStatusVariant: Record<ProjectStatus, "success" | "warning" | "info"> = {
+  active: "success",
+  paused: "warning",
+  done: "info"
+};
+
+const projectStatusDot: Record<ProjectStatus, string> = {
+  active: "bg-emerald-500",
+  paused: "bg-amber-500",
+  done: "bg-blue-500"
 };
 
 type Row = ProjectSummary & { nextDue: Date | null };
 
-const COLUMN_LABEL: Record<string, string> = {
-  business: "Business",
-  createdAt: "Started",
-  nextDue: "Next due",
-  status: "Status",
-  progress: "Progress"
+// Columns that drop out on phones and small tablets, so name, status and actions always fit.
+const HIDE_ON_PHONE: Record<string, string> = {
+  business: "max-md:hidden",
+  createdAt: "max-md:hidden",
+  nextDue: "max-sm:hidden",
+  progress: "max-lg:hidden"
 };
 
 export function TableRecentProjects({
@@ -100,7 +109,7 @@ export function TableRecentProjects({
           <button
             type="button"
             onClick={() => onOpen(row.original.id)}
-            className="text-left font-medium hover:underline"
+            className="block max-w-full truncate text-left font-medium hover:underline"
           >
             {row.original.name}
           </button>
@@ -109,49 +118,57 @@ export function TableRecentProjects({
       },
       {
         accessorKey: "business",
+        size: 200,
         header: "Business",
         cell: ({ row }) => (
-          <div className="flex items-center gap-4">
-            <Avatar>
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar className="size-8">
               <AvatarFallback>{initials(row.original.business)}</AvatarFallback>
             </Avatar>
-            {row.original.business}
+            <span className="truncate">{row.original.business}</span>
           </div>
         )
       },
       {
         accessorKey: "createdAt",
+        size: 120,
         header: "Started",
-        cell: ({ row }) => formatDate(row.original.createdAt)
+        cell: ({ row }) => (
+          <span className="text-muted-foreground whitespace-nowrap tabular-nums">
+            {formatDate(row.original.createdAt)}
+          </span>
+        )
       },
       {
         accessorKey: "nextDue",
+        size: 130,
         header: "Next due",
-        cell: ({ row }) =>
-          row.original.nextDue ? (
-            formatDue(row.original.nextDue)
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          )
+        cell: ({ row }) => (
+          <span className="text-muted-foreground whitespace-nowrap tabular-nums">
+            {row.original.nextDue ? formatDue(row.original.nextDue) : "—"}
+          </span>
+        )
       },
       {
         accessorKey: "status",
+        size: 110,
         header: "Status",
         cell: ({ row }) => {
           const status = row.original.status;
-          return <Badge className={projectStatusClass[status]}>{projectStatusLabel[status]}</Badge>;
+          return <Badge variant={projectStatusVariant[status]}>{projectStatusLabel[status]}</Badge>;
         }
       },
       {
         id: "progress",
         accessorFn: projectProgress,
+        size: 160,
         header: "Progress",
         cell: ({ row }) => {
           const value = projectProgress(row.original);
           return (
-            <div className="flex flex-col lg:flex-row lg:items-center lg:gap-2">
-              <Progress value={value} className="h-2" aria-label="Tasks done" />
-              <span className="text-muted-foreground text-sm">{value}%</span>
+            <div className="flex items-center gap-2">
+              <Progress value={value} className="h-1.5" aria-label="Tasks done" />
+              <span className="text-muted-foreground text-xs tabular-nums">{value}%</span>
             </div>
           );
         }
@@ -159,15 +176,16 @@ export function TableRecentProjects({
       {
         id: "actions",
         enableHiding: false,
+        size: 56,
         cell: ({ row }) => {
           const project = row.original;
           return (
             <div className="text-end">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
+                  <Button variant="ghost" size="icon-sm">
                     <span className="sr-only">Open menu</span>
-                    <Ellipsis className="h-4 w-4" />
+                    <Ellipsis />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -192,24 +210,28 @@ export function TableRecentProjects({
   );
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [search, setSearch] = React.useState("");
+  const [statuses, setStatuses] = React.useState<ProjectStatus[]>([]);
+
+  const rows = React.useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return data.filter(
+      (p) =>
+        (statuses.length === 0 || statuses.includes(p.status)) &&
+        (!q || [p.name, p.business].some((v) => v.toLowerCase().includes(q)))
+    );
+  }, [data, search, statuses]);
 
   const table = useReactTable({
-    data,
+    data: rows,
     columns,
     getRowId: (row) => row.id,
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
     state: {
-      sorting,
-      columnFilters,
-      columnVisibility
+      sorting
     },
     initialState: {
       pagination: {
@@ -219,103 +241,141 @@ export function TableRecentProjects({
     }
   });
 
+  const { pageIndex, pageSize } = table.getState().pagination;
+  const firstRow = rows.length === 0 ? 0 : pageIndex * pageSize + 1;
+  const lastRow = Math.min((pageIndex + 1) * pageSize, rows.length);
+
+  const toggleStatus = (status: ProjectStatus, on: boolean) => {
+    setStatuses((prev) => (on ? [...prev, status] : prev.filter((s) => s !== status)));
+    table.setPageIndex(0);
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Recent projects</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="mb-4 flex items-center gap-4">
-          <Input
-            placeholder="Filter projects..."
-            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-            onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
-            className="max-w-sm"
-          />
+      <CardContent className="flex flex-col p-0 [&_[data-slot=table-container]]:flex-1">
+        <div className="flex min-h-14 items-center gap-2 border-b px-(--card-spacing) py-3">
+          <InputGroup className="w-full max-w-56 shrink-0 @max-md/card:min-w-24 @max-md/card:flex-1 @max-md/card:basis-0">
+            <InputGroupInput
+              placeholder="Search project, business..."
+              aria-label="Search projects"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                table.setPageIndex(0);
+              }}
+            />
+            <InputGroupAddon>
+              <SearchIcon />
+            </InputGroupAddon>
+          </InputGroup>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columns <ChevronDownIcon className="ml-2 h-4 w-4" />
+              <Button variant="outline" size="sm">
+                <ListFilterIcon /> Filters
+                {statuses.length > 0 && (
+                  <Badge variant="secondary" className="px-1.5 tabular-nums">
+                    {statuses.length}
+                  </Badge>
+                )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                    >
-                      {COLUMN_LABEL[column.id] ?? column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
+            <DropdownMenuContent align="start" className="w-44">
+              <DropdownMenuLabel>Status</DropdownMenuLabel>
+              <DropdownMenuGroup>
+                {(["active", "paused", "done"] as const).map((status) => (
+                  <DropdownMenuCheckboxItem
+                    key={status}
+                    checked={statuses.includes(status)}
+                    onCheckedChange={(on) => toggleStatus(status, !!on)}
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    <span className={cn("size-2 rounded-full", projectStatusDot[status])} />
+                    {projectStatusLabel[status]}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuGroup>
+              {statuses.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setStatuses([]);
+                      table.setPageIndex(0);
+                    }}
+                  >
+                    <CheckIcon className="invisible" />
+                    Clear filters
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
-                      </TableHead>
-                    );
-                  })}
+        <Table className="md:min-w-[860px] md:table-fixed [&_td:first-child]:ps-(--card-spacing) [&_td:last-child]:pe-(--card-spacing) [&_th:first-child]:ps-(--card-spacing) [&_th:last-child]:pe-(--card-spacing)">
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className={HIDE_ON_PHONE[header.column.id]}
+                    style={{
+                      // 150 is TanStack's default size: only sized columns get a width.
+                      width: header.getSize() !== 150 ? header.getSize() : undefined
+                    }}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id} className={HIDE_ON_PHONE[cell.column.id]}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
                 </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
-                    {data.length ? "No projects match." : "No projects yet."}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="flex items-center justify-end space-x-2 pt-4">
-          <div className="text-muted-foreground flex-1 text-sm">
-            {table.getFilteredRowModel().rows.length}{" "}
-            {table.getFilteredRowModel().rows.length === 1 ? "project" : "projects"}
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  {data.length ? "No projects match." : "No projects yet."}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+        <div className="flex items-center justify-end gap-2 border-t px-(--card-spacing) py-3">
+          <div className="text-muted-foreground flex-1 text-sm tabular-nums">
+            {firstRow} - {lastRow} of {rows.length} {rows.length === 1 ? "project" : "projects"}
           </div>
-          <div className="space-x-2">
+          <div className="flex items-center gap-1">
             <Button
               variant="outline"
-              size="icon"
+              size="icon-sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              aria-label="Previous page"
             >
+              <span className="sr-only">Previous page</span>
               <ChevronLeft />
             </Button>
             <Button
               variant="outline"
-              size="icon"
+              size="icon-sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              aria-label="Next page"
             >
+              <span className="sr-only">Next page</span>
               <ChevronRight />
             </Button>
           </div>

@@ -1,19 +1,18 @@
 "use client";
 
-// Ported from the kit's apps/tasks/components/columns.tsx. Labels are gone (tasks have none);
-// project and due date take their place.
+// Ported from the kit's apps/tasks/components/task-list.tsx columns (v2.0.0): a select box,
+// then sortable headers. Labels are gone (tasks have none); project and due date take their place.
 
-import {
-  type LegacyColumnDef as ColumnDef
-} from "@tanstack/react-table/legacy";
+import { type LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
 
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { formatDue } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { projectIdsOf, type TaskRow, type TaskStatus } from "../../types";
 import { dueBucket, priorities, priorityRank, statuses } from "./data";
-import { DataTableColumnHeader } from "./data-table-column-header";
 import { DataTableRowActions } from "./data-table-row-actions";
+import { SortableHeader } from "./sortable-header";
 
 const statusRank = Object.fromEntries(statuses.map((s, i) => [s.value, i]));
 
@@ -26,9 +25,31 @@ export function taskColumns({
 }): ColumnDef<TaskRow>[] {
   return [
     {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label={`Select "${row.original.title}"`}
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false
+    },
+    {
       accessorKey: "title",
       meta: { label: "Title" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Task" />,
+      header: ({ column }) => <SortableHeader column={column}>Task</SortableHeader>,
       cell: ({ row }) => {
         const task = row.original;
         const doneSubs = task.subtasks.filter((s) => s.status === "done").length;
@@ -38,7 +59,7 @@ export function taskColumns({
               type="button"
               onClick={() => onOpen(task)}
               className={cn(
-                "max-w-[500px] truncate text-left font-medium hover:underline",
+                "line-clamp-2 max-w-[500px] text-left font-medium whitespace-normal hover:underline lg:line-clamp-1",
                 task.status === "done" && "text-muted-foreground line-through"
               )}
             >
@@ -57,7 +78,7 @@ export function taskColumns({
     {
       accessorKey: "status",
       meta: { label: "Status" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      header: ({ column }) => <SortableHeader column={column}>Status</SortableHeader>,
       cell: ({ row }) => {
         const status = statuses.find((status) => status.value === row.getValue("status"));
         if (!status) return null;
@@ -74,14 +95,14 @@ export function taskColumns({
     {
       accessorKey: "priority",
       meta: { label: "Priority" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Priority" />,
+      header: ({ column }) => <SortableHeader column={column}>Priority</SortableHeader>,
       cell: ({ row }) => {
         const priority = priorities.find((priority) => priority.value === row.getValue("priority"));
         if (!priority) return null;
         return (
           <div className="flex items-center gap-2">
             <priority.icon className="text-muted-foreground size-4" />
-            <span>{priority.label}</span>
+            <span className="max-sm:sr-only">{priority.label}</span>
           </div>
         );
       },
@@ -93,7 +114,7 @@ export function taskColumns({
       id: "project",
       accessorFn: (task) => task.projectName ?? "",
       meta: { label: "Project" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Project" />,
+      header: ({ column }) => <SortableHeader column={column}>Project</SortableHeader>,
       cell: ({ row }) => {
         const task = row.original;
         return (
@@ -115,13 +136,15 @@ export function taskColumns({
       id: "due",
       accessorFn: (task) => dueBucket(task.dueDate),
       meta: { label: "Due" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Due" />,
+      header: ({ column }) => <SortableHeader column={column}>Due</SortableHeader>,
       cell: ({ row }) => {
         const task = row.original;
         if (!task.dueDate) return <span className="text-muted-foreground">—</span>;
         const late = task.status !== "done" && dueBucket(task.dueDate) === "overdue";
         return (
-          <span className={cn("whitespace-nowrap", late && "text-destructive")}>
+          <span
+            className={cn("whitespace-normal md:whitespace-nowrap", late && "text-destructive")}
+          >
             {formatDue(task.dueDate)}
           </span>
         );
@@ -136,6 +159,7 @@ export function taskColumns({
     },
     {
       id: "actions",
+      enableHiding: false,
       cell: ({ row }) => (
         <DataTableRowActions
           task={row.original}

@@ -14,7 +14,9 @@ import Link from "next/link";
 
 import type { ActivityEntry } from "@/actions/activity";
 import { listActivity } from "@/actions/server";
+import { ListLink, ListRegion, ListTransition } from "@/components/layout/list-transition";
 import { PageHeader } from "@/components/layout/page-shell";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -51,7 +53,7 @@ const PAGE_SIZE = 50;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
-// The page layout follows the shadcn UI kit notifications page (pages/notifications).
+// The page layout follows the shadcn UI kit notifications page (pages/notifications, v2.0.0).
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const type = ENTITY_TYPES.find((t) => t.value === one(sp.type))?.value;
@@ -80,7 +82,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-4 lg:space-y-6">
       <PageHeader
         title="Archive"
         description="Everything that has changed in the app, newest first: shortlists, passes, tasks, grants and more."
@@ -96,41 +98,75 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
           action={{ href: "/radar", label: "Open Radar" }}
         />
       ) : (
-        <>
+        <ListTransition>
           <ArchiveFilters filters={{ type, from, to, query }} />
-          {result.data.entries.length === 0 ? (
-            <ArchiveEmpty
-              title="Nothing matches"
-              description="Try another search, kind or date range."
-              action={{ href: "/archive", label: "Clear filters" }}
+          <ListRegion className="space-y-4 lg:space-y-6">
+            {result.data.entries.length === 0 ? (
+              <ArchiveEmpty
+                title="Nothing matches"
+                description="Try another search, kind or date range."
+                action={{ href: "/archive", label: "Clear filters" }}
+              />
+            ) : (
+              <Timeline entries={result.data.entries} />
+            )}
+            <Pager
+              page={page}
+              pageSize={PAGE_SIZE}
+              shown={result.data.entries.length}
+              total={result.data.total}
+              href={pageHref}
             />
-          ) : (
-            <Timeline entries={result.data.entries} />
-          )}
-          <Pager
-            page={page}
-            pageSize={PAGE_SIZE}
-            shown={result.data.entries.length}
-            total={result.data.total}
-            href={pageHref}
-          />
-        </>
+          </ListRegion>
+        </ListTransition>
       )}
     </div>
   );
 }
 
-// Icon and colour per kind of change, like the notification type badges in the kit.
-const KIND_STYLE: Record<string, { icon: LucideIcon; color: string }> = {
-  company: { icon: RadarIcon, color: "bg-blue-500" },
-  contact: { icon: UsersIcon, color: "bg-green-500" },
-  grant: { icon: LandmarkIcon, color: "bg-orange-500" },
-  project: { icon: FolderKanbanIcon, color: "bg-purple-500" },
-  task: { icon: ListChecksIcon, color: "bg-teal-500" },
-  capture: { icon: InboxIcon, color: "bg-pink-500" },
-  approval: { icon: ShieldCheckIcon, color: "bg-amber-500" }
+// Icon and colour per kind of change, like the notification type styles in the kit.
+const KIND_STYLE: Record<string, { icon: LucideIcon; iconClass: string; dotClass: string }> = {
+  company: {
+    icon: RadarIcon,
+    iconClass: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+    dotClass: "bg-blue-500"
+  },
+  contact: {
+    icon: UsersIcon,
+    iconClass: "bg-green-500/10 text-green-600 dark:text-green-400",
+    dotClass: "bg-green-500"
+  },
+  grant: {
+    icon: LandmarkIcon,
+    iconClass: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
+    dotClass: "bg-orange-500"
+  },
+  project: {
+    icon: FolderKanbanIcon,
+    iconClass: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
+    dotClass: "bg-purple-500"
+  },
+  task: {
+    icon: ListChecksIcon,
+    iconClass: "bg-teal-500/10 text-teal-600 dark:text-teal-400",
+    dotClass: "bg-teal-500"
+  },
+  capture: {
+    icon: InboxIcon,
+    iconClass: "bg-pink-500/10 text-pink-600 dark:text-pink-400",
+    dotClass: "bg-pink-500"
+  },
+  approval: {
+    icon: ShieldCheckIcon,
+    iconClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+    dotClass: "bg-amber-500"
+  }
 };
-const FALLBACK_STYLE = { icon: ArchiveIcon, color: "bg-gray-500" };
+const FALLBACK_STYLE = {
+  icon: ArchiveIcon,
+  iconClass: "bg-gray-500/10 text-gray-600 dark:text-gray-400",
+  dotClass: "bg-gray-500"
+};
 
 function Timeline({ entries }: { entries: ActivityEntry[] }) {
   const now = new Date();
@@ -141,7 +177,7 @@ function Timeline({ entries }: { entries: ActivityEntry[] }) {
           <h2 className="text-muted-foreground text-sm font-medium">
             {dayHeading(group.day, now)}
           </h2>
-          <div className="rounded-md border">
+          <div className="overflow-hidden rounded-lg border">
             <Table>
               <TableBody>
                 {group.rows.map((e) => (
@@ -158,41 +194,51 @@ function Timeline({ entries }: { entries: ActivityEntry[] }) {
 
 function EntryRow({ entry: e }: { entry: ActivityEntry }) {
   const href = activityHref(e);
-  const { icon: Icon, color } = KIND_STYLE[e.entityType] ?? FALLBACK_STYLE;
+  const { icon: Icon, iconClass, dotClass } = KIND_STYLE[e.entityType] ?? FALLBACK_STYLE;
   const time = timeIn(e.at);
   return (
     <TableRow>
-      <TableCell className="whitespace-normal">
-        <div className="flex gap-4 rounded-md p-2">
+      <TableCell className="w-full whitespace-normal">
+        <div className="flex gap-4 p-2">
           <div
             className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-full text-white",
-              color
+              "flex size-10 shrink-0 items-center justify-center rounded-full",
+              iconClass
             )}
           >
             <Icon className="size-4" />
           </div>
           <div className="min-w-0 flex-1 space-y-1">
-            <p className="text-sm font-semibold break-words">{e.summary}</p>
-            <p className="text-muted-foreground text-sm">
-              {entityLabel(e.entityType)}
-              <span className="sm:hidden"> · {time}</span>
+            <p className="text-sm font-medium break-words">{e.summary}</p>
+            <p className="text-muted-foreground text-sm sm:hidden">
+              {entityLabel(e.entityType)} · {time}
             </p>
+            {href && (
+              <div className="pt-1">
+                <Button size="sm" variant="outline" asChild>
+                  <Link href={href}>
+                    Open
+                    <ArrowUpRightIcon />
+                  </Link>
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </TableCell>
-      <TableCell className="text-muted-foreground hidden w-24 text-right tabular-nums sm:table-cell">
-        <time dateTime={e.at.toISOString()}>{time}</time>
+      <TableCell className="max-sm:hidden">
+        <Badge variant="outline" className="text-muted-foreground gap-1.5">
+          <span className={cn("size-1.5 rounded-full", dotClass)} />
+          {entityLabel(e.entityType)}
+        </Badge>
       </TableCell>
-      <TableCell className="w-24 text-right">
-        {href && (
-          <Button size="sm" variant="outline" asChild>
-            <Link href={href}>
-              Open
-              <ArrowUpRightIcon />
-            </Link>
-          </Button>
-        )}
+      <TableCell className="text-end max-sm:hidden">
+        <time
+          dateTime={e.at.toISOString()}
+          className="text-muted-foreground pe-2 text-xs whitespace-nowrap tabular-nums"
+        >
+          {time}
+        </time>
       </TableCell>
     </TableRow>
   );
@@ -219,7 +265,9 @@ function ArchiveEmpty({
       </EmptyHeader>
       <EmptyContent className="flex-row justify-center gap-2">
         <Button size="sm" variant="outline" asChild>
-          <Link href={action.href}>{action.label}</Link>
+          <ListLink href={action.href} replace>
+            {action.label}
+          </ListLink>
         </Button>
       </EmptyContent>
     </Empty>
@@ -253,10 +301,10 @@ function Pager({
       {pages > 1 && (
         <nav className="space-x-2" aria-label="Pages">
           <Button size="sm" variant="outline" disabled={page <= 1} asChild={page > 1}>
-            {page > 1 ? <Link href={href(page - 1)}>Previous</Link> : <span>Previous</span>}
+            {page > 1 ? <ListLink href={href(page - 1)}>Previous</ListLink> : <span>Previous</span>}
           </Button>
           <Button size="sm" variant="outline" disabled={page >= pages} asChild={page < pages}>
-            {page < pages ? <Link href={href(page + 1)}>Next</Link> : <span>Next</span>}
+            {page < pages ? <ListLink href={href(page + 1)}>Next</ListLink> : <span>Next</span>}
           </Button>
         </nav>
       )}

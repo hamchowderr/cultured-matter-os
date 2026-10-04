@@ -1,6 +1,6 @@
 "use client";
 
-// Layout from the kit's project-management page: a header row, then Overview / Projects /
+// Layout from the kit's project-management page (v2.0.0): a header row, then Overview / Projects /
 // Tasks tabs. Overview holds the summary cards, reminders, chart and recent projects; Projects
 // is the kit's project list; Tasks is the kit's tasks data table.
 
@@ -18,9 +18,9 @@ import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ActivityPoint, ProjectStats } from "@/lib/project-stats";
 import { cn } from "@/lib/utils";
-import { AddTaskDialog } from "./components/add-task-dialog";
+import { AddTaskDrawer } from "./components/add-task-drawer";
 import { ChartProjectOverview } from "./components/chart-project-overview";
-import { NewProjectDialog } from "./components/new-project-dialog";
+import { NewProjectDrawer } from "./components/new-project-drawer";
 import { ProjectList } from "./components/project-list";
 import { Reminders } from "./components/reminders";
 import { SummaryCards } from "./components/summary-cards";
@@ -159,7 +159,7 @@ export function ProjectsView({
         onValueChange={(v) =>
           go({ view: v === "overview" ? undefined : v, p: undefined, due: undefined })
         }
-        className="space-y-4"
+        className="space-y-4 lg:space-y-6"
       >
         <TabsList className="z-10">
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -167,12 +167,13 @@ export function ProjectsView({
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
+        <TabsContent value="overview" className="space-y-4 lg:space-y-6">
           {projects.length === 0 ? (
             <NoProjects />
           ) : (
             <>
               <SummaryCards stats={stats} />
+              <ChartProjectOverview data={activity} />
               <Reminders
                 due={due}
                 onOpen={openReminder}
@@ -180,7 +181,6 @@ export function ProjectsView({
                 onAdd={() => setAddOpen(true)}
                 onShowAll={() => go({ view: "tasks", p: undefined, due: "soon" })}
               />
-              <ChartProjectOverview data={activity} />
               <TableRecentProjects
                 projects={projects}
                 nextDue={nextDue}
@@ -191,7 +191,7 @@ export function ProjectsView({
           )}
         </TabsContent>
 
-        <TabsContent value="projects" className="space-y-4">
+        <TabsContent value="projects" className="space-y-4 lg:space-y-6">
           {listed.length === 0 ? (
             <NoProjects />
           ) : (
@@ -208,7 +208,7 @@ export function ProjectsView({
           )}
         </TabsContent>
 
-        <TabsContent value="tasks" className="space-y-4">
+        <TabsContent value="tasks" className="space-y-4 lg:space-y-6">
           {current && (
             <header className="flex flex-wrap items-start justify-between gap-3 rounded-lg border p-4">
               <div>
@@ -247,12 +247,11 @@ export function ProjectsView({
             initialFilters={initialFilters}
             onOpen={openTask}
             onStatusChange={changeStatus}
-            onAdd={() => setAddOpen(true)}
           />
         </TabsContent>
       </Tabs>
 
-      <AddTaskDialog
+      <AddTaskDrawer
         open={addOpen}
         onOpenChange={setAddOpen}
         projects={openProjects}
@@ -260,7 +259,7 @@ export function ProjectsView({
         onCreated={refresh}
       />
 
-      <NewProjectDialog
+      <NewProjectDrawer
         open={newProjectOpen}
         onOpenChange={setNewProjectOpen}
         businesses={businesses.length ? businesses : ["Cultured Matter"]}

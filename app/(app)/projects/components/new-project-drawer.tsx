@@ -6,17 +6,16 @@ import { toast } from "sonner";
 import { createProject } from "@/actions/server";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog";
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle
+} from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function NewProjectDialog({
+export function NewProjectDrawer({
   open,
   onOpenChange,
   businesses,
@@ -51,15 +50,15 @@ export function NewProjectDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <form onSubmit={submit} className="space-y-4">
-          <DialogHeader>
-            <DialogTitle>New project</DialogTitle>
-            <DialogDescription>
-              Projects sit under a business. Type a new business name to add one.
-            </DialogDescription>
-          </DialogHeader>
+    <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="w-full sm:max-w-md">
+        <DrawerHeader>
+          <DrawerTitle>New project</DrawerTitle>
+          <DrawerDescription>
+            Projects sit under a business. Type a new business name to add one.
+          </DrawerDescription>
+        </DrawerHeader>
+        <form onSubmit={submit} className="space-y-6 overflow-y-auto p-4 pt-0">
           <div className="space-y-2">
             <Label htmlFor="project-name">Name</Label>
             <Input
@@ -83,16 +82,11 @@ export function NewProjectDialog({
               ))}
             </datalist>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={saving || !name.trim()}>
-              Create
-            </Button>
-          </DialogFooter>
+          <Button className="w-full" type="submit" disabled={saving || !name.trim()}>
+            Create project
+          </Button>
         </form>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   );
 }

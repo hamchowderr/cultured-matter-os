@@ -1,7 +1,7 @@
 import { searchGrants, tasksDueBetween } from "@/actions/server";
 import { PageHeader } from "@/components/layout/page-shell";
 import { generateMeta } from "@/lib/utils";
-import GrantsKanban from "./components/grants-kanban";
+import GrantsKanban, { type View } from "./components/grants-kanban";
 
 export async function generateMetadata() {
   return generateMeta({
@@ -21,7 +21,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const includeNonprofit = one(sp.all) === "1";
   const showClosed = one(sp.closed) === "1";
 
-  const view = one(sp.view) === "calendar" ? "calendar" : "board";
+  const requested = one(sp.view);
+  const view: View =
+    requested === "list" || requested === "table" || requested === "calendar" ? requested : "board";
 
   // Tasks for the calendar: three months back through a year ahead.
   const now = Date.now();
