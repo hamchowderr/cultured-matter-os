@@ -15,6 +15,7 @@ import Link from "next/link";
 import type { ActivityEntry } from "@/actions/activity";
 import { listActivity } from "@/actions/server";
 import { ListLink, ListRegion, ListTransition } from "@/components/layout/list-transition";
+import { CompactPager } from "@/components/layout/compact-pager";
 import { PageHeader } from "@/components/layout/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -101,6 +102,16 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         <ListTransition>
           <ArchiveFilters filters={{ type, from, to, query }} />
           <ListRegion className="space-y-4 lg:space-y-6">
+            {result.data.total > PAGE_SIZE && result.data.entries.length > 0 && (
+              <CompactPager
+                className="justify-end"
+                from={(page - 1) * PAGE_SIZE + 1}
+                to={(page - 1) * PAGE_SIZE + result.data.entries.length}
+                total={result.data.total}
+                prev={page > 1 ? pageHref(page - 1) : null}
+                next={page * PAGE_SIZE < result.data.total ? pageHref(page + 1) : null}
+              />
+            )}
             {result.data.entries.length === 0 ? (
               <ArchiveEmpty
                 title="Nothing matches"
@@ -177,7 +188,7 @@ function Timeline({ entries }: { entries: ActivityEntry[] }) {
           <h2 className="text-muted-foreground text-sm font-medium">
             {dayHeading(group.day, now)}
           </h2>
-          <div className="overflow-hidden rounded-lg border">
+          <div className="bg-card ring-foreground/10 overflow-hidden rounded-xl ring-1">
             <Table>
               <TableBody>
                 {group.rows.map((e) => (

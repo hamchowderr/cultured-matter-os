@@ -52,7 +52,7 @@ export function CompanyCard({
   return (
     <article
       className={cn(
-        "bg-card flex flex-col gap-3 rounded-lg border p-4",
+        "bg-muted/40 flex flex-col gap-3 rounded-lg p-4",
         company.status === "passed" && "opacity-60",
         className
       )}

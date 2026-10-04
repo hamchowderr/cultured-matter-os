@@ -39,14 +39,15 @@ export function GetStarted({ status }: { status: SetupStatus }) {
               <Link
                 href={done ? step.doneHref : step.href}
                 className={cn(
-                  "hover:bg-muted/50 flex w-full items-center gap-4 rounded-xl border p-4 transition-colors",
-                  waiting && "border-dashed"
+                  "bg-muted/40 hover:bg-muted flex w-full items-center gap-4 rounded-lg p-4 transition-colors"
                 )}
               >
                 <span
                   className={cn(
                     "flex size-7 shrink-0 items-center justify-center rounded-md",
-                    done ? "bg-primary text-primary-foreground" : "text-muted-foreground border"
+                    done
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background text-muted-foreground"
                   )}
                 >
                   {done ? <CheckIcon className="size-3.5" /> : <Icon className="size-3.5" />}
@@ -65,7 +66,9 @@ export function GetStarted({ status }: { status: SetupStatus }) {
                   </span>
                 </span>
                 <span className="text-muted-foreground inline-flex shrink-0 items-center gap-1 text-sm">
-                  {done ? "Done" : step.todoLabel}
+                  <span className={cn(!done && "max-sm:sr-only")}>
+                    {done ? "Done" : step.todoLabel}
+                  </span>
                   {!done && <ArrowRightIcon className="size-3.5" />}
                 </span>
               </Link>

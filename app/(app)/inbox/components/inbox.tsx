@@ -11,7 +11,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -76,10 +75,14 @@ export function Inbox({
   const items = React.useMemo(() => all.filter((c) => matches(c, query.trim())), [all, query]);
   const selected = [...toSort, ...filed].find((c) => c.id === selectedId) ?? null;
 
-  // Start with the newest item open on a wide screen; keep the pane empty on a phone.
+  // Start with the newest item open on a wide screen. On a phone the list comes first and the
+  // drawer opens only on a tap. useIsMobile reads false on the first render, so the width is
+  // checked directly here.
   React.useEffect(() => {
-    if (!isMobile && !selectedId && items[0]) setSelectedId(items[0].id);
-  }, [isMobile]);
+    const phone = window.matchMedia("(max-width: 767px)").matches;
+    if (phone) setSelectedId(null);
+    else if (!selectedId && items[0]) setSelectedId(items[0].id);
+  }, []);
 
   function changeTab(next: Tab) {
     setTab(next);
@@ -136,8 +139,7 @@ export function Inbox({
                 <TabsTrigger value="filed">Filed</TabsTrigger>
               </TabsList>
             </div>
-            <Separator />
-            <div className="bg-background/59 space-y-3 p-4 backdrop-blur-md">
+            <div className="space-y-3 px-4 pt-2 pb-4">
               <QuickCapture onCaptured={onCaptured} />
               <form onSubmit={(e) => e.preventDefault()}>
                 <InputGroup>
@@ -165,7 +167,7 @@ export function Inbox({
                 }
               />
             </div>
-            <div className="border-t p-3">
+            <div className="p-3">
               <IphonePanel />
             </div>
           </Tabs>

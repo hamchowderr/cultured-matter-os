@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 
+import { ClampedText } from "@/components/layout/clamped-text";
 import {
   Empty,
   EmptyDescription,
@@ -12,7 +13,7 @@ export function PageHeader({ title, description }: { title: string; description:
   return (
     <div className="space-y-1">
       <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
-      <p className="text-muted-foreground text-sm">{description}</p>
+      <ClampedText className="text-muted-foreground text-sm">{description}</ClampedText>
     </div>
   );
 }

@@ -31,6 +31,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { listNotifications, markNotificationsRead } from "@/actions/server";
 import type { NotificationItem } from "@/actions/notifications";
+import { cn } from "@/lib/utils";
 
 const KIND_ICON: Record<NotificationItem["kind"], LucideIcon> = {
   approval: ShieldCheckIcon,
@@ -96,9 +97,13 @@ const Notifications = () => {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align={isMobile ? "center" : "end"} className="ms-4 w-80 p-0">
+      <DropdownMenuContent
+        align={isMobile ? "center" : "end"}
+        collisionPadding={16}
+        className="w-80 max-w-[calc(100vw-2rem)] p-0"
+      >
         <DropdownMenuLabel className="bg-background dark:bg-muted sticky top-0 z-10 p-0">
-          <div className="flex justify-between border-b px-6 py-4">
+          <div className="flex justify-between px-4 pt-4 pb-2">
             <div className="font-medium">Notifications</div>
             {unread.length > 0 && (
               <Button
@@ -119,14 +124,14 @@ const Notifications = () => {
             Nothing needs you right now.
           </div>
         ) : (
-          <ScrollArea className={items.length > 4 ? "h-[350px]" : undefined}>
+          <ScrollArea className={cn("pb-1", items.length > 4 && "h-[350px]")}>
             {items.map((item) => {
               const Icon = KIND_ICON[item.kind];
               return (
                 <DropdownMenuItem
                   key={item.id}
                   asChild
-                  className="group flex cursor-pointer items-start gap-9 rounded-none border-b px-4 py-3"
+                  className="group mx-1 flex cursor-pointer items-start gap-9 rounded-md px-3 py-3"
                 >
                   <Link href={item.href} onClick={() => !item.read && markRead([item.id])}>
                     <div className="flex flex-1 items-start gap-2">
@@ -150,7 +155,7 @@ const Notifications = () => {
                     </div>
                     {!item.read && (
                       <div className="flex-0">
-                        <span className="bg-destructive/80 block size-2 rounded-full border" />
+                        <span className="bg-destructive/80 block size-2 rounded-full" />
                       </div>
                     )}
                   </Link>

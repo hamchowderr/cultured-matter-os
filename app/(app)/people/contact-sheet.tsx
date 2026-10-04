@@ -83,11 +83,11 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
     <TableRow className="hover:bg-transparent">
       <TableHead
         scope="row"
-        className="text-muted-foreground h-auto w-32 px-3 py-2.5 align-top font-normal"
+        className="text-muted-foreground h-auto w-32 ps-0 pe-3 py-2.5 align-top font-normal"
       >
         {label}
       </TableHead>
-      <TableCell className="px-3 py-2.5 whitespace-normal">{children}</TableCell>
+      <TableCell className="ps-3 pe-0 py-2.5 whitespace-normal">{children}</TableCell>
     </TableRow>
   );
 }
@@ -117,7 +117,7 @@ export function ContactSheet({
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent className="w-full gap-0 overflow-y-auto sm:max-w-lg">
-          <SheetHeader className="border-b">
+          <SheetHeader>
             <div className="flex items-center gap-3 pr-8">
               <Avatar className="size-11">
                 <AvatarFallback>{initials(contact.fullName)}</AvatarFallback>
@@ -129,8 +129,8 @@ export function ContactSheet({
             </div>
           </SheetHeader>
 
-          <div className="space-y-6 p-4">
-            <div className="overflow-hidden rounded-lg border">
+          <div className="space-y-6 px-4 pb-4">
+            <div className="overflow-hidden">
               <Table>
                 <TableBody>
                   <DetailRow label="Email">

@@ -5,7 +5,6 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
-import { Separator } from "@/components/ui/separator";
 
 import { type Capture, type Project, useInboxStore } from "../use-inbox";
 import { CaptureBody, CaptureHeader } from "./capture-display";
@@ -34,7 +33,6 @@ export function CaptureDisplayMobile({
         {capture && (
           <div className="flex min-h-0 flex-1 flex-col">
             <CaptureHeader capture={capture} />
-            <Separator />
             <CaptureBody capture={capture} projects={projects} onFiled={onFiled} />
           </div>
         )}

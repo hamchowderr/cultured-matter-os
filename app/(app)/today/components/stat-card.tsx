@@ -23,11 +23,11 @@ export function StatCard({
 }) {
   return (
     <Link href={href} className="group focus-visible:outline-none">
-      <Card className="group-hover:border-primary/40 group-focus-visible:ring-ring h-full transition-colors group-focus-visible:ring-2">
+      <Card className="group-hover:ring-primary/40 group-focus-visible:ring-ring h-full transition-colors group-focus-visible:ring-2">
         <CardHeader>
           <CardTitle>{title}</CardTitle>
           <CardAction>
-            <Icon className="text-muted-foreground size-4" />
+            <Icon className="text-muted-foreground size-4 max-sm:hidden" />
           </CardAction>
         </CardHeader>
         <CardContent>

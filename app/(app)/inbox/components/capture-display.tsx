@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 import { type Capture, type Kind, KIND_LABEL, type Project } from "../use-inbox";
@@ -28,7 +27,6 @@ export function CaptureDisplay({ capture, projects, onFiled }: DisplayProps) {
   return (
     <div className="flex h-full flex-col">
       <CaptureHeader capture={capture} />
-      <Separator />
       {capture ? (
         <CaptureBody capture={capture} projects={projects} onFiled={onFiled} />
       ) : (
@@ -87,8 +85,7 @@ export function CaptureBody({
           {capture.imagePath && <CapturePhoto captureId={capture.id} />}
         </div>
       </ScrollArea>
-      <Separator />
-      <div className="p-4">
+      <div className="bg-muted/40 p-4">
         <FilingForm key={capture.id} capture={capture} projects={projects} onFiled={onFiled} />
       </div>
     </div>

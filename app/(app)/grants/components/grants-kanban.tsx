@@ -270,14 +270,16 @@ export default function GrantsKanban({
     <div className={cn("space-y-4 transition-opacity", pending && "opacity-70")}>
       <Tabs value={tab} onValueChange={changeTab} className="w-full">
         <div className="mb-2 flex justify-between gap-2">
-          <TabsList>
-            <TabsTrigger value="board">Board</TabsTrigger>
-            <TabsTrigger value="list">List</TabsTrigger>
-            <TabsTrigger value="table">Table</TabsTrigger>
-            <TabsTrigger value="calendar">Calendar</TabsTrigger>
-          </TabsList>
+          <div className="-mx-1 min-w-0 [scrollbar-width:none] overflow-x-auto px-1">
+            <TabsList className="w-max">
+              <TabsTrigger value="board">Board</TabsTrigger>
+              <TabsTrigger value="list">List</TabsTrigger>
+              <TabsTrigger value="table">Table</TabsTrigger>
+              <TabsTrigger value="calendar">Calendar</TabsTrigger>
+            </TabsList>
+          </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <span className="text-muted-foreground hidden text-sm sm:inline">
               {grants.length} {grants.length === 1 ? "grant" : "grants"}
             </span>
@@ -459,17 +461,12 @@ function isUrgent(grant: Grant) {
 function GrantsList({ columns, onOpen }: { columns: Columns; onOpen: (grant: Grant) => void }) {
   return (
     <Card>
-      <CardContent className="p-0">
-        {COLUMNS.map(({ key, label }, index) => {
+      <CardContent className="p-0 first:pt-0">
+        {COLUMNS.map(({ key, label }) => {
           const items = columns[key];
           return (
             <div key={key}>
-              <div
-                className={cn(
-                  "bg-muted/50 flex items-center gap-2 border-b px-(--card-spacing) py-2",
-                  index > 0 && "border-t"
-                )}
-              >
+              <div className="bg-muted/50 flex items-center gap-2 px-(--card-spacing) py-2">
                 <span className="text-sm font-semibold">{label}</span>
                 <Badge variant="outline">{items.length}</Badge>
               </div>
