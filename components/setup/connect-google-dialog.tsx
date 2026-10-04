@@ -20,7 +20,8 @@ import { Spinner } from "@/components/ui/spinner";
 const ALLOWS = [
   "Read your Google contacts, to add them to People",
   "See who you emailed in Gmail and when, with a link to each email",
-  "Save follow-up emails you approve in your Gmail Drafts, for you to send"
+  "Save follow-up emails you approve in your Gmail Drafts, for you to send",
+  "Send the daily summary email from your Gmail to yourself, if you turn it on in Settings"
 ];
 
 // Explains what connecting Google allows before Google asks her to agree

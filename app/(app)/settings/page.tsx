@@ -1,7 +1,10 @@
 import { ArrowRightIcon } from "lucide-react";
+import { headers } from "next/headers";
 import Link from "next/link";
 
-import { setupStatus } from "@/actions/server";
+import { getUserSettings, setupStatus } from "@/actions/server";
+import { CalendarFeedCard } from "@/components/settings/calendar-feed-card";
+import { DailyEmailCard } from "@/components/settings/daily-email-card";
 import { PageHeader } from "@/components/layout/page-shell";
 import { ConnectGoogleDialog } from "@/components/setup/connect-google-dialog";
 import { ConnectionCard, type ConnectionState } from "@/components/setup/connection-card";
@@ -15,7 +18,8 @@ import { GoogleReturn } from "./google-return";
 export async function generateMetadata() {
   return generateMeta({
     title: "Settings",
-    description: "Your account and what is connected: LinkedIn, Google, iPhone and newsletter."
+    description:
+      "Your account, what is connected (LinkedIn, Google, iPhone, newsletter), the calendar feed and the daily email."
   });
 }
 
@@ -35,10 +39,22 @@ function initials(name: string, email: string) {
   return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?";
 }
 
+// The address she reached the app on, for the calendar feed link.
+async function requestOrigin() {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}`;
+}
+
 export default async function Page() {
   // Session first: it marks the page as dynamic before any action runs.
   const user = (await getSession())?.user;
-  const status = await setupStatus({});
+  const [status, settings, origin] = await Promise.all([
+    setupStatus({}),
+    getUserSettings(),
+    requestOrigin()
+  ]);
 
   function action(step: Step, done: boolean) {
     if (done) return <LinkAction href={step.doneHref} label={step.doneLabel} />;
@@ -114,6 +130,20 @@ export default async function Page() {
           </p>
         )}
       </section>
+
+      {user && settings.ok && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Calendar and email</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <CalendarFeedCard origin={origin} token={settings.data.calendarToken} />
+            <DailyEmailCard
+              enabled={settings.data.dailyEmail}
+              email={user.email}
+              googleConnected={status.ok ? status.data.outlook.done : true}
+            />
+          </div>
+        </section>
+      )}
     </div>
   );
 }

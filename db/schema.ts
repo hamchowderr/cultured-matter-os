@@ -355,6 +355,21 @@ export const notificationReads = sqliteTable(
   ]
 );
 
+// Per-user preferences that are hers rather than Better Auth's (the users table is generated).
+export const userSettings = sqliteTable("user_settings", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  // Secret part of the private calendar feed URL (/api/calendar/<token>.ics). Reset replaces it,
+  // so the old link stops working.
+  calendarToken: text("calendar_token").unique(),
+  dailyEmail: integer("daily_email", { mode: "boolean" }).notNull().default(false),
+  // When the last daily summary went out; the next one covers what is new since then.
+  lastSummaryAt: integer("last_summary_at", { mode: "timestamp_ms" }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt()
+});
+
 // ---------------------------------------------------------------- Log
 
 export const activityLog = sqliteTable(
