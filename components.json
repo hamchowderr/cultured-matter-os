@@ -24,6 +24,7 @@
       "headers": {
         "Authorization": "Bearer ${SHADCN_UI_KIT_TOKEN}"
       }
-    }
+    },
+    "@tour": "https://onboarding-tour.vercel.app/r/{name}.json"
   }
 }
