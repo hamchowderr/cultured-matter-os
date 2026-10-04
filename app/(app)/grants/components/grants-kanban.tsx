@@ -28,7 +28,6 @@ import {
 import { Input } from "@/components/ui/input";
 import * as Kanban from "@/components/ui/kanban";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
 import {
   Table,
   TableBody,
@@ -329,7 +328,7 @@ export default function GrantsKanban({
                   <Kanban.Column
                     key={key}
                     value={key}
-                    className="w-[340px] min-w-[340px] max-sm:w-full max-sm:min-w-full max-sm:snap-center"
+                    className="w-[300px] min-w-[300px] max-sm:w-full max-sm:min-w-full max-sm:snap-center lg:w-auto lg:min-w-[240px] lg:flex-1"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -403,12 +402,7 @@ const GrantKanbanCard = React.forwardRef<
   const urgent = days != null && days >= 0 && days <= 14;
 
   return (
-    <Card
-      ref={ref}
-      className={cn("cursor-pointer border-0", className)}
-      {...props}
-      onClick={onOpen}
-    >
+    <Card ref={ref} className={cn("cursor-pointer", className)} {...props} onClick={onOpen}>
       <CardContent className="space-y-3">
         <div className="space-y-1">
           <div className="text-base leading-snug font-semibold">{grant.title}</div>
@@ -428,7 +422,6 @@ const GrantKanbanCard = React.forwardRef<
             </span>
           )}
         </div>
-        <Separator />
         <div className="flex items-center justify-between">
           <EligibilityBadge grant={grant} />
           <Button
@@ -543,14 +536,14 @@ function GrantsTable({ columns, onOpen }: { columns: Columns; onOpen: (grant: Gr
   return (
     <Card>
       <CardContent className="p-0">
-        <Table className="min-w-[860px] table-fixed [&_td:first-child]:ps-(--card-spacing) [&_td:last-child]:pe-(--card-spacing) [&_th:first-child]:ps-(--card-spacing) [&_th:last-child]:pe-(--card-spacing)">
+        <Table className="lg:min-w-[860px] lg:table-fixed [&_td:first-child]:ps-(--card-spacing) [&_td:last-child]:pe-(--card-spacing) [&_th:first-child]:ps-(--card-spacing) [&_th:last-child]:pe-(--card-spacing)">
           <TableHeader>
             <TableRow>
               <TableHead>Grant</TableHead>
-              <TableHead className="w-28">Board</TableHead>
+              <TableHead className="w-28 max-md:hidden">Board</TableHead>
               <TableHead className="w-36">Deadline</TableHead>
-              <TableHead className="w-36">Amount</TableHead>
-              <TableHead className="w-40">Eligibility</TableHead>
+              <TableHead className="w-36 max-sm:hidden">Amount</TableHead>
+              <TableHead className="w-40 max-lg:hidden">Eligibility</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -563,15 +556,15 @@ function GrantsTable({ columns, onOpen }: { columns: Columns; onOpen: (grant: Gr
             ) : (
               rows.map(({ grant, label }) => (
                 <TableRow key={grant.id} className="cursor-pointer" onClick={() => onOpen(grant)}>
-                  <TableCell>
+                  <TableCell className="whitespace-normal">
                     <div className="min-w-0">
-                      <div className="truncate font-medium">{grant.title}</div>
+                      <div className="font-medium lg:truncate">{grant.title}</div>
                       {grant.agency && (
                         <div className="text-muted-foreground truncate text-xs">{grant.agency}</div>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="max-md:hidden">
                     <Badge variant="outline">{label}</Badge>
                   </TableCell>
                   <TableCell>
@@ -579,10 +572,10 @@ function GrantsTable({ columns, onOpen }: { columns: Columns; onOpen: (grant: Gr
                       {formatDeadline(grant.deadline)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground whitespace-nowrap">
+                  <TableCell className="text-muted-foreground whitespace-nowrap max-sm:hidden">
                     {formatAmount(grant.amountMin, grant.amountMax) ?? "-"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="max-lg:hidden">
                     <EligibilityBadge grant={grant} />
                   </TableCell>
                 </TableRow>
