@@ -3,12 +3,16 @@ import { z } from "zod/v4";
 
 import type { Executor } from "@/db";
 import { projects, taskProjects, tasks } from "@/db/schema";
+import { isPersonal, WORK_SCOPES } from "@/lib/personal";
+import { scopeWhere } from "@/lib/personal-sql";
 import { HOME_TIME_ZONE, startOfDayIn } from "@/lib/time";
 import { ActionError, defineAction } from "./define";
 import { id, projectSchema, taskPriority, taskSchema } from "./schemas";
 
 const projectStatus = z.enum(["active", "paused", "done"]);
 const name = z.string().trim().min(1).max(200);
+// Business / Personal / All. All by default, so callers that don't ask see everything.
+const scope = z.enum(WORK_SCOPES).default("all");
 
 async function mustGetProject(db: Executor, projectId: string) {
   const [row] = await db.select().from(projects).where(eq(projects.id, projectId));
@@ -25,9 +29,9 @@ async function mustGetTask(db: Executor, taskId: string) {
 export const listProjects = defineAction({
   name: "listProjects",
   description:
-    "All projects grouped by business, with counts of open, waiting, overdue and done tasks.",
+    "All projects grouped by business, with counts of open, waiting, overdue and done tasks. Scope narrows them to business or personal projects.",
   kind: "read",
-  input: z.object({ includeDone: z.boolean().default(false) }),
+  input: z.object({ includeDone: z.boolean().default(false), scope }),
   output: z.object({
     projects: z.array(
       projectSchema.extend({
@@ -66,7 +70,12 @@ export const listProjects = defineAction({
       })
       .from(projects)
       .leftJoin(counts, eq(counts.projectId, projects.id))
-      .where(input.includeDone ? undefined : ne(projects.status, "done"))
+      .where(
+        and(
+          input.includeDone ? undefined : ne(projects.status, "done"),
+          scopeWhere(projects.business, input.scope)
+        )
+      )
       .orderBy(asc(projects.business), asc(projects.name));
 
     return {
@@ -215,6 +224,37 @@ export const updateProject = defineAction({
   })
 });
 
+export const deleteProject = defineAction({
+  name: "deleteProject",
+  description:
+    "Delete a project that has no tasks of its own (for example an unused suggested personal project). A project with tasks can be marked finished instead.",
+  kind: "write",
+  input: z.object({ projectId: id }),
+  output: z.object({ id: z.string(), name: z.string(), business: z.string() }),
+  async handler(input, db) {
+    const project = await mustGetProject(db, input.projectId);
+    const [own] = await db
+      .select({ id: tasks.id })
+      .from(tasks)
+      .where(eq(tasks.projectId, project.id))
+      .limit(1);
+    if (own) {
+      throw new ActionError(
+        "conflict",
+        "This project still has tasks. Move them, or mark the project finished instead."
+      );
+    }
+    // Links to tasks from other projects go with it (cascade); those tasks stay in their homes.
+    await db.delete(projects).where(eq(projects.id, project.id));
+    return { id: project.id, name: project.name, business: project.business };
+  },
+  log: (_input, p) => ({
+    entityType: "project",
+    entityId: p.id,
+    summary: `Deleted project ${p.name} (${p.business})`
+  })
+});
+
 export const updateTask = defineAction({
   name: "updateTask",
   description:
@@ -298,14 +338,19 @@ export const unlinkTaskFromProject = defineAction({
   })
 });
 
-const dueTaskSchema = taskSchema.extend({ projectName: z.string().nullable() });
+const dueTaskSchema = taskSchema.extend({
+  projectName: z.string().nullable(),
+  // True when the task's home project is under Personal.
+  personal: z.boolean()
+});
 
 export const dueTasks = defineAction({
   name: "dueTasks",
   description:
-    "Open tasks that are overdue, due today, or due in the next 7 days, with their project names. Subtasks are included.",
+    "Open tasks that are overdue, due today, or due in the next 7 days, with their project names and whether each is personal. Subtasks are included. Scope narrows them to business or personal tasks.",
   kind: "read",
   input: z.object({
+    scope,
     now: z.coerce.date().optional(),
     timeZone: z.string().default(HOME_TIME_ZONE)
   }),
@@ -317,17 +362,33 @@ export const dueTasks = defineAction({
   async handler(input, db) {
     const now = input.now ?? new Date();
     const start = startOfDayIn(input.timeZone, now);
-    const tomorrow = startOfDayIn(input.timeZone, new Date(start.getTime() + 36 * 3_600_000)).getTime();
-    const weekEnd = startOfDayIn(input.timeZone, new Date(start.getTime() + 7 * 86_400_000 + 36 * 3_600_000)).getTime();
+    const tomorrow = startOfDayIn(
+      input.timeZone,
+      new Date(start.getTime() + 36 * 3_600_000)
+    ).getTime();
+    const weekEnd = startOfDayIn(
+      input.timeZone,
+      new Date(start.getTime() + 7 * 86_400_000 + 36 * 3_600_000)
+    ).getTime();
 
     const rows = await db
-      .select({ task: tasks, projectName: projects.name })
+      .select({ task: tasks, projectName: projects.name, business: projects.business })
       .from(tasks)
       .leftJoin(projects, eq(tasks.projectId, projects.id))
-      .where(and(ne(tasks.status, "done"), sql`${tasks.dueDate} < ${weekEnd}`))
+      .where(
+        and(
+          ne(tasks.status, "done"),
+          sql`${tasks.dueDate} < ${weekEnd}`,
+          scopeWhere(projects.business, input.scope)
+        )
+      )
       .orderBy(asc(tasks.dueDate), asc(tasks.createdAt));
 
-    const all = rows.map((r) => ({ ...r.task, projectName: r.projectName }));
+    const all = rows.map((r) => ({
+      ...r.task,
+      projectName: r.projectName,
+      personal: isPersonal(r.business)
+    }));
     const at = (t: (typeof all)[number]) => t.dueDate!.getTime();
     return {
       overdue: all.filter((t) => at(t) < start.getTime()),
@@ -348,9 +409,9 @@ const taskRowSchema = taskSchema.extend({
 export const listTasks = defineAction({
   name: "listTasks",
   description:
-    "Every top-level task across all projects, with its home project and business, the other projects it is linked into, and its subtasks.",
+    "Every top-level task across all projects, with its home project and business, the other projects it is linked into, and its subtasks. Scope narrows them to business or personal tasks (by home project).",
   kind: "read",
-  input: z.object({ includeDone: z.boolean().default(true) }),
+  input: z.object({ includeDone: z.boolean().default(true), scope }),
   output: z.object({ tasks: z.array(taskRowSchema) }),
   async handler(input, db) {
     const top = await db
@@ -358,7 +419,11 @@ export const listTasks = defineAction({
       .from(tasks)
       .leftJoin(projects, eq(tasks.projectId, projects.id))
       .where(
-        and(isNull(tasks.parentTaskId), input.includeDone ? undefined : ne(tasks.status, "done"))
+        and(
+          isNull(tasks.parentTaskId),
+          input.includeDone ? undefined : ne(tasks.status, "done"),
+          scopeWhere(projects.business, input.scope)
+        )
       )
       .orderBy(
         sql`${tasks.status} = 'done'`,

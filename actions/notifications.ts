@@ -16,7 +16,16 @@ import {
 } from "drizzle-orm";
 import { z } from "zod/v4";
 
-import { approvals, captures, companies, grants, notificationReads, tasks } from "@/db/schema";
+import {
+  approvals,
+  captures,
+  companies,
+  grants,
+  notificationReads,
+  projects,
+  tasks
+} from "@/db/schema";
+import { isPersonal } from "@/lib/personal";
 import { defineAction } from "./define";
 
 const DAY = 86_400_000;
@@ -75,9 +84,11 @@ export const listNotifications = defineAction({
           id: tasks.id,
           title: tasks.title,
           projectId: tasks.projectId,
+          business: projects.business,
           updatedAt: tasks.updatedAt
         })
         .from(tasks)
+        .leftJoin(projects, eq(tasks.projectId, projects.id))
         .where(
           and(
             eq(tasks.status, "replied"),
@@ -132,7 +143,8 @@ export const listNotifications = defineAction({
       items.push({
         id: `reply:${t.id}`,
         kind: "reply",
-        title: "Reply arrived",
+        // The bell and the daily summary both say when the task is a personal one.
+        title: isPersonal(t.business) ? "Reply arrived (personal)" : "Reply arrived",
         description: t.title,
         href: t.projectId
           ? `/projects?p=${encodeURIComponent(t.projectId)}`

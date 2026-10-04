@@ -13,6 +13,7 @@ import { tasksDueBetween } from "./grants";
 import { listActivity } from "./activity";
 import {
   createProject,
+  deleteProject,
   dueTasks,
   getProject,
   linkTaskToProject,
@@ -69,7 +70,8 @@ import {
   newGrantsSince,
   recordDailySummary,
   resetCalendarLink,
-  setDailyEmail
+  setDailyEmail,
+  setWorkScope
 } from "./preferences";
 import {
   prunePushSubscriptions,
@@ -111,6 +113,7 @@ export {
   listTasks,
   getProject,
   createProject,
+  deleteProject,
   updateProject,
   updateTask,
   linkTaskToProject,
@@ -136,6 +139,7 @@ export {
   getUserSettings,
   resetCalendarLink,
   setDailyEmail,
+  setWorkScope,
   markTourSeen,
   calendarFeed,
   newGrantsSince,
@@ -181,6 +185,7 @@ export const allActions = [
   listTasks,
   getProject,
   createProject,
+  deleteProject,
   updateProject,
   updateTask,
   linkTaskToProject,
@@ -202,6 +207,7 @@ export const allActions = [
   getUserSettings,
   resetCalendarLink,
   setDailyEmail,
+  setWorkScope,
   newGrantsSince,
   dailySummary,
   pushStatus,

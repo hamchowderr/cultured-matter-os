@@ -376,6 +376,13 @@ export const userSettings = sqliteTable("user_settings", {
   pushDaily: integer("push_daily", { mode: "boolean" }).notNull().default(true),
   pushReplies: integer("push_replies", { mode: "boolean" }).notNull().default(true),
   pushApprovals: integer("push_approvals", { mode: "boolean" }).notNull().default(true),
+  // The Business / Personal / All switch on Today and Projects. Personal means projects under
+  // the "Personal" business (lib/personal.ts).
+  workScope: text("work_scope", { enum: ["business", "personal", "all"] })
+    .notNull()
+    .default("all"),
+  // The suggested personal projects are offered once; deleting them never brings them back.
+  personalSeeded: integer("personal_seeded", { mode: "boolean" }).notNull().default(false),
   createdAt: createdAt(),
   updatedAt: updatedAt()
 });

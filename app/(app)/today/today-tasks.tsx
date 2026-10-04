@@ -17,7 +17,19 @@ const LABELS: { key: keyof Groups; label: string }[] = [
   { key: "week", label: "Next 7 days" }
 ];
 
-export function TodayTasks({ groups }: { groups: Groups }) {
+// With the switch on All, personal tasks say so next to their project name.
+const projectLabel = (t: DueTask, labelPersonal: boolean) =>
+  labelPersonal && t.personal
+    ? ["Personal", t.projectName].filter(Boolean).join(" · ")
+    : (t.projectName ?? undefined);
+
+export function TodayTasks({
+  groups,
+  labelPersonal = false
+}: {
+  groups: Groups;
+  labelPersonal?: boolean;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -39,7 +51,7 @@ export function TodayTasks({ groups }: { groups: Groups }) {
             <TaskCard
               key={t.id}
               task={t}
-              projectName={t.projectName ?? undefined}
+              projectName={projectLabel(t, labelPersonal)}
               onStatusChange={(s) => change(t, s)}
             />
           ))}

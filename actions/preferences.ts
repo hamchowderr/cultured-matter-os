@@ -5,6 +5,13 @@ import { z } from "zod/v4";
 
 import type { Database, Executor } from "@/db";
 import { grants, projects, tasks, userSettings, users } from "@/db/schema";
+import {
+  isPersonal,
+  PERSONAL_BUSINESS,
+  SUGGESTED_PERSONAL_PROJECTS,
+  WORK_SCOPES
+} from "@/lib/personal";
+import { personalSql } from "@/lib/personal-sql";
 import { HOME_TIME_ZONE, startOfDayIn } from "@/lib/time";
 import { addSeen, getTour, parseSeen, TOURS, type TourId } from "@/lib/tours";
 import { defineAction } from "./define";
@@ -19,7 +26,8 @@ const settingsSchema = z.object({
   calendarToken: z.string().nullable(),
   dailyEmail: z.boolean(),
   lastSummaryAt: z.date().nullable(),
-  toursSeen: z.array(z.string())
+  toursSeen: z.array(z.string()),
+  workScope: z.enum(WORK_SCOPES)
 });
 
 async function settingsRow(db: Executor, userId: string) {
@@ -32,7 +40,8 @@ export const newCalendarToken = () => randomBytes(24).toString("base64url");
 
 export const getUserSettings = defineAction({
   name: "getUserSettings",
-  description: "Her preferences: the private calendar feed token and whether the daily email is on.",
+  description:
+    "Her preferences: the private calendar feed token, whether the daily email is on, the tours she has seen, and the Business / Personal / All switch.",
   kind: "read",
   input: z.object({ userId: id }),
   output: settingsSchema,
@@ -42,9 +51,57 @@ export const getUserSettings = defineAction({
       calendarToken: row?.calendarToken ?? null,
       dailyEmail: row?.dailyEmail ?? false,
       lastSummaryAt: row?.lastSummaryAt ?? null,
-      toursSeen: parseSeen(row?.toursSeen)
+      toursSeen: parseSeen(row?.toursSeen),
+      workScope: row?.workScope ?? "all"
     };
   }
+});
+
+export const setWorkScope = defineAction({
+  name: "setWorkScope",
+  description:
+    "Set the Business / Personal / All switch on Today and Projects. The first switch to Personal adds suggested personal projects when she has none.",
+  kind: "write",
+  input: z.object({ userId: id, scope: z.enum(WORK_SCOPES) }),
+  output: z.object({
+    workScope: z.enum(WORK_SCOPES),
+    // Names of suggested personal projects this switch added (empty almost always).
+    added: z.array(z.string())
+  }),
+  async handler(input, db) {
+    const row = await settingsRow(db, input.userId);
+    let added: string[] = [];
+    if (input.scope === "personal" && !row?.personalSeeded) {
+      const [mine] = await db
+        .select({ id: projects.id })
+        .from(projects)
+        .where(personalSql(projects.business))
+        .limit(1);
+      if (!mine) {
+        await db
+          .insert(projects)
+          .values(SUGGESTED_PERSONAL_PROJECTS.map((p) => ({ ...p, business: PERSONAL_BUSINESS })));
+        added = SUGGESTED_PERSONAL_PROJECTS.map((p) => p.name);
+      }
+    }
+    const personalSeeded = Boolean(row?.personalSeeded) || input.scope === "personal";
+    await db
+      .insert(userSettings)
+      .values({ userId: input.userId, workScope: input.scope, personalSeeded })
+      .onConflictDoUpdate({
+        target: userSettings.userId,
+        set: { workScope: input.scope, personalSeeded }
+      });
+    return { workScope: input.scope, added };
+  },
+  log: (input, r) => ({
+    entityType: "user_settings",
+    entityId: input.userId,
+    summary:
+      `Switched to ${r.workScope === "all" ? "business and personal" : r.workScope} work` +
+      (r.added.length ? `, and added ${r.added.length} suggested personal projects` : ""),
+    data: r.added.length ? { added: r.added } : undefined
+  })
 });
 
 export const resetCalendarLink = defineAction({
@@ -133,7 +190,7 @@ export type CalendarEvent = z.infer<typeof calendarEventSchema>;
 export const calendarFeed = defineAction({
   name: "calendarFeed",
   description:
-    "Events for the private calendar feed: deadlines of grants on the board, for-profit grants closing within 60 days, and due dates of open tasks. Null when the token matches no one.",
+    "Events for the private calendar feed: deadlines of grants on the board, for-profit grants closing within 60 days, and due dates of open tasks, business and personal (personal ones labeled). Null when the token matches no one.",
   kind: "read",
   input: z.object({ token: z.string().min(1).max(200), now: z.coerce.date().optional() }),
   output: z.object({ events: z.array(calendarEventSchema) }).nullable(),
@@ -182,7 +239,8 @@ export const calendarFeed = defineAction({
           title: tasks.title,
           dueDate: tasks.dueDate,
           projectId: tasks.projectId,
-          projectName: projects.name
+          projectName: projects.name,
+          business: projects.business
         })
         .from(tasks)
         .leftJoin(projects, eq(tasks.projectId, projects.id))
@@ -206,11 +264,15 @@ export const calendarFeed = defineAction({
       });
     }
     for (const t of taskRows) {
+      const personal = isPersonal(t.business);
       events.push({
         uid: `task-${t.id}@cultured-matter-os`,
         kind: "task",
-        title: `Due: ${t.title}`,
-        description: t.projectName ? `Project: ${t.projectName}` : "",
+        // Personal tasks are labeled so they read apart from work in the same calendar.
+        title: personal ? `Due (personal): ${t.title}` : `Due: ${t.title}`,
+        description: t.projectName
+          ? `${personal ? "Personal project" : "Project"}: ${t.projectName}`
+          : "",
         date: t.dueDate!,
         href: taskHref(t.projectId)
       });
