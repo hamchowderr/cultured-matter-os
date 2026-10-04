@@ -215,7 +215,7 @@ export default function GrantsKanban({
     return (
       <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline">
+          <Button variant="outline" data-tour-step-id="grants-filters">
             <ListFilterIcon />
             <span className="hidden lg:inline">
               {activeFilters > 0 ? <>Filters ({activeFilters})</> : "Filters"}
@@ -270,7 +270,10 @@ export default function GrantsKanban({
     <div className={cn("space-y-4 transition-opacity", pending && "opacity-70")}>
       <Tabs value={tab} onValueChange={changeTab} className="w-full">
         <div className="mb-2 flex justify-between gap-2">
-          <div className="-mx-1 min-w-0 [scrollbar-width:none] overflow-x-auto px-1">
+          <div
+            className="-mx-1 min-w-0 [scrollbar-width:none] overflow-x-auto px-1"
+            data-tour-step-id="grants-views"
+          >
             <TabsList className="w-max">
               <TabsTrigger value="board">Board</TabsTrigger>
               <TabsTrigger value="list">List</TabsTrigger>
@@ -283,7 +286,7 @@ export default function GrantsKanban({
             <span className="text-muted-foreground hidden text-sm sm:inline">
               {grants.length} {grants.length === 1 ? "grant" : "grants"}
             </span>
-            <div className="relative hidden w-auto lg:block">
+            <div className="relative hidden w-auto lg:block" data-tour-step-id="grants-search">
               <SearchIcon className="absolute top-2.5 left-3 size-4 opacity-50" />
               <Input
                 placeholder="Search grants..."
@@ -296,7 +299,11 @@ export default function GrantsKanban({
             <div className="none lg:hidden">
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" aria-label="Search grants">
+                  <Button
+                    variant="outline"
+                    aria-label="Search grants"
+                    data-tour-step-id="grants-search"
+                  >
                     <SearchIcon />
                   </Button>
                 </PopoverTrigger>
@@ -330,6 +337,7 @@ export default function GrantsKanban({
                   <Kanban.Column
                     key={key}
                     value={key}
+                    data-tour-step-id={key === COLUMNS[0].key ? "grants-board" : undefined}
                     className="w-[300px] min-w-[300px] max-sm:w-full max-sm:min-w-full max-sm:snap-center lg:w-auto lg:min-w-[240px] lg:flex-1"
                   >
                     <div className="flex items-center justify-between">

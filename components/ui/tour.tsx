@@ -17,7 +17,7 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
-import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
+import { cardPosition } from "@/lib/tour-position";
 
 const TourContext = React.createContext<{
   start: (tourId: string) => void;
@@ -52,7 +52,16 @@ interface Tour {
   steps: Step[];
 }
 
-function TourProvider({ tours, children }: { tours: Tour[]; children: React.ReactNode }) {
+function TourProvider({
+  tours,
+  onComplete,
+  children
+}: {
+  tours: Tour[];
+  // Called when a tour ends: finished on its last step, or closed early with the X.
+  onComplete?: (tourId: string, finished: boolean) => void;
+  children: React.ReactNode;
+}) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [activeTourId, setActiveTourId] = React.useState<string | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = React.useState(0);
@@ -67,6 +76,7 @@ function TourProvider({ tours, children }: { tours: Tour[]; children: React.Reac
       setIsOpen(false);
       setCurrentStepIndex(0);
       setActiveTourId(null);
+      if (activeTourId) onComplete?.(activeTourId, true);
     }
   }
 
@@ -80,6 +90,7 @@ function TourProvider({ tours, children }: { tours: Tour[]; children: React.Reac
     setIsOpen(false);
     setCurrentStepIndex(0);
     setActiveTourId(null);
+    if (activeTourId) onComplete?.(activeTourId, false);
   }
 
   function start(tourId: string) {
@@ -186,9 +197,11 @@ function TourOverlay({
         setTargets(validElements.map(({ rect, radius }) => ({ rect, radius })));
 
         if (validElements.length > 0 && needsScroll) {
+          // A tall element scrolls to its top so its start is in view; others to the middle.
+          const tall = validElements[0].rect.height > window.innerHeight * 0.6;
           validElements[0].element.scrollIntoView({
             behavior: "smooth",
-            block: "center"
+            block: tall ? "start" : "center"
           });
           needsScroll = false;
         }
@@ -220,6 +233,25 @@ function TourOverlay({
       resizeObserver.disconnect();
     };
   }, [step]);
+
+  // Measure the card, then place it next to its element without leaving the screen.
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  const [position, setPosition] = React.useState<{ top: number; left: number } | null>(null);
+  React.useLayoutEffect(() => {
+    setPosition(null);
+  }, [step.id]);
+  React.useLayoutEffect(() => {
+    const card = cardRef.current;
+    if (!card || targets.length === 0) return;
+    const { rect } = targets[0];
+    const next = cardPosition(
+      { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+      { width: card.offsetWidth, height: card.offsetHeight },
+      { width: window.innerWidth, height: window.innerHeight },
+      step.side
+    );
+    setPosition((prev) => (prev && prev.top === next.top && prev.left === next.left ? prev : next));
+  }, [targets, step.side, step.id]);
 
   React.useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -266,74 +298,56 @@ function TourOverlay({
         })}
       </svg>
       {targets.length > 0 && (
-        <Popover key={step.id} open={true}>
-          <PopoverAnchor
-            virtualRef={{
-              current: {
-                getBoundingClientRect: () =>
-                  targets[0]?.rect || {
-                    top: 0,
-                    left: 0,
-                    width: 0,
-                    height: 0,
-                    bottom: 0,
-                    right: 0,
-                    x: 0,
-                    y: 0,
-                    toJSON: () => {}
-                  }
-              }
-            }}
-          />
-          <PopoverContent
-            className={cn("px-0", step.className)}
-            side={step.side}
-            sideOffset={step.sideOffset}
-            align={step.align}
-            alignOffset={step.alignOffset}
-            onOpenAutoFocus={(e) => e.preventDefault()}
-            onCloseAutoFocus={(e) => e.preventDefault()}
-            asChild
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle>{step.title}</CardTitle>
-                <CardDescription>
-                  Step {currentStepIndex + 1} of {totalSteps}
-                </CardDescription>
-                <CardAction>
-                  <Button variant="ghost" size="icon" onClick={onClose}>
-                    <XIcon />
-                  </Button>
-                </CardAction>
-              </CardHeader>
-              <CardContent>{step.content}</CardContent>
-              <CardFooter className="justify-between">
-                {currentStepIndex > 0 &&
-                  (step.previousRoute ? (
-                    <Button variant="outline" onClick={onPrevious} asChild>
-                      <Link href={step.previousRoute}>{step.previousLabel ?? "Previous"}</Link>
-                    </Button>
-                  ) : (
-                    <Button variant="outline" onClick={onPrevious}>
-                      {step.previousLabel ?? "Previous"}
-                    </Button>
-                  ))}
-                {step.nextRoute ? (
-                  <Button className="ml-auto" onClick={onNext} asChild>
-                    <Link href={step.nextRoute}>
-                      {step.nextLabel ?? (currentStepIndex === totalSteps - 1 ? "Finish" : "Next")}
-                    </Link>
+        // Positioned by cardPosition instead of a Radix popover, so the card stays fully on
+        // screen when the element is taller than the space around it (see lib/tour-position.ts).
+        <div
+          key={step.id}
+          ref={cardRef}
+          data-slot="tour-card"
+          className={cn(
+            "absolute w-72 max-w-[calc(100vw-24px)] transition-opacity duration-150",
+            !position && "opacity-0"
+          )}
+          style={position ?? { top: 0, left: 0 }}
+        >
+          <Card className={cn("shadow-lg", step.className)}>
+            <CardHeader>
+              <CardTitle>{step.title}</CardTitle>
+              <CardDescription>
+                Step {currentStepIndex + 1} of {totalSteps}
+              </CardDescription>
+              <CardAction>
+                <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close the tour">
+                  <XIcon />
+                </Button>
+              </CardAction>
+            </CardHeader>
+            <CardContent>{step.content}</CardContent>
+            <CardFooter className="justify-between">
+              {currentStepIndex > 0 &&
+                (step.previousRoute ? (
+                  <Button variant="outline" onClick={onPrevious} asChild>
+                    <Link href={step.previousRoute}>{step.previousLabel ?? "Previous"}</Link>
                   </Button>
                 ) : (
-                  <Button className="ml-auto" onClick={onNext}>
-                    {step.nextLabel ?? (currentStepIndex === totalSteps - 1 ? "Finish" : "Next")}
+                  <Button variant="outline" onClick={onPrevious}>
+                    {step.previousLabel ?? "Previous"}
                   </Button>
-                )}
-              </CardFooter>
-            </Card>
-          </PopoverContent>
-        </Popover>
+                ))}
+              {step.nextRoute ? (
+                <Button className="ml-auto" onClick={onNext} asChild>
+                  <Link href={step.nextRoute}>
+                    {step.nextLabel ?? (currentStepIndex === totalSteps - 1 ? "Finish" : "Next")}
+                  </Link>
+                </Button>
+              ) : (
+                <Button className="ml-auto" onClick={onNext}>
+                  {step.nextLabel ?? (currentStepIndex === totalSteps - 1 ? "Finish" : "Next")}
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
+        </div>
       )}
     </div>,
     document.body

@@ -44,6 +44,7 @@ export function TodayApprovals({
   return (
     <Section
       id="approvals"
+      tourId="today-approvals"
       className={className}
       title="Needs your approval"
       href="/archive"

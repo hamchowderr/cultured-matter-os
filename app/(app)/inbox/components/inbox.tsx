@@ -132,7 +132,7 @@ export function Inbox({
           >
             <div className="flex items-center px-4 py-2">
               <h1 className="text-xl font-bold">Inbox</h1>
-              <TabsList className="ml-auto">
+              <TabsList className="ml-auto" data-tour-step-id="inbox-tabs">
                 <TabsTrigger value="sort">
                   To sort <span className="text-muted-foreground ml-1 tabular-nums">{unfiled}</span>
                 </TabsTrigger>
@@ -155,7 +155,7 @@ export function Inbox({
                 </InputGroup>
               </form>
             </div>
-            <div className="min-h-0 flex-1">
+            <div className="min-h-0 flex-1" data-tour-step-id="inbox-list">
               <CaptureList
                 items={items}
                 empty={
@@ -167,13 +167,18 @@ export function Inbox({
                 }
               />
             </div>
-            <div className="p-3">
+            <div className="p-3" data-tour-step-id="inbox-iphone">
               <IphonePanel />
             </div>
           </Tabs>
         </ResizablePanel>
         <ResizableHandle hidden={isMobile} withHandle />
-        <ResizablePanel id="display-panel" hidden={isMobile} minSize="30%">
+        <ResizablePanel
+          id="display-panel"
+          hidden={isMobile}
+          minSize="30%"
+          data-tour-step-id="inbox-detail"
+        >
           {!isMobile && <CaptureDisplay capture={selected} projects={projects} onFiled={onFiled} />}
         </ResizablePanel>
       </ResizablePanelGroup>
@@ -202,6 +207,7 @@ function QuickCapture({ onCaptured }: { onCaptured: (capture: Capture) => void }
   return (
     <form
       className="space-y-2"
+      data-tour-step-id="inbox-capture"
       onSubmit={(e) => {
         e.preventDefault();
         capture();

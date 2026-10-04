@@ -90,7 +90,10 @@ export default async function Page() {
 
   return (
     <div className="space-y-4 lg:space-y-6">
-      <div className="flex flex-row flex-wrap items-end justify-between gap-2">
+      <div
+        className="flex flex-row flex-wrap items-end justify-between gap-2"
+        data-tour-step-id="today-heading"
+      >
         <h1 className="text-xl font-bold tracking-tight lg:text-2xl">
           {greeting(now)}
           {firstName && `, ${firstName}`}
@@ -98,7 +101,10 @@ export default async function Page() {
         <p className="text-muted-foreground text-sm">{dateLabel}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-6">
+      <div
+        className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-6"
+        data-tour-step-id="today-stats"
+      >
         <StatCard
           title="Tasks due this week"
           value={taskCount}
@@ -147,7 +153,7 @@ export default async function Page() {
       </div>
 
       {showSetup && setup.ok && (
-        <Card>
+        <Card data-tour-step-id="today-setup">
           <CardContent>
             <GetStarted status={setup.data} />
           </CardContent>
@@ -170,6 +176,7 @@ export default async function Page() {
         {taskCount > 0 && (
           <Section
             title="Tasks"
+            tourId="today-tasks"
             description="Overdue or due within 7 days"
             href="/projects"
             linkLabel="All projects"
@@ -182,6 +189,7 @@ export default async function Page() {
         {finds.total > 0 && (
           <Section
             title={baselineRaw ? "New on Radar since your last visit" : "New on Radar this week"}
+            tourId="today-radar"
             href={baselineRaw ? "/radar?new=1" : "/radar"}
             linkLabel="See them all"
             className="lg:col-span-3"

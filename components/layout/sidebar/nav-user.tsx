@@ -1,6 +1,12 @@
 "use client";
 
-import { ChevronsUpDownIcon, LogOutIcon, SettingsIcon } from "lucide-react";
+import {
+  ChevronsUpDownIcon,
+  CircleHelpIcon,
+  CompassIcon,
+  LogOutIcon,
+  SettingsIcon
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -14,12 +20,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem
-} from "@/components/ui/sidebar";
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import { useAppTours } from "@/components/tours/app-tours";
 import { authClient } from "@/lib/auth-client";
+
+// Lets the account menu finish closing before a tour measures the page.
+const MENU_CLOSE_MS = 200;
 
 export type SidebarUser = { name: string; email: string; image?: string | null };
 
@@ -33,6 +39,7 @@ function initials(user: SidebarUser) {
 export function NavUser({ user }: { user: SidebarUser }) {
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
+  const { pageTour, startTour } = useAppTours();
 
   async function signOut() {
     setSigningOut(true);
@@ -63,6 +70,7 @@ export function NavUser({ user }: { user: SidebarUser }) {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent"
               aria-label="Account"
+              data-tour-step-id="tour-account"
             >
               {avatar}
               {identity}
@@ -85,6 +93,16 @@ export function NavUser({ user }: { user: SidebarUser }) {
                 <SettingsIcon />
                 Settings
               </Link>
+            </DropdownMenuItem>
+            {pageTour && (
+              <DropdownMenuItem onSelect={() => startTour(pageTour.id, MENU_CLOSE_MS)}>
+                <CompassIcon />
+                Take a tour of this page
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onSelect={() => startTour("welcome", MENU_CLOSE_MS)}>
+              <CircleHelpIcon />
+              Show the welcome tour again
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={signOut} disabled={signingOut}>

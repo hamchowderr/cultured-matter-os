@@ -51,7 +51,7 @@ export function Reminders({
   const rest = reminders.length - SHOWN;
 
   return (
-    <Card className="xl:col-span-2">
+    <Card className="xl:col-span-2" data-tour-step-id="projects-reminders">
       <CardHeader>
         <CardTitle>Next up</CardTitle>
         <CardDescription>Most urgent first. Tick a task to mark it done.</CardDescription>

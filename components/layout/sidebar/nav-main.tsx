@@ -73,7 +73,7 @@ export function NavMain() {
   return (
     <>
       {navItems.map((nav) => (
-        <SidebarGroup key={nav.title}>
+        <SidebarGroup key={nav.title} data-tour-step-id="tour-nav">
           <SidebarGroupLabel>{nav.title}</SidebarGroupLabel>
           <SidebarGroupContent className="flex flex-col gap-2">
             <SidebarMenu className="gap-1">

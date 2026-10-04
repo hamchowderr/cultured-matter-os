@@ -176,7 +176,7 @@ export function RadarList({
   return (
     <>
       <ListRegion>
-        <Card>
+        <Card data-tour-step-id="radar-list">
           <CardHeader>
             <CardTitle>Companies</CardTitle>
             {/* The tab already shows the unfiltered count, so the total appears only when filtered. */}

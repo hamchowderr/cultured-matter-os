@@ -67,7 +67,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     <ListTransition>
       <div className="space-y-4 lg:space-y-6">
         <VisitMarker />
-        <PageHeader title="Radar" description={SOURCES_LINE} />
+        <PageHeader title="Radar" description={SOURCES_LINE} tourId="radar-heading" />
         {facets.ok && <RadarSummary facets={facets.data} />}
         <RadarTabs
           filters={{ view, category, stage, source, query, newOnly }}

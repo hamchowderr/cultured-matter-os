@@ -223,7 +223,7 @@ export function ContactsTable({
 
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-lg border">
+      <div className="overflow-hidden rounded-lg border" data-tour-step-id="people-table">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

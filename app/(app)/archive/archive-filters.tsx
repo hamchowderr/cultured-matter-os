@@ -71,7 +71,7 @@ export function ArchiveFilters({ filters }: { filters: ArchiveFilterState }) {
           : "Any date";
 
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-wrap gap-3" data-tour-step-id="archive-filters">
       <div className="relative min-w-48 grow">
         <SearchIcon className="text-muted-foreground absolute start-3 top-1/2 size-4 -translate-y-1/2" />
         <Input

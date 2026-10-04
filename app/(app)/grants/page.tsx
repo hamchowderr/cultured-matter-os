@@ -42,6 +42,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     <div className="space-y-6">
       <PageHeader
         title="Grants"
+        tourId="grants-heading"
         description="Federal and California grants, soonest deadline first. Drag a grant across the board as you work on it, or see deadlines by month on the calendar."
       />
       {result.ok ? (

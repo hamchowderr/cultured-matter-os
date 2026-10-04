@@ -86,6 +86,7 @@ const Notifications = () => {
           size="icon-sm"
           variant="ghost"
           className="relative"
+          data-tour-step-id="tour-bell"
           aria-label={unread.length ? `Notifications, ${unread.length} unread` : "Notifications"}
         >
           <BellIcon />
