@@ -192,7 +192,7 @@ export const requestApproval = defineAction({
 export const decideApproval = defineAction({
   name: "decideApproval",
   description:
-    "Approve or reject a pending approval, with an optional note. Records the decision only; an approval can be decided once.",
+    "Approve or reject a pending approval, with an optional note. Approving carries out the queued action (a Gmail draft, or a change the chat assistant proposed); an approval can be decided once.",
   kind: "write",
   input: z.object({
     approvalId: id,
