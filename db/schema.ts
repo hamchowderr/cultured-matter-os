@@ -260,7 +260,7 @@ export const captures = sqliteTable(
   {
     id: id(),
     body: text("body").notNull(),
-    // Pathname of a photo in the private Vercel Blob store (iPhone Shortcut captures).
+    // Pathname of a photo in the private Vercel Blob store (iPhone Shortcut or Inbox camera).
     imagePath: text("image_path"),
     kind: text("kind", { enum: ["task", "idea", "reference"] }),
     tier: integer("tier"),

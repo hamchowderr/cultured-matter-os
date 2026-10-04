@@ -149,6 +149,14 @@ export async function listContactEmails(input: In<typeof A.listContactEmails>) {
 export async function draftFollowUp(input: In<typeof A.draftFollowUp>) {
   return toResult(() => A.draftFollowUp.run(input));
 }
+// The Inbox camera button: a photo (fields "photo" and "caption") from the signed-in session,
+// stored the same way as iPhone Shortcut photos.
+export async function captureInboxPhoto(form: FormData) {
+  return toResult(async () => {
+    const capture = await import("@/lib/capture");
+    return capture.captureInboxPhoto(form);
+  });
+}
 export async function setupStatus(input: In<typeof A.setupStatus>) {
   return toResult(() => A.setupStatus.run(input));
 }

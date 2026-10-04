@@ -3,8 +3,18 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 
 import type { Database } from "@/db";
 import * as t from "@/db/schema";
-import { handleCapture, serveCapturePhoto } from "@/lib/capture";
+import * as S from "@/actions/server";
+import {
+  captureInboxPhoto,
+  handleCapture,
+  MAX_PHOTO_BYTES,
+  serveCapturePhoto
+} from "@/lib/capture";
 import { freshDb } from "./test-db";
+
+// The server action's session lookup needs a Next.js request; the test decides what it returns.
+const getSession = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/session", () => ({ getSession }));
 
 // Never touch the real Blob store: the upload is injected, and the module is mocked as a guard.
 vi.mock("@vercel/blob", () => ({
@@ -244,6 +254,96 @@ describe("iPhone capture endpoint", () => {
 
     expect(upload).not.toHaveBeenCalled();
     expect(await count()).toBe(before);
+  });
+});
+
+describe("Inbox camera button", () => {
+  const jpeg = () =>
+    new File([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2])], "photo.jpg", { type: "image/jpeg" });
+  const form = (fields: Record<string, string | Blob>) => {
+    const f = new FormData();
+    for (const [k, v] of Object.entries(fields)) f.set(k, v);
+    return f;
+  };
+
+  it("stores the photo privately like Shortcut photos, with the caption, and no key", async () => {
+    delete process.env.CAPTURE_TOKEN;
+    try {
+      const capture = await captureInboxPhoto(
+        form({ photo: jpeg(), caption: "  Whiteboard from the lab  " }),
+        deps()
+      );
+      expect(upload).toHaveBeenCalledTimes(1);
+      const [pathname, blob, options] = upload.mock.calls[0] as unknown as [string, Blob, object];
+      expect(pathname).toBe("captures/photo.jpg");
+      expect(blob.size).toBe(6);
+      expect(options).toMatchObject({
+        access: "private",
+        addRandomSuffix: true,
+        contentType: "image/jpeg"
+      });
+      expect(capture).toMatchObject({
+        body: "Whiteboard from the lab",
+        imagePath: "captures/photo-Ab12Cd34.jpg"
+      });
+      expect(await latest()).toMatchObject({ id: capture.id, kind: null });
+      const [log] = await db
+        .select()
+        .from(t.activityLog)
+        .where(eq(t.activityLog.entityId, capture.id));
+      expect(log.summary).toBe("Captured a photo");
+    } finally {
+      process.env.CAPTURE_TOKEN = KEY;
+    }
+  });
+
+  it("uses a plain default when there is no caption", async () => {
+    const capture = await captureInboxPhoto(form({ photo: jpeg(), caption: "   " }), deps());
+    expect(capture.body).toBe("Photo");
+    expect(capture.imagePath).toBe("captures/photo-Ab12Cd34.jpg");
+  });
+
+  it("keeps a HEIC the browser could not convert", async () => {
+    const heic = new File([new Uint8Array([0, 0, 0, 0x18])], "IMG.HEIC", { type: "image/heic" });
+    await captureInboxPhoto(form({ photo: heic }), deps());
+    expect(upload.mock.calls[0][0]).toBe("captures/photo.heic");
+  });
+
+  it("refuses a missing photo, a non-image and an oversized photo without storing anything", async () => {
+    const before = await count();
+    await expect(captureInboxPhoto(form({ caption: "no photo" }), deps())).rejects.toMatchObject({
+      code: "invalid",
+      message: "Choose a photo first."
+    });
+    await expect(
+      captureInboxPhoto(form({ photo: new File(["hi"], "a.txt", { type: "text/plain" }) }), deps())
+    ).rejects.toMatchObject({ code: "invalid", message: "That file isn't a photo." });
+    const big = new File([new Uint8Array(MAX_PHOTO_BYTES + 1)], "big.jpg", { type: "image/jpeg" });
+    await expect(captureInboxPhoto(form({ photo: big }), deps())).rejects.toMatchObject({
+      code: "invalid"
+    });
+    expect(upload).not.toHaveBeenCalled();
+    expect(await count()).toBe(before);
+  });
+
+  it("saves nothing when the upload fails", async () => {
+    const before = await count();
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const failing = vi.fn(async () => {
+      throw new Error("store unavailable");
+    });
+    await expect(
+      captureInboxPhoto(form({ photo: jpeg() }), { ctx: { db }, upload: failing as never })
+    ).rejects.toMatchObject({ code: "unavailable" });
+    spy.mockRestore();
+    expect(await count()).toBe(before);
+  });
+
+  it("is a server action that needs a session", async () => {
+    getSession.mockResolvedValueOnce(null);
+    const result = await S.captureInboxPhoto(form({ photo: jpeg() }));
+    expect(result).toMatchObject({ ok: false, error: { code: "unauthorized" } });
+    expect(upload).not.toHaveBeenCalled();
   });
 });
 

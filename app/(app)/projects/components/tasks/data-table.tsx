@@ -30,6 +30,7 @@ import {
   XIcon
 } from "lucide-react";
 
+import { formatDue } from "@/lib/format";
 import { revealTop } from "@/components/layout/list-transition";
 import { useIsMobile, useIsTablet } from "@/hooks/use-mobile";
 import { CompactPager } from "@/components/layout/compact-pager";
@@ -61,7 +62,8 @@ import {
 
 import { projectIdsOf, type ProjectSummary, type TaskRow, type TaskStatus } from "../../types";
 import { taskColumns } from "./columns";
-import { dueBuckets, priorities, statuses } from "./data";
+import { DataTableRowActions } from "./data-table-row-actions";
+import { dueBucket, dueBuckets, priorities, statuses } from "./data";
 import { DataTableFacetedFilter } from "./data-table-faceted-filter";
 
 interface DataTableProps {
@@ -235,14 +237,14 @@ export function DataTable({
                 </Button>
               )}
               {pageCount > 1 && (
-              <CompactPager
-                className="ms-auto"
-                from={firstRow}
-                to={lastRow}
-                total={shown}
-                prev={table.getCanPreviousPage() ? () => table.previousPage() : null}
-                next={table.getCanNextPage() ? () => table.nextPage() : null}
-              />
+                <CompactPager
+                  className="ms-auto"
+                  from={firstRow}
+                  to={lastRow}
+                  total={shown}
+                  prev={table.getCanPreviousPage() ? () => table.previousPage() : null}
+                  next={table.getCanNextPage() ? () => table.nextPage() : null}
+                />
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -271,40 +273,62 @@ export function DataTable({
           )}
         </div>
 
-        <Table className="[&_td:first-child]:ps-(--card-spacing) [&_td:last-child]:pe-(--card-spacing) [&_th:first-child]:ps-(--card-spacing) [&_th:last-child]:pe-(--card-spacing)">
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} colSpan={header.colSpan}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+        {/* Phones: one stacked row per task, like Radar, so the due date keeps to one line. */}
+        <ul className="divide-y border-t md:hidden" aria-label="Tasks">
+          {table.getRowModel().rows.length ? (
+            table
+              .getRowModel()
+              .rows.map((row) => (
+                <TaskItem
+                  key={row.id}
+                  task={row.original}
+                  onOpen={onOpen}
+                  onStatusChange={onStatusChange}
+                />
+              ))
+          ) : (
+            <li className="text-muted-foreground py-8 text-center text-sm">
+              {data.length ? "No tasks match these filters." : "No tasks yet."}
+            </li>
+          )}
+        </ul>
+
+        <div className="flex-1 max-md:hidden">
+          <Table className="[&_td:first-child]:ps-(--card-spacing) [&_td:last-child]:pe-(--card-spacing) [&_th:first-child]:ps-(--card-spacing) [&_th:last-child]:pe-(--card-spacing)">
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id} colSpan={header.colSpan}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  {data.length ? "No tasks match these filters." : "No tasks yet."}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                    {data.length ? "No tasks match these filters." : "No tasks yet."}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
         <div className="flex flex-col items-center justify-between gap-3 border-t px-(--card-spacing) py-3 sm:flex-row">
           <div className="text-muted-foreground flex items-center gap-2 text-sm">
@@ -364,5 +388,66 @@ export function DataTable({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function TaskItem({
+  task,
+  onOpen,
+  onStatusChange
+}: {
+  task: TaskRow;
+  onOpen: (task: TaskRow) => void;
+  onStatusChange: (task: TaskRow, status: TaskStatus) => void;
+}) {
+  const priority = priorities.find((p) => p.value === task.priority);
+  const status = statuses.find((s) => s.value === task.status);
+  const done = task.status === "done";
+  const late = !done && !!task.dueDate && dueBucket(task.dueDate) === "overdue";
+  const doneSubs = task.subtasks.filter((s) => s.status === "done").length;
+  return (
+    <li className="flex items-start gap-2 px-(--card-spacing) py-3">
+      <button
+        type="button"
+        onClick={() => onOpen(task)}
+        className="block min-w-0 flex-1 space-y-1 text-left"
+      >
+        <span
+          className={cn("line-clamp-2 font-medium", done && "text-muted-foreground line-through")}
+        >
+          {task.title}
+        </span>
+        <span className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+          {task.dueDate && (
+            <span className={cn("whitespace-nowrap", late && "text-destructive")}>
+              {formatDue(task.dueDate)}
+            </span>
+          )}
+          {priority && (
+            <span className="inline-flex items-center gap-1 whitespace-nowrap">
+              <priority.icon className="size-3.5" />
+              {priority.label}
+            </span>
+          )}
+          {status && !done && (
+            <span className="inline-flex items-center gap-1 whitespace-nowrap">
+              <status.icon className="size-3.5" />
+              {status.label}
+            </span>
+          )}
+          {task.subtasks.length > 0 && (
+            <span className="whitespace-nowrap">
+              {doneSubs}/{task.subtasks.length} subtasks
+            </span>
+          )}
+          {task.projectName && <span className="truncate">{task.projectName}</span>}
+        </span>
+      </button>
+      <DataTableRowActions
+        task={task}
+        onOpen={() => onOpen(task)}
+        onStatusChange={(next) => onStatusChange(task, next)}
+      />
+    </li>
   );
 }
