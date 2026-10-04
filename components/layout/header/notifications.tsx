@@ -29,8 +29,14 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { listNotifications, markNotificationsRead } from "@/actions/server";
+import {
+  listNotifications,
+  markNotificationsRead,
+  pushStatus,
+  savePushSubscription
+} from "@/actions/server";
 import type { NotificationItem } from "@/actions/notifications";
+import { currentSubscription, setIconBadge, subscriptionJson } from "@/lib/push-client";
 import { cn } from "@/lib/utils";
 
 const KIND_ICON: Record<NotificationItem["kind"], LucideIcon> = {
@@ -56,12 +62,16 @@ const Notifications = () => {
   const isMobile = useIsMobile();
   const pathname = usePathname();
   const [items, setItems] = useState<NotificationItem[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [, startTransition] = useTransition();
 
   const load = useCallback(() => {
     startTransition(async () => {
       const r = await listNotifications();
-      if (r.ok) setItems(r.data.items.map((i) => ({ ...i, at: new Date(i.at) })));
+      if (r.ok) {
+        setItems(r.data.items.map((i) => ({ ...i, at: new Date(i.at) })));
+        setLoaded(true);
+      }
     });
   }, []);
 
@@ -69,6 +79,26 @@ const Notifications = () => {
   useEffect(load, [pathname, load]);
 
   const unread = items.filter((i) => !i.read);
+
+  // The app icon's badge is the bell's unread count; reading items here clears it.
+  useEffect(() => {
+    if (loaded) setIconBadge(unread.length);
+  }, [loaded, unread.length]);
+
+  // Once per app open: if this device allowed notifications but the server no longer has its
+  // subscription (the browser can renew it), save it again.
+  useEffect(() => {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    currentSubscription()
+      .then(async (sub) => {
+        if (!sub) return;
+        const status = await pushStatus({ endpoint: sub.endpoint });
+        if (status.ok && status.data.configured && !status.data.thisDevice) {
+          await savePushSubscription(subscriptionJson(sub));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const markRead = (ids: string[]) => {
     if (ids.length === 0) return;

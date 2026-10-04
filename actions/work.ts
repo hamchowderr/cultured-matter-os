@@ -181,7 +181,12 @@ export const requestApproval = defineAction({
     entityType: "approval",
     entityId: approval.id,
     summary: `Requested approval: ${approval.summary}`
-  })
+  }),
+  // Tell her phone right away.
+  async after(_input, approval, db) {
+    const { sendPush, approvalPush } = await import("@/lib/push");
+    await sendPush(db, "approvals", approvalPush(approval));
+  }
 });
 
 export const decideApproval = defineAction({

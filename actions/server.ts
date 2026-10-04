@@ -205,3 +205,66 @@ export async function setDailyEmail(input: { enabled: boolean }) {
 export async function markTourSeen(input: Omit<In<typeof A.markTourSeen>, "userId">) {
   return toResult(async () => A.markTourSeen.run({ ...input, userId: await sessionUserId() }));
 }
+
+// Push notifications. The device's subscription comes from the browser; the user from the session.
+type BrowserSubscription = { endpoint: string; keys: { p256dh: string; auth: string } };
+export async function pushStatus(input: { endpoint?: string } = {}) {
+  return toResult(async () =>
+    A.pushStatus.run({ userId: await sessionUserId(), endpoint: input.endpoint })
+  );
+}
+export async function savePushSubscription(input: BrowserSubscription) {
+  return toResult(async () => {
+    const { headers } = await import("next/headers");
+    const userAgent = (await headers()).get("user-agent") ?? undefined;
+    return A.savePushSubscription.run({
+      userId: await sessionUserId(),
+      endpoint: input.endpoint,
+      keys: input.keys,
+      userAgent
+    });
+  });
+}
+export async function removePushSubscription(input: { endpoint: string }) {
+  return toResult(async () =>
+    A.removePushSubscription.run({ userId: await sessionUserId(), endpoint: input.endpoint })
+  );
+}
+export async function setPushPreferences(input: {
+  daily?: boolean;
+  replies?: boolean;
+  approvals?: boolean;
+}) {
+  return toResult(async () =>
+    A.setPushPreferences.run({ ...input, userId: await sessionUserId() })
+  );
+}
+// Settings' "Send a test": one notification to this device only.
+export async function sendTestPush(input: { endpoint: string }) {
+  return toResult(async () => {
+    const [{ sendPush }, { db }] = await Promise.all([import("@/lib/push"), import("@/db")]);
+    const result = await sendPush(
+      db,
+      "test",
+      {
+        title: "Notifications are on",
+        body: "This is how Cultured Matter will reach you.",
+        url: "/settings",
+        tag: "test"
+      },
+      { userId: await sessionUserId(), endpoint: input.endpoint }
+    );
+    if (result.skipped === "Push is not configured") {
+      throw new A.ActionError("unavailable", "Notifications are not set up on the server yet.");
+    }
+    if (result.sent === 0) {
+      throw new A.ActionError(
+        "unavailable",
+        result.removed
+          ? "This device no longer accepts notifications. Allow them again."
+          : "The test notification could not be sent."
+      );
+    }
+    return result;
+  });
+}

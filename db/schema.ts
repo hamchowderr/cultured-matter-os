@@ -372,9 +372,35 @@ export const userSettings = sqliteTable("user_settings", {
     .$type<string[]>()
     .notNull()
     .default(sql`'[]'`),
+  // Which push notifications she gets, on every device that allowed them.
+  pushDaily: integer("push_daily", { mode: "boolean" }).notNull().default(true),
+  pushReplies: integer("push_replies", { mode: "boolean" }).notNull().default(true),
+  pushApprovals: integer("push_approvals", { mode: "boolean" }).notNull().default(true),
   createdAt: createdAt(),
   updatedAt: updatedAt()
 });
+
+// One row per device (browser or installed app) that allowed notifications. The endpoint is the
+// push service URL the browser gave us; it is the device's identity. Rows whose endpoint the push
+// service reports gone (404/410) are deleted when a push is sent.
+export const pushSubscriptions = sqliteTable(
+  "push_subscriptions",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    endpoint: text("endpoint").notNull().unique(),
+    // Encryption keys from PushSubscription.toJSON().keys.
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    // "iPhone", "Mac", ... for Settings and the log.
+    device: text("device"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt()
+  },
+  (t) => [index("push_subscriptions_user_idx").on(t.userId)]
+);
 
 // ---------------------------------------------------------------- Log
 

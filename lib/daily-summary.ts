@@ -7,7 +7,9 @@ import {
   recordDailySummary,
   type SummaryItem
 } from "@/actions/preferences";
+import { pushStatus } from "@/actions/push";
 import type { Database } from "@/db";
+import type { PushMessage, PushResult } from "@/lib/push";
 import { HOME_TIME_ZONE } from "@/lib/time";
 
 // The morning summary email behind /api/cron/daily-summary. Sent from her own Gmail to herself
@@ -138,26 +140,67 @@ export function pickTransport(db: Database): Transport {
   return process.env.EMAIL_TRANSPORT === "resend" ? resendTransport() : gmailTransport(db);
 }
 
-export type DailySummaryResult =
-  | { ok: true; sent: true; via: Transport["via"]; items: number }
-  | { ok: true; sent: false; skipped: string }
-  | { ok: false; sent: false; error: string };
+// The push version of the summary: one line of counts, opening Today.
+export function composeSummaryPush(s: DailySummary): PushMessage {
+  const n = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
+  const parts = [
+    s.newGrantsTotal ? n(s.newGrantsTotal, "new grant", "new grants") : null,
+    s.closingGrants.length
+      ? `${n(s.closingGrants.length, "grant", "grants")} closing this week`
+      : null,
+    s.radar ? (s.radar.detail ?? "New on Radar") : null,
+    s.replies.length ? n(s.replies.length, "reply", "replies") : null,
+    s.approvals.length ? `${n(s.approvals.length, "approval", "approvals")} waiting` : null
+  ].filter(Boolean);
+  return {
+    title: "Your day in Cultured Matter",
+    body: parts.join(" · ") || "Here is what is new today.",
+    url: "/today",
+    tag: "daily-summary"
+  };
+}
 
+export type DailySummaryResult = (
+  | { ok: true; sent: true; via: Transport["via"] | "push"; items: number }
+  | { ok: true; sent: false; skipped: string }
+  | { ok: false; sent: false; error: string }
+) & {
+  // Devices the push reached; present only when a push was attempted.
+  pushed?: number;
+};
+
+export type DailyPush = (db: Database, message: PushMessage, userId: string) => Promise<PushResult>;
+const defaultPush: DailyPush = async (db, message, userId) =>
+  (await import("@/lib/push")).sendPush(db, "daily", message, { userId });
+
+// One morning job for both channels: the email (when on) and the push (when on and a device
+// allowed it). Both say the same "what's new" and share the "new since" mark.
 export async function runDailySummary(
-  opts: { db?: Database; now?: Date; transport?: Transport; baseUrl?: string } = {}
+  opts: {
+    db?: Database;
+    now?: Date;
+    transport?: Transport;
+    baseUrl?: string;
+    push?: DailyPush;
+  } = {}
 ): Promise<DailySummaryResult> {
   const db = opts.db ?? (await import("@/db")).db;
   const ctx = { db };
   const now = opts.now ?? new Date();
   const baseUrl = opts.baseUrl ?? process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+  const push = opts.push ?? defaultPush;
 
   const user = await firstUser(db);
   if (!user) return { ok: true, sent: false, skipped: "No one has signed in yet" };
   const settings = await getUserSettings.run({ userId: user.id }, ctx);
-  if (!settings.dailyEmail) return { ok: true, sent: false, skipped: "Daily email is off" };
+  const devices = await pushStatus.run({ userId: user.id }, ctx);
+  const pushOn = devices.configured && devices.preferences.daily && devices.devices > 0;
+  if (!settings.dailyEmail && !pushOn) {
+    return { ok: true, sent: false, skipped: "Daily email is off" };
+  }
 
   const summary = await dailySummary.run({ userId: user.id, now }, ctx);
-  // Nothing new: no email, and nothing logged (so the activity log doesn't fill with empty days).
+  // Nothing new: no email, no push, and nothing logged (so the log doesn't fill with empty days).
   if (!summary.hasNews) return { ok: true, sent: false, skipped: "Nothing new" };
 
   const items =
@@ -166,6 +209,41 @@ export async function runDailySummary(
     (summary.radar ? 1 : 0) +
     summary.replies.length +
     summary.approvals.length;
+
+  // The push first: it does not depend on Google.
+  let pushed: number | undefined;
+  if (pushOn) {
+    try {
+      pushed = (await push(db, composeSummaryPush(summary), user.id)).sent;
+    } catch (e) {
+      console.error(e);
+      pushed = 0;
+    }
+  }
+  const withPush = (r: DailySummaryResult): DailySummaryResult =>
+    pushed === undefined ? r : { ...r, pushed };
+
+  if (!settings.dailyEmail) {
+    // Push only. A delivered push moves the "new since" mark like a sent email does.
+    await recordDailySummary.run(
+      pushed
+        ? { userId: user.id, at: now, outcome: "sent", via: "push", items, pushed }
+        : {
+            userId: user.id,
+            at: now,
+            outcome: "skipped",
+            via: "push",
+            reason: "no device accepted the push",
+            items,
+            pushed
+          },
+      ctx
+    );
+    return pushed
+      ? withPush({ ok: true, sent: true, via: "push", items })
+      : withPush({ ok: false, sent: false, error: "No device accepted the push" });
+  }
+
   const transport = opts.transport ?? pickTransport(db);
   try {
     await transport.send({
@@ -181,16 +259,16 @@ export async function runDailySummary(
     if (!notConnected) console.error(e);
     // Not moving the "new since" mark: tomorrow's summary still includes today's news.
     await recordDailySummary.run(
-      { userId: user.id, at: now, outcome: "skipped", via: transport.via, reason, items },
+      { userId: user.id, at: now, outcome: "skipped", via: transport.via, reason, items, pushed },
       ctx
     );
     return notConnected
-      ? { ok: true, sent: false, skipped: reason }
-      : { ok: false, sent: false, error: reason };
+      ? withPush({ ok: true, sent: false, skipped: reason })
+      : withPush({ ok: false, sent: false, error: reason });
   }
   await recordDailySummary.run(
-    { userId: user.id, at: now, outcome: "sent", via: transport.via, items },
+    { userId: user.id, at: now, outcome: "sent", via: transport.via, items, pushed },
     ctx
   );
-  return { ok: true, sent: true, via: transport.via, items };
+  return withPush({ ok: true, sent: true, via: transport.via, items });
 }
