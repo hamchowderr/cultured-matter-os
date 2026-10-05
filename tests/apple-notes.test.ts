@@ -17,8 +17,6 @@ import { decide, dedupeKey } from "@/lib/note-dedupe";
 import { freshDb } from "./test-db";
 
 vi.mock("@/lib/session", () => ({ getSession: vi.fn() }));
-// The proxy matcher test only reads proxy.ts's config; skip loading Better Auth behind it.
-vi.mock("@/lib/auth", () => ({ auth: {} }));
 
 let db: Database;
 let cleanup: () => void;
