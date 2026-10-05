@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Typecheck, lint and unit tests. Deterministic, no secrets, no network services:
+# tests migrate their own temp libsql files (tests/global-setup.ts) and stub any env they read.
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # Plain `npm ci`, not --legacy-peer-deps: the lockfile resolves cleanly, and vitest 5
+      # needs its `vite` peer (marked "peer": true in the lockfile), which legacy mode skips.
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint (eslint)
+        run: npm run lint
+
+      - name: Tests (Vitest, temp libsql per file)
+        run: npx vitest run
+        env:
+          # Safe dummies only, never real values. Points the default db client
+          # (db/index.ts) at a throwaway file instead of file:local.db in the checkout.
+          TURSO_DATABASE_URL: file:${{ runner.temp }}/ci-local.db
+          BETTER_AUTH_SECRET: ci-only-dummy-secret-not-used-anywhere-else-0000
