@@ -76,11 +76,12 @@ export function RadarTabs({ filters, facets }: Omit<Props, "hasBaseline">) {
 
   const setView = (v: string) => update({ view: v === "review" ? undefined : v });
 
-  // Five views with counts don't fit a phone, so phones get one select instead of tabs.
+  // Five views with counts don't fit a narrow page (a phone, or a page beside the docked
+  // assistant), so a narrow page gets one select instead of tabs.
   return (
     <div data-tour-step-id="radar-tabs">
       <NativeSelect
-        className="w-full sm:hidden"
+        className="w-full @xl/main:hidden"
         value={filters.view}
         onChange={(e) => setView(e.target.value)}
         aria-label="Show"
@@ -94,7 +95,7 @@ export function RadarTabs({ filters, facets }: Omit<Props, "hasBaseline">) {
           );
         })}
       </NativeSelect>
-      <Tabs className="hidden sm:flex" value={filters.view} onValueChange={setView}>
+      <Tabs className="hidden @xl/main:flex" value={filters.view} onValueChange={setView}>
         <TabsList>
           {RADAR_VIEWS.map((v) => {
             const n = count(v.statuses);

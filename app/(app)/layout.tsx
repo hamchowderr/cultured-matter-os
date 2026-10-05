@@ -8,6 +8,12 @@ import { SiteHeader } from "@/components/layout/header";
 import { getUserSettings } from "@/actions/server";
 import { AppTours } from "@/components/tours/app-tours";
 import { ChatDock, ChatDockProvider } from "@/components/layout/chat-dock";
+import {
+  CHAT_DOCK_OPEN_COOKIE,
+  CHAT_DOCK_WIDTH_COOKIE,
+  parseDockOpen,
+  parseDockWidth
+} from "@/lib/chat-dock";
 import { getSession } from "@/lib/session";
 import { parseSeen } from "@/lib/tours";
 
@@ -45,13 +51,21 @@ export default async function AppLayout({
         } as React.CSSProperties
       }
     >
-      {/* The header's chat button opens the chat panel beside every page. */}
-      <ChatDockProvider>
+      {/* The assistant docked beside every page; its open/closed state and width come from
+          cookies so it loads the way it was left. */}
+      <ChatDockProvider
+        defaultOpen={parseDockOpen(cookieStore.get(CHAT_DOCK_OPEN_COOKIE)?.value)}
+        defaultWidth={parseDockWidth(cookieStore.get(CHAT_DOCK_WIDTH_COOKIE)?.value)}
+      >
         <AppTours initialSeen={toursSeen}>
           <AppSidebar user={{ name, email, image }} />
-          <SidebarInset className="min-w-0">
+          {/* From 1024px the page scrolls in its own area under the header, so its
+              scrollbar sits beside the page, below the header line, and the docked
+              assistant stays outside it, like a browser's side panel. Below that the
+              document scrolls as usual. */}
+          <SidebarInset className="min-w-0 lg:h-svh lg:overflow-hidden">
             <SiteHeader />
-            <div className="bg-background flex flex-1 flex-col">
+            <div className="bg-background flex flex-1 flex-col lg:min-h-0 lg:overflow-y-auto">
               <div className="@container/main p-(--content-padding) pb-[calc(var(--content-padding)+env(safe-area-inset-bottom))] xl:group-data-[theme-content-layout=centered]/layout:container xl:group-data-[theme-content-layout=centered]/layout:mx-auto">
                 {children}
               </div>

@@ -233,7 +233,7 @@ export default function GrantsKanban({
         <PopoverTrigger asChild>
           <Button variant="outline" data-tour-step-id="grants-filters">
             <ListFilterIcon />
-            <span className="hidden lg:inline">
+            <span className="hidden @4xl/main:inline">
               {activeFilters > 0 ? <>Filters ({activeFilters})</> : "Filters"}
             </span>
           </Button>
@@ -294,10 +294,10 @@ export default function GrantsKanban({
           </TabsList>
 
           <div className="flex shrink-0 items-center gap-2">
-            <span className="text-muted-foreground hidden text-sm sm:inline">
+            <span className="text-muted-foreground hidden text-sm @xl/main:inline">
               {grants.length} {grants.length === 1 ? "grant" : "grants"}
             </span>
-            <div className="relative hidden w-auto lg:block" data-tour-step-id="grants-search">
+            <div className="relative hidden w-auto @3xl/main:block" data-tour-step-id="grants-search">
               <SearchIcon className="absolute top-2.5 left-3 size-4 opacity-50" />
               <Input
                 placeholder="Search grants..."
@@ -307,7 +307,7 @@ export default function GrantsKanban({
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <div className="none lg:hidden">
+            <div className="@3xl/main:hidden">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -370,8 +370,11 @@ export default function GrantsKanban({
                           ? "grants-board"
                           : undefined
                     }
+                    // Sized by the page column, not the window: the docked assistant can
+                    // leave a wide window with a narrow page. Fixed columns that scroll
+                    // sideways until all five fit.
                     className={cn(
-                      "w-full min-w-0 md:w-[300px] md:min-w-[300px] lg:w-auto lg:min-w-[240px] lg:flex-1 xl:min-w-0",
+                      "w-full min-w-0 md:w-[260px] md:min-w-[260px] md:shrink-0 @4xl/main:w-auto @4xl/main:min-w-0 @4xl/main:flex-1 @4xl/main:shrink",
                       key !== phoneColumn && "max-md:hidden"
                     )}
                   >
