@@ -1,4 +1,3 @@
-import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -15,22 +14,19 @@ export default function NotFound() {
         <p className="text-muted-foreground mt-6 text-base leading-7">
           Sorry, we couldn’t find the page you’re looking for.
         </p>
-        <div className="mt-10 flex items-center justify-center gap-x-2">
+        <div className="mt-10 flex items-center justify-center">
           <Button size="lg" asChild>
             <Link href="/today">Go back home</Link>
-          </Button>
-          <Button size="lg" variant="ghost">
-            Contact support <ArrowRight className="ms-2 h-4 w-4" />
           </Button>
         </div>
       </div>
       <div className="hidden lg:block">
-        <img
-          src={`/404.svg`}
+        <Image
+          src="/404.svg"
           width={300}
           height={400}
           className="w-full object-contain lg:max-w-2xl"
-          alt="not found image"
+          alt=""
         />
       </div>
     </div>
