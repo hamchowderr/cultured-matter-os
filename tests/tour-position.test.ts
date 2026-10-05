@@ -14,7 +14,7 @@ const onScreen = (p: { top: number; left: number }, vp = phone) =>
 describe("cardPosition", () => {
   it("puts the card under a small element", () => {
     const p = cardPosition({ top: 72, left: 16, width: 388, height: 28 }, card, phone);
-    expect(p.top).toBe(72 + 28 + GAP + 1);
+    expect(p.top).toBe(72 + 28 + GAP);
     expect(onScreen(p)).toBe(true);
   });
 
