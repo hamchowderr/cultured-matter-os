@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "4e9782f9-4fa8-4c35-a1ec-5351bd4aef03",
+  "id": "e1944521-ad0b-4318-8884-b04199f8c1d4",
   "prevId": "f4935078-5f97-4faa-829f-2206313c80d9",
   "tables": {
     "accounts": {
@@ -532,6 +532,14 @@
           "notNull": false,
           "autoincrement": false
         },
+        "seeded_fields": {
+          "name": "seeded_fields",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
+        },
         "updated_at": {
           "name": "updated_at",
           "type": "integer",
@@ -545,7 +553,12 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "business_profile_single_row": {
+          "name": "business_profile_single_row",
+          "value": "\"business_profile\".\"id\" = 'main'"
+        }
+      }
     },
     "captures": {
       "name": "captures",

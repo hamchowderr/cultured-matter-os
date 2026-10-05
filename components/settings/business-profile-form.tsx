@@ -53,13 +53,21 @@ const formSchema = z.object({
   womanOwned: answer,
   minorityOwned: answer,
   sectors: z.array(z.string()),
-  fitCriteria: z.array(z.object({ value: z.string().max(500) })),
+  fitCriteria: z.array(
+    z.object({ value: z.string().max(500, "Keep each criterion under 500 characters.") })
+  ),
   targetBrands: z.array(z.string()),
   people: z.array(
-    z.object({
-      name: z.string().max(200),
-      role: z.string().max(300)
-    })
+    z
+      .object({
+        name: z.string().max(200, "Keep the name under 200 characters."),
+        role: z.string().max(300, "Keep the role under 300 characters.")
+      })
+      // A row with only a role would be dropped on save; ask for the name instead.
+      .refine((p) => p.name.trim() || !p.role.trim(), {
+        path: ["name"],
+        message: "Add a name, or remove this row."
+      })
   ),
   website: z.string().max(300),
   socialLinks: z.array(z.string()),
@@ -130,6 +138,9 @@ function fromForm(v: FormValues): ProfileFields {
 }
 
 const WAITING = "Waiting for your answer.";
+// The longest single chip (a sector, a brand, a link) and the most chips in one list.
+const CHIP_MAX = 200;
+const CHIPS_MAX = 100;
 
 function Section({
   title,
@@ -246,6 +257,7 @@ function ChipsField({
   description?: string;
 }) {
   const [draft, setDraft] = useState("");
+  const [problem, setProblem] = useState<string | null>(null);
   return (
     <FormField
       control={control}
@@ -254,6 +266,13 @@ function ChipsField({
         const add = () => {
           const value = draft.trim();
           if (!value) return;
+          if (value.length > CHIP_MAX) {
+            return setProblem(`That's ${value.length} characters. Keep it under ${CHIP_MAX}.`);
+          }
+          if (field.value.length >= CHIPS_MAX) {
+            return setProblem(`This list holds up to ${CHIPS_MAX}. Remove one to add another.`);
+          }
+          setProblem(null);
           if (!field.value.some((v) => v.toLowerCase() === value.toLowerCase())) {
             field.onChange([...field.value, value]);
           }
@@ -288,7 +307,11 @@ function ChipsField({
                 <Input
                   value={draft}
                   placeholder={placeholder}
-                  onChange={(e) => setDraft(e.target.value)}
+                  aria-invalid={problem ? true : undefined}
+                  onChange={(e) => {
+                    setDraft(e.target.value);
+                    if (problem) setProblem(null);
+                  }}
                   onBlur={field.onBlur}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -304,7 +327,13 @@ function ChipsField({
               </Button>
             </div>
             {description && <FormDescription>{description}</FormDescription>}
-            <FormMessage />
+            {problem ? (
+              <p role="alert" className="text-destructive text-sm">
+                {problem}
+              </p>
+            ) : (
+              <FormMessage />
+            )}
           </FormItem>
         );
       }}
@@ -326,7 +355,8 @@ export function BusinessProfileForm({ initial }: { initial: ProfileFields }) {
     startTransition(async () => {
       const result = await updateBusinessProfile(fromForm(values));
       if (!result.ok) return void toast.error(result.error.message);
-      form.reset(toForm(result.data.profile));
+      // The result leaves out the EIN and SAM UEI, so keep what she submitted as the new baseline.
+      form.reset(toForm(fromForm(values)));
       toast.success(result.data.changed.length ? "Business profile saved." : "No changes to save.");
     });
 
@@ -407,6 +437,7 @@ export function BusinessProfileForm({ initial }: { initial: ProfileFields }) {
                             {...field}
                           />
                         </FormControl>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -461,6 +492,7 @@ export function BusinessProfileForm({ initial }: { initial: ProfileFields }) {
                           <FormControl>
                             <Input placeholder="Name" aria-label={`Name ${i + 1}`} {...field} />
                           </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -472,6 +504,7 @@ export function BusinessProfileForm({ initial }: { initial: ProfileFields }) {
                           <FormControl>
                             <Input placeholder="Role" aria-label={`Role ${i + 1}`} {...field} />
                           </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />

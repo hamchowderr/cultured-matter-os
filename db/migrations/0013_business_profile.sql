@@ -1,4 +1,5 @@
--- The business profile (Settings > Business): one row, the single source of truth the AI reads.
+-- The business profile (Settings > Business): one row (id = main, enforced by a CHECK), the single
+-- source of truth the AI reads.
 CREATE TABLE `business_profile` (
 	`id` text PRIMARY KEY DEFAULT 'main' NOT NULL,
 	`name` text,
@@ -24,5 +25,7 @@ CREATE TABLE `business_profile` (
 	`website` text,
 	`social_links` text DEFAULT '[]' NOT NULL,
 	`notes` text,
-	`updated_at` integer DEFAULT (unixepoch('subsec') * 1000) NOT NULL
+	`seeded_fields` text DEFAULT '[]' NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch('subsec') * 1000) NOT NULL,
+	CONSTRAINT "business_profile_single_row" CHECK("business_profile"."id" = 'main')
 );

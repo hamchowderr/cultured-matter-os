@@ -48,6 +48,30 @@ async function requestOrigin() {
   return `${proto}://${host}`;
 }
 
+// The Business card: a load failure says so instead of looking up to date.
+function businessCard(business: Awaited<ReturnType<typeof getBusinessProfile>>): {
+  description: string;
+  state: ConnectionState;
+  stateLabel: string;
+} {
+  const about = "What Cultured Matter is, in one place. The AI reads it.";
+  if (!business.ok) {
+    return {
+      description: `Couldn’t load your business profile: ${business.error.message}`,
+      state: "error",
+      stateLabel: "Couldn’t load"
+    };
+  }
+  if (business.data.waitingOn.length) {
+    return {
+      description: `${about} Some company details are waiting for your answer.`,
+      state: "waiting",
+      stateLabel: "Needs answers"
+    };
+  }
+  return { description: about, state: "connected", stateLabel: "Up to date" };
+}
+
 export default async function Page() {
   // Session first: it marks the page as dynamic before any action runs.
   const user = (await getSession())?.user;
@@ -99,15 +123,7 @@ export default async function Page() {
           <ConnectionCard
             icon={Building2Icon}
             title="Business profile"
-            description={
-              business.ok && business.data.waitingOn.length
-                ? "What Cultured Matter is, in one place. The AI reads it. Some company details are waiting for your answer."
-                : "What Cultured Matter is, in one place. The AI reads it."
-            }
-            state={business.ok && business.data.waitingOn.length ? "waiting" : "connected"}
-            stateLabel={
-              business.ok && business.data.waitingOn.length ? "Needs answers" : "Up to date"
-            }
+            {...businessCard(business)}
             action={<LinkAction href="/settings/business" label="Open" />}
           />
         </div>

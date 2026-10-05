@@ -312,6 +312,10 @@ export async function fileNoteToInbox(input: In<typeof A.fileNoteToInbox>) {
 export async function getBusinessProfile() {
   return toResult(() => A.getBusinessProfile.run({}));
 }
+// The form needs the EIN and SAM UEI values; nothing else does.
+export async function getBusinessProfileForEditing() {
+  return toResult(() => A.getBusinessProfileForEditing.run({}));
+}
 export async function updateBusinessProfile(input: In<typeof A.updateBusinessProfile>) {
-  return toResult(() => A.updateBusinessProfile.run(input));
+  return toResult(() => A.updateBusinessProfile.run(input, inAction), REFRESH);
 }

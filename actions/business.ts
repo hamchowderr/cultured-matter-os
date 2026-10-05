@@ -22,6 +22,17 @@ const ROW_ID = "main";
 
 const profileSchema = profileFieldsSchema.extend({ updatedAt: z.date().nullable() });
 
+// What the chat agent (and any registered tool) sees: the EIN and SAM UEI are left out by
+// default, replaced by whether they are on file. Only the Settings page reads the values.
+const agentProfileSchema = profileSchema
+  .omit({ ein: true, samUei: true })
+  .extend({ einOnFile: z.boolean(), samUeiOnFile: z.boolean() });
+
+export function redactProfile(profile: BusinessProfile): z.input<typeof agentProfileSchema> {
+  const { ein, samUei, ...rest } = profile;
+  return { ...rest, einOnFile: !!ein, samUeiOnFile: !!samUei };
+}
+
 export async function loadBusinessProfile(db: Executor): Promise<BusinessProfile> {
   const [row] = await db.select().from(businessProfile).where(eq(businessProfile.id, ROW_ID));
   if (!row) return { ...emptyProfile(), updatedAt: null };
@@ -37,21 +48,35 @@ export async function loadBusinessContext(db: Executor) {
 export const getBusinessProfile = defineAction({
   name: "getBusinessProfile",
   description:
-    "Cultured Matter's business profile, the single source of truth about the business: name, tagline, mission, story, founder, company details (entity, state, EIN, SAM UEI, address, founding date, team size, revenue stage, ownership), sectors, fit criteria, target brands, key people and partners, links and notes. Also returns a short plain-text summary (context) and the company details she has not given yet (waitingOn), so ask her for those instead of guessing.",
+    "Cultured Matter's business profile, the single source of truth about the business: name, tagline, mission, story, founder, company details (entity, state, address, founding date, team size, revenue stage, ownership), sectors, fit criteria, target brands, key people and partners, links and notes. The EIN and SAM UEI values are not included; einOnFile and samUeiOnFile say whether she has saved them. Also returns a short plain-text summary (context) and the company details she has not given yet (waitingOn), so ask her for those instead of guessing.",
   kind: "read",
   input: z.object({}),
   output: z.object({
-    profile: profileSchema,
+    profile: agentProfileSchema,
     context: z.string(),
     waitingOn: z.array(z.string())
   }),
   async handler(_input, db) {
     const profile = await loadBusinessProfile(db);
     return {
-      profile,
+      profile: redactProfile(profile),
       context: businessContext(profile),
       waitingOn: waitingOn(profile).map((f) => FIELD_LABELS[f])
     };
+  }
+});
+
+// The full profile, EIN and SAM UEI included, for the Settings → Business form only. Not in
+// allActions, so it is never offered to the chat agent as a tool.
+export const getBusinessProfileForEditing = defineAction({
+  name: "getBusinessProfileForEditing",
+  description:
+    "The full business profile including the EIN and SAM UEI, for the Settings → Business form.",
+  kind: "read",
+  input: z.object({}),
+  output: z.object({ profile: profileSchema }),
+  async handler(_input, db) {
+    return { profile: await loadBusinessProfile(db) };
   }
 });
 
@@ -68,10 +93,10 @@ function normalize(patch: Partial<ProfileFields>): Partial<ProfileFields> {
 export const updateBusinessProfile = defineAction({
   name: "updateBusinessProfile",
   description:
-    "Change fields of the business profile. Send only the fields to change; lists (sectors, fitCriteria, targetBrands, people, socialLinks) replace the whole list. An empty string clears a text field. Returns the profile and the names of the fields that changed.",
+    "Change fields of the business profile. Send only the fields to change; lists (sectors, fitCriteria, targetBrands, people, socialLinks) replace the whole list. An empty string clears a text field. Returns the profile (without the EIN and SAM UEI values) and the names of the fields that changed.",
   kind: "write",
   input: profileFieldsSchema.partial(),
-  output: z.object({ profile: profileSchema, changed: z.array(z.string()) }),
+  output: z.object({ profile: agentProfileSchema, changed: z.array(z.string()) }),
   async handler(input, db) {
     const before = await loadBusinessProfile(db);
     const patch = normalize(input);
@@ -88,9 +113,9 @@ export const updateBusinessProfile = defineAction({
           set: { ...values, updatedAt: new Date() }
         });
     }
-    return { profile: await loadBusinessProfile(db), changed };
+    return { profile: redactProfile(await loadBusinessProfile(db)), changed };
   },
-  // Field names only: the profile holds the EIN and SAM UEI, which never go in the log.
+  // Field names only: values (the EIN and SAM UEI among them) never go in the log.
   log: (_input, result) => {
     const labels = (result.changed as ProfileField[]).map((f) => FIELD_LABELS[f] ?? f);
     return {

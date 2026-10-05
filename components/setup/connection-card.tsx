@@ -3,15 +3,16 @@ import type { LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 
-export type ConnectionState = "connected" | "not_connected" | "waiting";
+export type ConnectionState = "connected" | "not_connected" | "waiting" | "error";
 
 const BADGE: Record<
   ConnectionState,
-  { label: string; variant: "success" | "outline" | "secondary" }
+  { label: string; variant: "success" | "outline" | "secondary" | "destructive" }
 > = {
   connected: { label: "Connected", variant: "success" },
   not_connected: { label: "Not set up", variant: "outline" },
-  waiting: { label: "Waiting", variant: "secondary" }
+  waiting: { label: "Waiting", variant: "secondary" },
+  error: { label: "Error", variant: "destructive" }
 };
 
 // One connection on Settings (from the UI kit's integrations1 card): what it is, where it

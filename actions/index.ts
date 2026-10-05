@@ -82,7 +82,11 @@ import {
   setPushPreferences
 } from "./push";
 import { fileNoteToInbox, getNote, importNotes, searchNotes } from "./notes";
-import { getBusinessProfile, updateBusinessProfile } from "./business";
+import {
+  getBusinessProfile,
+  getBusinessProfileForEditing,
+  updateBusinessProfile
+} from "./business";
 
 export {
   searchCompanies,
@@ -159,6 +163,7 @@ export {
   getNote,
   fileNoteToInbox,
   getBusinessProfile,
+  getBusinessProfileForEditing,
   updateBusinessProfile
 };
 
@@ -230,7 +235,8 @@ export const allActions = [
   updateBusinessProfile
   // Not tools: calendarFeed (keyed by the feed's secret token), recordDailySummary (the cron's
   // bookkeeping), markTourSeen (the guided tours' bookkeeping), importNotes (the Apple Notes
-  // Shortcut's endpoint) and the push device actions (they need a browser's push subscription).
+  // Shortcut's endpoint), the push device actions (they need a browser's push subscription) and
+  // getBusinessProfileForEditing (it returns the EIN and SAM UEI; getBusinessProfile leaves them out).
 ] as const;
 
 export { ActionError, type Action, type ActionResult } from "./define";

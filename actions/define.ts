@@ -1,3 +1,4 @@
+import { DrizzleQueryError } from "drizzle-orm/errors";
 import { z } from "zod/v4";
 
 import type { Database, Executor } from "@/db";
@@ -17,6 +18,18 @@ type LogEntry = {
   summary: string;
   data?: unknown;
 };
+
+// What may go in a server log for a thrown error. A failed query's message and `params` carry
+// the values being written (an EIN, a SAM UEI, a contact's details), so it is reduced to the
+// error type and the database's own reason, which names tables and columns, never values.
+// lib/agent-actions.ts (the chat agent's endpoint) should log through this too.
+export function loggableError(e: unknown): string | unknown {
+  if (e instanceof DrizzleQueryError) {
+    const cause = e.cause instanceof Error ? `${e.cause.name}: ${e.cause.message}` : "no cause";
+    return `DrizzleQueryError (${cause})`;
+  }
+  return e;
+}
 
 export class ActionError extends Error {
   constructor(
@@ -104,7 +117,7 @@ export function defineAction<I extends z.ZodType, O extends z.ZodType, P = undef
           try {
             await after(input, committed, db);
           } catch (e) {
-            console.error(`${config.name}: follow-up step failed`, e);
+            console.error(`${config.name}: follow-up step failed`, loggableError(e));
           }
         };
         if (ctx?.defer) ctx.defer(followUp);
@@ -149,7 +162,7 @@ export async function toResult<T>(
         error: { code: "invalid", message: e.issues[0]?.message ?? "Invalid input" }
       };
     }
-    console.error(e);
+    console.error(loggableError(e));
     return { ok: false, error: { code: "internal", message: "Something went wrong" } };
   }
 }

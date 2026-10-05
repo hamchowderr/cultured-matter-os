@@ -1,7 +1,7 @@
 import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
 
-import { getBusinessProfile } from "@/actions/server";
+import { getBusinessProfileForEditing } from "@/actions/server";
 import { PageHeader } from "@/components/layout/page-shell";
 import { BusinessProfileForm } from "@/components/settings/business-profile-form";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ export async function generateMetadata() {
 export default async function Page() {
   // Session first: it marks the page as dynamic before the action runs.
   await getSession();
-  const result = await getBusinessProfile();
+  const result = await getBusinessProfileForEditing();
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">

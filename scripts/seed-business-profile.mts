@@ -10,7 +10,7 @@ const filled = await seedBusinessProfile(db);
 console.log(
   filled.length
     ? `Filled: ${filled.join(", ")}`
-    : "Nothing to fill: every seeded field already has a value."
+    : "Nothing to fill: the seed has already handled every field."
 );
 console.log("\nbusinessContext():\n" + businessContext(await loadBusinessProfile(db)));
 process.exit(0);

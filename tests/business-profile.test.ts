@@ -1,8 +1,9 @@
-import { eq } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { eq, sql } from "drizzle-orm";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import * as A from "@/actions";
 import { loadBusinessContext } from "@/actions/business";
+import { toResult } from "@/actions/define";
 import type { Database } from "@/db";
 import * as t from "@/db/schema";
 import {
@@ -13,6 +14,9 @@ import {
 } from "@/lib/business-profile";
 import { SEED_PROFILE, seedBusinessProfile } from "@/lib/business-seed";
 import { freshDb } from "./test-db";
+
+// toResult checks the session; these tests stand in a signed-in one.
+vi.mock("@/lib/session", () => ({ getSession: async () => ({ user: { id: "u1" } }) }));
 
 let db: Database;
 let cleanup: () => void;
@@ -26,11 +30,15 @@ afterAll(() => cleanup());
 const profileLog = () =>
   db.select().from(t.activityLog).where(eq(t.activityLog.entityType, "business_profile"));
 
+const EIN = "98-7654321";
+const UEI = "ABCDEF123456";
+
 describe("business profile actions", () => {
   it("reads an empty profile before anything is saved, with every company detail waiting", async () => {
     const r = await A.getBusinessProfile.run({}, ctx());
-    expect(r.profile).toMatchObject(emptyProfile());
-    expect(r.profile.updatedAt).toBeNull();
+    const { ein: _e, samUei: _s, ...rest } = emptyProfile();
+    expect(r.profile).toMatchObject(rest);
+    expect(r.profile).toMatchObject({ einOnFile: false, samUeiOnFile: false, updatedAt: null });
     expect(r.waitingOn).toHaveLength(COMPANY_DETAIL_FIELDS.length);
     expect(r.waitingOn).toContain("EIN");
     expect(r.context).toBe("The business.");
@@ -72,27 +80,86 @@ describe("business profile actions", () => {
   });
 });
 
+describe("EIN and SAM UEI stay out of the agent's tools", () => {
+  it("leaves the values out of the registered reads and writes, and says whether they are on file", async () => {
+    const written = await A.updateBusinessProfile.run({ ein: EIN, samUei: UEI }, ctx());
+    expect(written.changed).toEqual(["ein", "samUei"]);
+    expect(written.profile).not.toHaveProperty("ein");
+    expect(written.profile).not.toHaveProperty("samUei");
+    expect(JSON.stringify(written)).not.toContain(EIN);
+
+    const read = await A.getBusinessProfile.run({}, ctx());
+    expect(read.profile).toMatchObject({ einOnFile: true, samUeiOnFile: true });
+    expect(JSON.stringify(read)).not.toContain(EIN);
+    expect(JSON.stringify(read)).not.toContain(UEI);
+    expect(read.waitingOn).not.toContain("EIN");
+  });
+
+  it("gives the values only to the Settings form's read, which is not a tool", async () => {
+    const full = await A.getBusinessProfileForEditing.run({}, ctx());
+    expect(full.profile.ein).toBe(EIN);
+    expect(full.profile.samUei).toBe(UEI);
+    const names = A.allActions.map((a) => a.name);
+    expect(names).toContain("getBusinessProfile");
+    expect(names).not.toContain("getBusinessProfileForEditing");
+  });
+});
+
 describe("the write log", () => {
   it("names the changed fields and never their values", async () => {
-    const ein = "98-7654321";
-    const uei = "ABCDEF123456";
-    await A.updateBusinessProfile.run({ ein, samUei: uei, address: "1 Main St" }, ctx());
+    await A.updateBusinessProfile.run(
+      { ein: "11-1111111", samUei: "ZZZZ99998888", address: "1 Main St" },
+      ctx()
+    );
     const rows = await profileLog();
     const last = rows.at(-1)!;
     expect(last.action).toBe("updateBusinessProfile");
     expect(last.summary).toBe("Updated the business profile: EIN, SAM UEI, business address");
     expect(last.data).toEqual({ fields: ["ein", "samUei", "address"] });
     const all = JSON.stringify(rows);
-    expect(all).not.toContain(ein);
-    expect(all).not.toContain(uei);
-    expect(all).not.toContain("1 Main St");
+    for (const secret of [EIN, UEI, "11-1111111", "ZZZZ99998888", "1 Main St"]) {
+      expect(all).not.toContain(secret);
+    }
   });
 
   it("logs a save with no changes as such", async () => {
-    await A.updateBusinessProfile.run({ ein: "98-7654321" }, ctx());
+    await A.updateBusinessProfile.run({ ein: "11-1111111" }, ctx());
     const last = (await profileLog()).at(-1)!;
     expect(last.summary).toBe("Saved the business profile (no changes)");
     expect(last.data).toEqual({ fields: [] });
+  });
+});
+
+describe("a failed save", () => {
+  it("never writes the query's parameters (the EIN) to the server log", async () => {
+    const { db: broken, cleanup: done } = await freshDb();
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      // The insert fails, and drizzle's error message carries the values it tried to write.
+      await broken.run(sql`DROP TABLE business_profile`);
+      const result = await toResult(() =>
+        A.updateBusinessProfile.run({ ein: EIN, samUei: UEI }, { db: broken })
+      );
+      expect(result.ok).toBe(false);
+      expect(spy).toHaveBeenCalled();
+      const logged = JSON.stringify(spy.mock.calls.map((c) => c.map(String)));
+      expect(logged).toContain("DrizzleQueryError");
+      expect(logged).toContain("no such table");
+      expect(logged).not.toContain(EIN);
+      expect(logged).not.toContain(UEI);
+      expect(logged).not.toContain("params");
+    } finally {
+      spy.mockRestore();
+      done();
+    }
+  });
+});
+
+describe("the table", () => {
+  it("holds only the one row", async () => {
+    await expect(
+      db.insert(t.businessProfile).values({ id: "second", name: "Another business" })
+    ).rejects.toThrow();
   });
 });
 
@@ -105,9 +172,15 @@ describe("businessContext", () => {
     expect(text).toContain("Mission:");
     expect(text).toContain("Sectors: Beauty, Fashion");
     expect(text).toContain("Fit criteria: Extremely novel and visible");
-    // No markup, and nothing private.
+    // No markup, and no company IDs.
     expect(text).not.toMatch(/[<>#*]/);
-    expect(text).not.toContain("Founder bio");
+    expect(text).not.toContain("EIN");
+  });
+
+  it("never carries the EIN or SAM UEI", () => {
+    const text = businessContext({ ...emptyProfile(), name: "X", ein: EIN, samUei: UEI });
+    expect(text).not.toContain(EIN);
+    expect(text).not.toContain(UEI);
   });
 
   it("stays under the limit and never cuts a word for a very long profile", () => {
@@ -140,12 +213,13 @@ describe("seed", () => {
       expect(first).toContain("sectors");
       expect(first).not.toContain("tagline");
 
-      const read = await A.getBusinessProfile.run({}, { db: seedDb });
+      const read = await A.getBusinessProfileForEditing.run({}, { db: seedDb });
       expect(read.profile.tagline).toBe("Her own words");
       expect(read.profile.founderName).toBe("Simone Paz");
       expect(read.profile.targetBrands).toEqual(["Osea Malibu", "Rivian", "The RealReal"]);
       // Company details she hasn't given stay empty.
       for (const f of COMPANY_DETAIL_FIELDS) expect(read.profile[f]).toBeNull();
+      expect(read.profile.socialLinks).toEqual([]);
 
       const logCount = async () =>
         (
@@ -157,8 +231,38 @@ describe("seed", () => {
       const before = await logCount();
       expect(await seedBusinessProfile(seedDb)).toEqual([]);
       expect(await logCount()).toBe(before);
-      const again = await A.getBusinessProfile.run({}, { db: seedDb });
+      const again = await A.getBusinessProfileForEditing.run({}, { db: seedDb });
       expect(again.profile).toEqual(read.profile);
+    } finally {
+      done();
+    }
+  });
+
+  it("does not refill a field she cleared on purpose", async () => {
+    const { db: seedDb, cleanup: done } = await freshDb();
+    try {
+      await seedBusinessProfile(seedDb);
+      await A.updateBusinessProfile.run({ mission: "", targetBrands: [] }, { db: seedDb });
+
+      expect(await seedBusinessProfile(seedDb)).toEqual([]);
+      const read = await A.getBusinessProfileForEditing.run({}, { db: seedDb });
+      expect(read.profile.mission).toBeNull();
+      expect(read.profile.targetBrands).toEqual([]);
+    } finally {
+      done();
+    }
+  });
+
+  it("still fills a field a later seed adds, once", async () => {
+    const { db: seedDb, cleanup: done } = await freshDb();
+    try {
+      await seedBusinessProfile(seedDb, { name: "Cultured Matter" });
+      expect(await seedBusinessProfile(seedDb, { name: "X", tagline: "New line" })).toEqual([
+        "tagline"
+      ]);
+      const read = await A.getBusinessProfileForEditing.run({}, { db: seedDb });
+      expect(read.profile.name).toBe("Cultured Matter");
+      expect(read.profile.tagline).toBe("New line");
     } finally {
       done();
     }
