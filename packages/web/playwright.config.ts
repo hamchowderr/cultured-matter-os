@@ -1,0 +1,114 @@
+import path from 'node:path';
+import { defineConfig, devices } from '@playwright/test';
+
+/**
+ * End-to-end: the FULL chat flow, AIMock-backed (zero LLM spend).
+ *
+ * Topology started by `webServer` below (in dependency order):
+ *   AIMock (:4010)  ──>  Mastra server (:4111, USE_AIMOCK)  ──>  Next web (:3000)
+ * Playwright drives a real browser against the web app; the web proxies to the
+ * Mastra server, which routes LLM calls to AIMock's deterministic fixtures.
+ *
+ * No external services: storage runs on a local libSQL file DB, so there's no
+ * Postgres/pgvector to stand up. Override with E2E_DB_URL to point the server at a
+ * different libSQL/Turso URL.
+ */
+
+// ABSOLUTE path on purpose: under `mastra dev` the server's cwd shifts between
+// module load and request time, so a relative `file:./x.db` splits reads/writes
+// across two files (empty sidebar). An absolute URL pins every op to one DB, and
+// matches the file `e2e/global-setup.ts` resets.
+const DB_FILE = process.env.E2E_DB_FILE ?? path.resolve(process.cwd(), '../server/mastra-e2e.db');
+const DB_URL = process.env.E2E_DB_URL ?? `file:${DB_FILE.replace(/\\/g, '/')}`;
+
+// Ports are overridable so the e2e stack doesn't collide with other local dev
+// servers (set E2E_SERVER_PORT / E2E_WEB_PORT / AIMOCK_URL when 4111/3000/4010
+// are taken). `reuseExistingServer` reuses whatever is already on a port, so a
+// collision would silently run the tests against the wrong app.
+const AIMOCK_URL = process.env.AIMOCK_URL ?? 'http://127.0.0.1:4010';
+const SERVER_PORT = Number(process.env.E2E_SERVER_PORT ?? 4111);
+const SERVER_URL = process.env.MASTRA_SERVER_URL ?? `http://127.0.0.1:${SERVER_PORT}`;
+const WEB_PORT = Number(process.env.E2E_WEB_PORT ?? 3000);
+const WEB_URL = `http://127.0.0.1:${WEB_PORT}`;
+
+// Env for the Mastra server: route LLM calls at AIMock, point storage at a local
+// libSQL file DB, satisfy env.ts (an LLM key is required even under AIMock —
+// validation runs before the AIMock provider switch). All non-secret test values.
+//
+// MASTRA_SKIP_DOTENV is what makes these values stick. `mastra dev` otherwise loads
+// packages/server/.env and writes each of its keys OVER process.env, so on any
+// machine with a dev .env the e2e server ran on the dev DB (TURSO_DATABASE_URL)
+// instead of the one global-setup wipes. Recall then pulled old threads into each
+// request, AIMock's turnIndex matched the wrong fixture, and the tool tests failed.
+// E2E_AUTH=1 runs the whole stack with auth on: the same MASTRA_JWT_SECRET on the
+// server and the web proxy, so every request in every spec goes through the signed
+// path (docs/registry.md → "Users and auth"), and e2e/auth.spec.ts checks the server
+// refuses anything unsigned. A fixed, non-secret test value.
+const E2E_JWT_SECRET = process.env.E2E_AUTH ? 'e2e-jwt-secret-at-least-32-characters-long' : '';
+
+const serverEnv: Record<string, string> = {
+  MASTRA_SKIP_DOTENV: '1',
+  USE_AIMOCK: 'true',
+  AIMOCK_URL,
+  PORT: String(SERVER_PORT),
+  TURSO_DATABASE_URL: DB_URL,
+  APP_SECRET: 'e2e-app-secret-at-least-32-characters-long-xx',
+  ANTHROPIC_API_KEY: 'mock',
+  OPENAI_API_KEY: 'mock',
+  CHAT_MODEL: 'anthropic/claude-sonnet-4-6',
+  MASTRA_TELEMETRY_DISABLED: '1',
+  LOG_LEVEL: 'info',
+  ...(E2E_JWT_SECRET ? { MASTRA_JWT_SECRET: E2E_JWT_SECRET } : {}),
+};
+
+export default defineConfig({
+  testDir: './e2e',
+  globalSetup: './e2e/global-setup.ts',
+  fullyParallel: false,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 1 : 0,
+  workers: 1,
+  reporter: process.env.CI ? [['github'], ['list']] : 'list',
+  timeout: 60_000,
+  expect: { timeout: 20_000 },
+  use: {
+    baseURL: WEB_URL,
+    trace: 'on-first-retry',
+  },
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  webServer: [
+    {
+      command: 'pnpm --filter @mastra-chat-kit/server dev:mock',
+      url: `${AIMOCK_URL}/health`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
+    },
+    {
+      // Clear a stale mastra dev lock first (see e2e/clear-stale-dev-lock.mjs).
+      command: 'node e2e/clear-stale-dev-lock.mjs && pnpm --filter @mastra-chat-kit/server dev',
+      url: `${SERVER_URL}/health`,
+      reuseExistingServer: !process.env.CI,
+      // A cold `mastra dev` bundle shares the CPU with the web server's `next build`
+      // below; 120s timed out before the server came up.
+      timeout: 240_000,
+      env: serverEnv,
+    },
+    {
+      // Production build + start, NOT `next dev`: the Turbopack dev client's HMR
+      // WebSocket fails under Playwright's headless Chromium and aborts React
+      // hydration, leaving the page non-interactive. A production server hydrates
+      // cleanly (and is what we actually ship).
+      command: `pnpm exec next build && pnpm exec next start --port ${WEB_PORT}`,
+      url: WEB_URL,
+      reuseExistingServer: !process.env.CI,
+      timeout: 240_000,
+      // NODE_ENV=production is required: a `next build` inheriting NODE_ENV=development
+      // builds in dev mode and its error-page prerender crashes (useContext of null).
+      env: {
+        MASTRA_SERVER_URL: SERVER_URL,
+        NODE_ENV: 'production',
+        ...(E2E_JWT_SECRET ? { MASTRA_JWT_SECRET: E2E_JWT_SECRET } : {}),
+      },
+    },
+  ],
+});
