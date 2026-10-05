@@ -8,6 +8,7 @@ import {
   SettingsIcon
 } from "lucide-react";
 import Link from "next/link";
+import { guardLink } from "@/lib/unsaved-changes";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -89,7 +90,7 @@ export function NavUser({ user }: { user: SidebarUser }) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/settings">
+              <Link href="/settings" onNavigate={guardLink("/settings")}>
                 <SettingsIcon />
                 Settings
               </Link>

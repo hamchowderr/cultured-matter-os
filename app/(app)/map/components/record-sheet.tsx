@@ -136,7 +136,7 @@ export function RecordSheet({
             )}
             {node.href && (
               <SheetFooter>
-                <Button asChild>
+                <Button asChild className="touch:h-11">
                   <Link href={node.href}>
                     {node.kind === "business"
                       ? "Open the business profile"

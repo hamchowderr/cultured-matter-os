@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useNavItems } from "@/components/layout/sidebar/nav-main";
+import { mayNavigate } from "@/lib/unsaved-changes";
 
 export default function Search() {
   const [open, setOpen] = useState(false);
@@ -78,7 +79,7 @@ export default function Search() {
                     key={key}
                     onSelect={() => {
                       setOpen(false);
-                      router.push(item.href);
+                      if (mayNavigate(item.href)) router.push(item.href);
                     }}
                   >
                     {item.icon && <item.icon />}

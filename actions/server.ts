@@ -355,6 +355,13 @@ export async function createMindMap(input: In<typeof A.createMindMap>) {
 export async function updateMindMap(input: In<typeof A.updateMindMap>) {
   return toResult(() => A.updateMindMap.run(input, inAction), REFRESH);
 }
+// The editor's "Link record" search: any project, task, person, company, grant or idea by name.
+export async function findLinkableRecords(input: { query: string }) {
+  return toResult(async () => {
+    const { findLinkableRecords: find } = await import("./maps");
+    return find(String(input?.query ?? "").slice(0, 100));
+  });
+}
 export async function deleteMindMap(input: In<typeof A.deleteMindMap>) {
   return toResult(() => A.deleteMindMap.run(input, inAction), REFRESH);
 }

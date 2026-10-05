@@ -30,8 +30,12 @@ import {
   starterGraph
 } from "@/lib/mind-map";
 import { personalSql } from "@/lib/personal-sql";
-import { ActionError, defineAction } from "./define";
-import { warmPathsFor } from "./people";
+import { type ActionContext, ActionError, defineAction } from "./define";
+import { searchGrants } from "./grants";
+import { searchContacts, warmPathsFor } from "./people";
+import { listProjects, listTasks } from "./projects";
+import { searchCompanies } from "./radar";
+import { listCaptures } from "./work";
 import { id, limit } from "./schemas";
 
 // ---------------------------------------------------------------- The live business map
@@ -358,7 +362,9 @@ export const createMindMap = defineAction({
     await assertLinksExist(db, graph.nodes);
     const [row] = await db
       .insert(mindMaps)
-      .values({ title: input.title, ...graph })
+      // A whole-millisecond updatedAt (the column default has fractions), the value the editor
+      // later sends back as expectedUpdatedAt.
+      .values({ title: input.title, ...graph, updatedAt: new Date() })
       .returning();
     return row;
   },
@@ -372,10 +378,18 @@ export const createMindMap = defineAction({
 
 export const updateMindMap = defineAction({
   name: "updateMindMap",
-  description: `Change a saved mind map: its title, and/or its whole set of nodes and edges (send both together; they replace what is there). ${NODE_HELP}`,
+  description: `Change a saved mind map: its title, and/or its whole set of nodes and edges (send both together; they replace what is there, so get the map first and keep what should stay). ${NODE_HELP}`,
   kind: "write",
   input: z
-    .object({ mindMapId: id, title: mindMapTitle.optional(), ...graphFields })
+    .object({
+      mindMapId: id,
+      title: mindMapTitle.optional(),
+      ...graphFields,
+      // The editor sends the updatedAt of the version it loaded. A newer stored one means the
+      // map was changed since (by the assistant, or on another device), and the save is refused
+      // rather than overwrite that change. Callers that have just read the map can leave it out.
+      expectedUpdatedAt: z.coerce.date().optional()
+    })
     .superRefine((v, ctx) => {
       if ((v.nodes === undefined) !== (v.edges === undefined)) {
         ctx.addIssue({ code: "custom", message: "Send nodes and edges together" });
@@ -386,13 +400,21 @@ export const updateMindMap = defineAction({
   output: mindMapSchema,
   async handler(input, db) {
     const before = await mustGetMap(db, input.mindMapId);
+    if (input.expectedUpdatedAt && before.updatedAt.getTime() > input.expectedUpdatedAt.getTime()) {
+      throw new ActionError(
+        "conflict",
+        "This map was changed somewhere else since you opened it. Reload it to see the changes."
+      );
+    }
     if (input.nodes) await assertLinksExist(db, input.nodes, before.nodes);
     const [row] = await db
       .update(mindMaps)
       .set({
         ...(input.title !== undefined && { title: input.title }),
         ...(input.nodes && input.edges && { nodes: input.nodes, edges: input.edges }),
-        updatedAt: new Date()
+        // Always later than the version it replaces, even within the same millisecond, so an
+        // open editor's expectedUpdatedAt check can't miss this change.
+        updatedAt: new Date(Math.max(Date.now(), before.updatedAt.getTime() + 1))
       })
       .where(eq(mindMaps.id, input.mindMapId))
       .returning();
@@ -424,3 +446,47 @@ export const deleteMindMap = defineAction({
     summary: `Deleted mind map "${map.title}"`
   })
 });
+
+// ---------------------------------------------------------------- Linking a node to a record
+
+export type LinkableRecord = { type: RecordType; id: string; title: string; href: string };
+
+const PER_TYPE = 8;
+
+// Every record of each kind whose name matches, for the editor's "Link record" search: not only
+// what the business map shows. Reads through the existing actions, so each kind matches the way
+// its own screen searches. Not an agent tool: the assistant has those search actions already.
+export async function findLinkableRecords(
+  query: string,
+  ctx?: ActionContext
+): Promise<LinkableRecord[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const has = (s: string | null | undefined) => !!s && s.toLowerCase().includes(q.toLowerCase());
+  const [projectList, taskList, people, radar, grantList, ideas] = await Promise.all([
+    listProjects.run({ includeDone: true }, ctx),
+    listTasks.run({ includeDone: true }, ctx),
+    searchContacts.run({ query: q, limit: PER_TYPE }, ctx),
+    searchCompanies.run({ query: q, limit: PER_TYPE }, ctx),
+    searchGrants.run({ query: q, limit: PER_TYPE }, ctx),
+    listCaptures.run({ filed: true, kind: "idea", limit: 200 }, ctx)
+  ]);
+  const out: LinkableRecord[] = [];
+  const add = (type: RecordType, rid: string, title: string, extra = {}) =>
+    out.push({ type, id: rid, title, href: recordHref({ type, id: rid }, { title, ...extra }) });
+
+  for (const p of projectList.projects.filter((p) => has(p.name)).slice(0, PER_TYPE)) {
+    add("project", p.id, p.name);
+  }
+  const tasksFlat = taskList.tasks.flatMap((t) => [t, ...t.subtasks]);
+  for (const t of tasksFlat.filter((t) => has(t.title)).slice(0, PER_TYPE)) {
+    add("task", t.id, t.title, { projectId: t.projectId });
+  }
+  for (const c of people.contacts) add("contact", c.id, c.fullName);
+  for (const c of radar.companies) add("company", c.id, c.name);
+  for (const g of grantList.grants) add("grant", g.id, g.title);
+  for (const i of ideas.captures.filter((i) => has(i.body)).slice(0, PER_TYPE)) {
+    add("idea", i.id, i.body.replace(/\s+/g, " ").slice(0, 120), { filed: true });
+  }
+  return out;
+}

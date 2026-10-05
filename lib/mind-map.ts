@@ -113,6 +113,37 @@ export function starterGraph(title: string): MindMapGraph {
   return { nodes: [{ id: "root", label: title, x: 0, y: 0, link: null }], edges: [] };
 }
 
+// What the editor holds, in the saved shape: positions rounded, no link written as null.
+export type MapSnapshot = { title: string; nodes: MindMapNode[]; edges: MindMapEdge[] };
+
+export function snapshotKey(s: MapSnapshot): string {
+  return JSON.stringify({
+    title: s.title,
+    nodes: s.nodes.map((n) => ({
+      id: n.id,
+      label: n.label,
+      x: Math.round(n.x),
+      y: Math.round(n.y),
+      link: n.link ? { type: n.link.type, id: n.link.id } : null
+    })),
+    edges: s.edges.map((e) => ({ id: e.id, source: e.source, target: e.target }))
+  });
+}
+
+// A newer version of the map arrived while the editor is open (the page refreshed after the
+// assistant's updateMindMap, or after the editor's own save):
+// - "same": it holds what the editor already shows (its own save), so only its version moves on;
+// - "adopt": nothing unsaved in the editor, so it shows the new version;
+// - "conflict": the editor has unsaved edits, so it warns and won't save over the newer version.
+export function reconcileIncoming(
+  incoming: MapSnapshot,
+  current: MapSnapshot,
+  dirty: boolean
+): "same" | "adopt" | "conflict" {
+  if (snapshotKey(incoming) === snapshotKey(current)) return "same";
+  return dirty ? "conflict" : "adopt";
+}
+
 // Where a record lives in the app. Pages that have no per-record URL get a search that finds it.
 export function recordHref(
   link: RecordLink,

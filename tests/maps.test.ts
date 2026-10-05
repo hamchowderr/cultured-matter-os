@@ -15,7 +15,14 @@ import {
   visibleNodes
 } from "@/lib/business-map";
 import { layoutGraph, layoutTwoSided } from "@/lib/map-layout";
-import { MAX_EDGES, MAX_NODES, mindMapGraphSchema, recordHref } from "@/lib/mind-map";
+import { findLinkableRecords } from "@/actions/maps";
+import {
+  MAX_EDGES,
+  MAX_NODES,
+  mindMapGraphSchema,
+  reconcileIncoming,
+  recordHref
+} from "@/lib/mind-map";
 import { freshDb } from "./test-db";
 
 let db: Database;
@@ -424,6 +431,102 @@ describe("graph validation", () => {
     expect(recordHref({ type: "company", id: "k" }, { title: "Kelp" })).toBe(
       "/radar?view=all&q=Kelp&company=k"
     );
+  });
+});
+
+describe("a map changed while the editor is open", () => {
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  it("refuses the editor's save over a newer version, and accepts it on the version it loaded", async () => {
+    // The editor opens the map: it holds this version and its updatedAt.
+    const opened = await A.createMindMap.run({ title: "Sponsors" }, ctx());
+    await sleep(5);
+    // The assistant's approved updateMindMap (no expectedUpdatedAt) adds a node.
+    const byAssistant = await A.updateMindMap.run(
+      {
+        mindMapId: opened.id,
+        nodes: [...opened.nodes, { id: "ai", label: "Patagonia", x: 250, y: 0 }],
+        edges: [{ id: "e-ai", source: "root", target: "ai" }]
+      },
+      ctx()
+    );
+    expect(byAssistant.updatedAt.getTime()).toBeGreaterThan(opened.updatedAt.getTime());
+
+    // The editor saves what it had, against the version it loaded: refused, nothing lost.
+    const blind = A.updateMindMap.run(
+      {
+        mindMapId: opened.id,
+        nodes: [{ ...opened.nodes[0], label: "Sponsors (mine)" }],
+        edges: [],
+        expectedUpdatedAt: opened.updatedAt
+      },
+      ctx()
+    );
+    await expect(blind).rejects.toMatchObject({ code: "conflict" });
+    const kept = await A.getMindMap.run({ mindMapId: opened.id }, ctx());
+    expect(kept.map.nodes.map((n) => n.label)).toEqual(["Sponsors", "Patagonia"]);
+
+    // After reloading, it saves on top of the newer version.
+    const saved = await A.updateMindMap.run(
+      {
+        mindMapId: opened.id,
+        title: "Sponsors v2",
+        expectedUpdatedAt: kept.map.updatedAt
+      },
+      ctx()
+    );
+    expect(saved.title).toBe("Sponsors v2");
+    expect(saved.nodes).toHaveLength(2);
+  });
+
+  it("moves updatedAt forward even for two saves in the same millisecond", async () => {
+    const m = await A.createMindMap.run({ title: "Fast" }, ctx());
+    const a = await A.updateMindMap.run({ mindMapId: m.id, title: "Fast 1" }, ctx());
+    const b = await A.updateMindMap.run({ mindMapId: m.id, title: "Fast 2" }, ctx());
+    expect(a.updatedAt.getTime()).toBeGreaterThan(m.updatedAt.getTime());
+    expect(b.updatedAt.getTime()).toBeGreaterThan(a.updatedAt.getTime());
+  });
+
+  it("decides what the open editor does with a newer version", () => {
+    const base = {
+      title: "Map",
+      nodes: [{ id: "root", label: "Map", x: 0, y: 0, link: null }],
+      edges: []
+    };
+    const newer = {
+      ...base,
+      nodes: [...base.nodes, { id: "ai", label: "From the assistant", x: 250, y: 0 }]
+    };
+    // Its own save coming back (positions rounded, link left out): nothing to do.
+    const own = { ...base, nodes: [{ id: "root", label: "Map", x: 0.4, y: -0.2 }] };
+    expect(reconcileIncoming(own, base, true)).toBe("same");
+    // Someone else's change, nothing unsaved here: show it.
+    expect(reconcileIncoming(newer, base, false)).toBe("adopt");
+    // Someone else's change while she has unsaved edits: warn, don't save over it.
+    expect(reconcileIncoming(newer, base, true)).toBe("conflict");
+  });
+});
+
+describe("findLinkableRecords", () => {
+  it("finds any record by name, not only what the business map shows", async () => {
+    const project = await A.createProject.run({ name: "Seaweed packaging trial" }, ctx());
+    const done = await A.createTask.run(
+      { title: "Seaweed supplier call", projectId: project.id },
+      ctx()
+    );
+    // Done tasks never appear on the business map, but can still be linked.
+    await A.setTaskStatus.run({ taskId: done.id, status: "done" }, ctx());
+    const unstarred = await seedCompany("Seaweed Labs");
+    const found = await findLinkableRecords("seaweed", ctx());
+    expect(found.map((r) => `${r.type}:${r.title}`).sort()).toEqual(
+      [
+        "company:Seaweed Labs",
+        "project:Seaweed packaging trial",
+        "task:Seaweed supplier call"
+      ].sort()
+    );
+    expect(found.find((r) => r.id === unstarred.id)?.href).toContain(`company=${unstarred.id}`);
+    expect(await findLinkableRecords("   ", ctx())).toEqual([]);
   });
 });
 

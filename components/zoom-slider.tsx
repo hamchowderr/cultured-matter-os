@@ -39,6 +39,7 @@ export function ZoomSlider({
         <Button
           variant="ghost"
           size="icon"
+          className="touch:size-11"
           aria-label="Zoom out"
           onClick={() => zoomOut({ duration: 300 })}
         >
@@ -58,6 +59,7 @@ export function ZoomSlider({
         <Button
           variant="ghost"
           size="icon"
+          className="touch:size-11"
           aria-label="Zoom in"
           onClick={() => zoomIn({ duration: 300 })}
         >
@@ -80,6 +82,7 @@ export function ZoomSlider({
       <Button
         variant="ghost"
         size="icon"
+        className="touch:size-11"
         aria-label="Fit the whole map"
         onClick={() => fitView({ duration: 300 })}
       >

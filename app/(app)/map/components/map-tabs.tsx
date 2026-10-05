@@ -13,7 +13,7 @@ export function MapTabs({ current }: { current: (typeof TABS)[number]["value"] }
   return (
     <nav
       aria-label="Map sections"
-      className="bg-muted text-muted-foreground inline-flex h-9 w-fit items-center rounded-lg p-[3px]"
+      className="bg-muted text-muted-foreground touch:h-[50px] inline-flex h-9 w-fit items-center rounded-lg p-[3px]"
     >
       {TABS.map((t) => (
         <Link

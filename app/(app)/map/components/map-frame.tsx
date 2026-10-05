@@ -43,7 +43,8 @@ export const FLOW_DEFAULTS = {
   fitViewOptions: { padding: 0.12, maxZoom: 1 }
 } as const;
 
-// Dots behind the nodes, and the React Flow UI zoom slider (vertical on a phone so it fits).
+// Dots behind the nodes, and the React Flow UI zoom slider: on a phone just the zoom out, zoom in
+// and fit buttons (pinch zooms there), sized for a finger.
 export function MapChrome() {
   const isMobile = useIsMobile();
   return (

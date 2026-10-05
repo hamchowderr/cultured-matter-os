@@ -97,7 +97,7 @@ function Flow({ map }: { map: BusinessMap }) {
         className="flex w-full flex-wrap justify-start *:data-[slot=toggle-group-item]:flex-none"
       >
         {LAYERS.map((l) => (
-          <ToggleGroupItem key={l.value} value={l.value} className="px-3">
+          <ToggleGroupItem key={l.value} value={l.value} className="touch:h-11 px-3">
             {l.label}
           </ToggleGroupItem>
         ))}
@@ -122,31 +122,30 @@ function Flow({ map }: { map: BusinessMap }) {
   );
 }
 
-// The map is rebuilt on the server from the tables on every visit. While it is open it also
-// refreshes when she comes back to the tab and once a minute, so it follows changes made
-// elsewhere (another screen, the assistant).
-function useLiveRefresh() {
+// The map is built on the server from the tables on every visit, and the page is refreshed by
+// the writes themselves (server actions' REFRESH, the chat after an approved write). The one
+// change those can't see is work done in another tab or on another device, so it also refreshes
+// when she comes back to this tab.
+function useRefreshOnReturn() {
   const router = useRouter();
   useEffect(() => {
     const refresh = () => {
       if (document.visibilityState === "visible") router.refresh();
     };
-    const timer = setInterval(refresh, 60_000);
     document.addEventListener("visibilitychange", refresh);
-    window.addEventListener("focus", refresh);
-    return () => {
-      clearInterval(timer);
-      document.removeEventListener("visibilitychange", refresh);
-      window.removeEventListener("focus", refresh);
-    };
+    return () => document.removeEventListener("visibilitychange", refresh);
   }, [router]);
 }
 
 export function BusinessMapView({ map }: { map: BusinessMap }) {
-  useLiveRefresh();
+  useRefreshOnReturn();
+  // A refresh hands over a new object even when nothing changed; keep the previous one then,
+  // so the layout (dagre) only runs again when the data did.
+  const key = useMemo(() => JSON.stringify(map), [map]);
+  const stableMap = useMemo(() => map, [key]);
   return (
     <ReactFlowProvider>
-      <Flow map={map} />
+      <Flow map={stableMap} />
     </ReactFlowProvider>
   );
 }

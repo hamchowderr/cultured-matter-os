@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useIsTablet } from "@/hooks/use-mobile";
 import Link from "next/link";
+import { guardLink } from "@/lib/unsaved-changes";
 
 import {
   Sidebar,
@@ -60,7 +61,7 @@ export function AppSidebar({
               className="hover:text-foreground h-10 group-data-[collapsible=icon]:px-0!"
               asChild
             >
-              <Link href="/today">
+              <Link href="/today" onNavigate={guardLink("/today")}>
                 <span className="bg-foreground text-background flex size-7 shrink-0 items-center justify-center rounded-md text-xs font-semibold">
                   CM
                 </span>

@@ -28,6 +28,7 @@ import {
   type LucideIcon
 } from "lucide-react";
 import Link from "next/link";
+import { guardLink } from "@/lib/unsaved-changes";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { usePathname } from "next/navigation";
 import { useChatEnabled } from "@/components/layout/chat-dock";
@@ -150,7 +151,11 @@ export function NavMain() {
                                   isActive={pathname === subItem.href}
                                   asChild
                                 >
-                                  <Link href={subItem.href} target={subItem.newTab ? "_blank" : ""}>
+                                  <Link
+                                    href={subItem.href}
+                                    target={subItem.newTab ? "_blank" : ""}
+                                    onNavigate={guardLink(subItem.href)}
+                                  >
                                     <span>{subItem.title}</span>
                                   </Link>
                                 </SidebarMenuSubButton>
@@ -167,7 +172,11 @@ export function NavMain() {
                       tooltip={item.title}
                       asChild
                     >
-                      <Link href={item.href} target={item.newTab ? "_blank" : ""}>
+                      <Link
+                        href={item.href}
+                        target={item.newTab ? "_blank" : ""}
+                        onNavigate={guardLink(item.href)}
+                      >
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
                       </Link>
