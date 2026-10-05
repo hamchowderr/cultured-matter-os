@@ -13,7 +13,8 @@
     "test": "vitest run",
     "ingest:radar": "tsx scripts/ingest-radar.mts",
     "ingest:grants": "tsx scripts/ingest-grants.mts",
-    "ingest:monitors": "tsx scripts/ingest-monitors.mts"
+    "ingest:monitors": "tsx scripts/ingest-monitors.mts",
+    "seed:business": "tsx scripts/seed-business-profile.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

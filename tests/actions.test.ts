@@ -94,7 +94,9 @@ describe("registry", () => {
         "setPushPreferences",
         "searchNotes",
         "getNote",
-        "fileNoteToInbox"
+        "fileNoteToInbox",
+        "getBusinessProfile",
+        "updateBusinessProfile"
       ].sort()
     );
     for (const a of A.allActions) {

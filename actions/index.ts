@@ -82,6 +82,7 @@ import {
   setPushPreferences
 } from "./push";
 import { fileNoteToInbox, getNote, importNotes, searchNotes } from "./notes";
+import { getBusinessProfile, updateBusinessProfile } from "./business";
 
 export {
   searchCompanies,
@@ -156,7 +157,9 @@ export {
   importNotes,
   searchNotes,
   getNote,
-  fileNoteToInbox
+  fileNoteToInbox,
+  getBusinessProfile,
+  updateBusinessProfile
 };
 
 // Every named action, for the phase-2 agent to wrap as tools.
@@ -222,7 +225,9 @@ export const allActions = [
   setPushPreferences,
   searchNotes,
   getNote,
-  fileNoteToInbox
+  fileNoteToInbox,
+  getBusinessProfile,
+  updateBusinessProfile
   // Not tools: calendarFeed (keyed by the feed's secret token), recordDailySummary (the cron's
   // bookkeeping), markTourSeen (the guided tours' bookkeeping), importNotes (the Apple Notes
   // Shortcut's endpoint) and the push device actions (they need a browser's push subscription).

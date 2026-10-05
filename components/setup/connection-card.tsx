@@ -21,12 +21,15 @@ export function ConnectionCard({
   title,
   description,
   state,
+  stateLabel,
   action
 }: {
   icon: LucideIcon;
   title: string;
   description: string;
   state: ConnectionState;
+  // Overrides the badge text (e.g. "Up to date" for something that isn't a connection).
+  stateLabel?: string;
   action?: React.ReactNode;
 }) {
   const badge = BADGE[state];
@@ -37,16 +40,14 @@ export function ConnectionCard({
           <span className="text-muted-foreground bg-muted flex size-9 items-center justify-center rounded-lg">
             <Icon className="size-4" />
           </span>
-          <Badge variant={badge.variant}>{badge.label}</Badge>
+          <Badge variant={badge.variant}>{stateLabel ?? badge.label}</Badge>
         </div>
         <div className="space-y-1">
           <h3 className="text-base font-medium">{title}</h3>
           <p className="text-muted-foreground text-sm">{description}</p>
         </div>
       </CardContent>
-      {action && (
-        <CardFooter className="bg-muted/40 px-(--card-spacing) py-3">{action}</CardFooter>
-      )}
+      {action && <CardFooter className="bg-muted/40 px-(--card-spacing) py-3">{action}</CardFooter>}
     </Card>
   );
 }

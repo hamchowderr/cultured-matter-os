@@ -1,8 +1,8 @@
-import { ArrowRightIcon } from "lucide-react";
+import { ArrowRightIcon, Building2Icon } from "lucide-react";
 import { headers } from "next/headers";
 import Link from "next/link";
 
-import { getUserSettings, pushStatus, setupStatus } from "@/actions/server";
+import { getBusinessProfile, getUserSettings, pushStatus, setupStatus } from "@/actions/server";
 import { CalendarFeedCard } from "@/components/settings/calendar-feed-card";
 import { DailyEmailCard } from "@/components/settings/daily-email-card";
 import { NotificationsCard } from "@/components/settings/notifications-card";
@@ -20,7 +20,7 @@ export async function generateMetadata() {
   return generateMeta({
     title: "Settings",
     description:
-      "Your account, what is connected (LinkedIn, Google, iPhone, newsletter), the calendar feed, the daily email and notifications."
+      "Your account, your business profile, what is connected (LinkedIn, Google, iPhone, newsletter), the calendar feed, the daily email and notifications."
   });
 }
 
@@ -51,11 +51,12 @@ async function requestOrigin() {
 export default async function Page() {
   // Session first: it marks the page as dynamic before any action runs.
   const user = (await getSession())?.user;
-  const [status, settings, push, origin] = await Promise.all([
+  const [status, settings, push, origin, business] = await Promise.all([
     setupStatus({}),
     getUserSettings(),
     pushStatus(),
-    requestOrigin()
+    requestOrigin(),
+    getBusinessProfile()
   ]);
 
   function action(step: Step, done: boolean) {
@@ -91,6 +92,26 @@ export default async function Page() {
           </div>
         </section>
       )}
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Business</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <ConnectionCard
+            icon={Building2Icon}
+            title="Business profile"
+            description={
+              business.ok && business.data.waitingOn.length
+                ? "What Cultured Matter is, in one place. The AI reads it. Some company details are waiting for your answer."
+                : "What Cultured Matter is, in one place. The AI reads it."
+            }
+            state={business.ok && business.data.waitingOn.length ? "waiting" : "connected"}
+            stateLabel={
+              business.ok && business.data.waitingOn.length ? "Needs answers" : "Up to date"
+            }
+            action={<LinkAction href="/settings/business" label="Open" />}
+          />
+        </div>
+      </section>
 
       <section className="space-y-3">
         <div className="flex items-baseline justify-between gap-3">

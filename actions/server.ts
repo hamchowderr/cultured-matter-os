@@ -307,3 +307,11 @@ export async function getNote(input: In<typeof A.getNote>) {
 export async function fileNoteToInbox(input: In<typeof A.fileNoteToInbox>) {
   return toResult(() => A.fileNoteToInbox.run(input, inAction), REFRESH);
 }
+
+// Settings → Business: the business profile the AI reads.
+export async function getBusinessProfile() {
+  return toResult(() => A.getBusinessProfile.run({}));
+}
+export async function updateBusinessProfile(input: In<typeof A.updateBusinessProfile>) {
+  return toResult(() => A.updateBusinessProfile.run(input));
+}
