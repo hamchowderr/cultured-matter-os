@@ -1,7 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { Database } from "@/db";
+import { DrizzleQueryError } from "drizzle-orm/errors";
+import { z } from "zod/v4";
+
 import {
+  agentActions,
   describeAgentActions,
   handleListAgentActions,
   handleRunAgentAction
@@ -104,6 +108,52 @@ describe("running an agent action", () => {
     expect(res.status).toBe(400);
     expect((await res.json()).error.code).toBe("invalid");
     expect((await run("createTask", "not json")).status).toBe(400);
+  });
+
+  it("logs a failed action without the values it was given", async () => {
+    // A database error's message lists the query parameters: here, the search text.
+    const secret = "EIN 12-3456789";
+    const failing = new Proxy(
+      {},
+      {
+        get: () => () => {
+          throw new DrizzleQueryError(
+            "select * from contacts where full_name like ?",
+            [`%${secret}%`],
+            new Error("SQLITE_BUSY: database is locked")
+          );
+        }
+      }
+    ) as unknown as Database;
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await handleRunAgentAction(
+      new Request("http://localhost/api/agent/actions/searchContacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...auth },
+        body: JSON.stringify({ query: secret })
+      }),
+      "searchContacts",
+      { db: failing }
+    );
+    expect(res.status).toBe(500);
+    expect(logged).toHaveBeenCalled();
+    const line = logged.mock.calls.map((c) => c.map(String).join(" ")).join(" | ");
+    expect(line).toContain("SQLITE_BUSY");
+    expect(line).not.toContain("12-3456789");
+    logged.mockRestore();
+  });
+
+  it("reports a bad result from the action as a server error, not bad input", async () => {
+    const action = agentActions.find((a) => a.name === "searchContacts")!;
+    const runSpy = vi
+      .spyOn(action, "run")
+      .mockRejectedValue(new z.ZodError([{ code: "custom", message: "bad output", path: ["total"], input: null }]));
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await run("searchContacts", { query: "x" });
+    expect(res.status).toBe(500);
+    expect((await res.json()).error.code).toBe("internal");
+    runSpy.mockRestore();
+    logged.mockRestore();
   });
 
   it("does not run unknown or excluded actions", async () => {

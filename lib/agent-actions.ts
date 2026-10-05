@@ -2,7 +2,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod/v4";
 
 import { type Action, ActionError, allActions } from "@/actions";
-import type { ActionContext } from "@/actions/define";
+import { type ActionContext, loggableError } from "@/actions/define";
 
 // The named actions the chat agent (the cultured-matter-agent server) may call as tools.
 // The agent server reads this list at boot and builds one tool per action from its JSON
@@ -111,6 +111,14 @@ export async function handleRunAgentAction(request: Request, name: string, ctx?:
     return json({ ok: false, error: { code: "invalid", message: "Body must be JSON" } }, 400);
   }
 
+  // Bad input is the caller's mistake (400). Checked here, before running, so that a
+  // ZodError from the action's OUTPUT schema below reads as what it is: our bug (500).
+  const parsed = action.input.safeParse(input);
+  if (!parsed.success) {
+    const message = parsed.error.issues[0]?.message ?? "Invalid input";
+    return json({ ok: false, error: { code: "invalid", message } }, 400);
+  }
+
   try {
     return json({ ok: true, data: await action.run(input, ctx) });
   } catch (e) {
@@ -120,11 +128,9 @@ export async function handleRunAgentAction(request: Request, name: string, ctx?:
         STATUS[e.code] ?? 400
       );
     }
-    if (e instanceof z.ZodError) {
-      const message = e.issues[0]?.message ?? "Invalid input";
-      return json({ ok: false, error: { code: "invalid", message } }, 400);
-    }
-    console.error(`agent action ${name} failed`, e);
+    // A database error's message carries the query's parameters (her data: an EIN, an
+    // email); loggableError keeps the error's kind and drops them.
+    console.error(`agent action ${name} failed`, loggableError(e));
     return json({ ok: false, error: { code: "internal", message: "Something went wrong" } }, 500);
   }
 }
