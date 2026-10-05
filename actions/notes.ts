@@ -85,6 +85,10 @@ export const importNotes = defineAction({
           .where(eq(notes.id, row.id));
         result.updated++;
       } else {
+        // A note first imported without a modified date gets one when a later run sends it.
+        if (row && row.noteModifiedAt == null && n.modifiedAt) {
+          await db.update(notes).set({ noteModifiedAt: n.modifiedAt }).where(eq(notes.id, row.id));
+        }
         result.unchanged++;
       }
     }
