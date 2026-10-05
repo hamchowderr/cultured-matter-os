@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   type AnySQLiteColumn,
+  check,
   index,
   integer,
   primaryKey,
@@ -437,6 +438,70 @@ export const notes = sqliteTable(
     updatedAt: updatedAt()
   },
   (t) => [index("notes_created_idx").on(t.noteCreatedAt), index("notes_folder_idx").on(t.folder)]
+);
+
+// ---------------------------------------------------------------- Business profile
+
+// What Cultured Matter is, in one row (one user, one business): the single source of truth the
+// Settings → Business page edits and the AI reads (lib/business-profile.ts). Sensitive IDs (EIN,
+// SAM UEI) are plain columns; actions log which fields changed, never their values.
+export const businessProfile = sqliteTable(
+  "business_profile",
+  {
+    id: text("id").primaryKey().default("main"),
+    // About
+    name: text("name"),
+    tagline: text("tagline"),
+    mission: text("mission"),
+    story: text("story"),
+    founderName: text("founder_name"),
+    founderBio: text("founder_bio"),
+    // Company details
+    entityType: text("entity_type"),
+    entityState: text("entity_state"),
+    ein: text("ein"),
+    samUei: text("sam_uei"),
+    address: text("address"),
+    foundedOn: text("founded_on"),
+    teamSize: text("team_size"),
+    revenueStage: text("revenue_stage"),
+    // null means she hasn't answered yet.
+    womanOwned: integer("woman_owned", { mode: "boolean" }),
+    minorityOwned: integer("minority_owned", { mode: "boolean" }),
+    // Focus
+    sectors: text("sectors", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    fitCriteria: text("fit_criteria", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    targetBrands: text("target_brands", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    // People and partners
+    people: text("people", { mode: "json" })
+      .$type<{ name: string; role: string }[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    website: text("website"),
+    socialLinks: text("social_links", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    notes: text("notes"),
+    // Fields the one-time seed (lib/business-seed.ts) has already handled. A field she cleared
+    // stays cleared: the seed only touches fields that are not in this list.
+    seededFields: text("seeded_fields", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    updatedAt: updatedAt()
+  },
+  // One user, one business: the table can only ever hold the row "main".
+  (t) => [check("business_profile_single_row", sql`${t.id} = 'main'`)]
 );
 
 // ---------------------------------------------------------------- Log
