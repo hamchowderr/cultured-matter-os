@@ -1,18 +1,18 @@
-import { randomUUID } from "node:crypto";
-import { Agent } from "@mastra/core/agent";
-import { TaskSignalProvider } from "@mastra/core/signals";
-import { createTool } from "@mastra/core/tools";
-import { z } from "zod";
-import { env } from "../../lib/env";
-import { type ChatFeatures, features as defaultFeatures } from "../lib/features";
-import { putImage } from "../lib/image-store";
-import { liveScorers } from "../lib/live-scorers";
-import { createDefaultMemory } from "../lib/memory";
-import { defaultInputProcessors, defaultOutputProcessors } from "../lib/processors";
-import { getChatWorkspace, WORKSPACE_ROOT } from "../lib/workspace";
-import { getAppActionTools } from "../tools/app-actions";
-import { createWritePlanTool } from "../tools/plan";
-import { listSchedules, startSchedule, stopSchedule } from "../tools/schedule";
+import { randomUUID } from 'node:crypto';
+import { Agent } from '@mastra/core/agent';
+import { TaskSignalProvider } from '@mastra/core/signals';
+import { createTool } from '@mastra/core/tools';
+import { z } from 'zod';
+import { env } from '../../lib/env';
+import { type ChatFeatures, features as defaultFeatures } from '../lib/features';
+import { putImage } from '../lib/image-store';
+import { liveScorers } from '../lib/live-scorers';
+import { createDefaultMemory } from '../lib/memory';
+import { defaultInputProcessors, defaultOutputProcessors } from '../lib/processors';
+import { getChatWorkspace, WORKSPACE_ROOT } from '../lib/workspace';
+import { getAppActionTools } from '../tools/app-actions';
+import { createWritePlanTool } from '../tools/plan';
+import { listSchedules, startSchedule, stopSchedule } from '../tools/schedule';
 
 /**
  * # Chat Assistant (mastra-chat-kit reference agent)
@@ -29,61 +29,61 @@ import { listSchedules, startSchedule, stopSchedule } from "../tools/schedule";
 
 /** Instant tool → exercises <Tool>/<ToolInput>/<ToolOutput> rendering. */
 export const getWeather = createTool({
-  id: "getWeather",
+  id: 'getWeather',
   description:
-    "Get the current weather for a location. Call this whenever the user asks about weather.",
+    'Get the current weather for a location. Call this whenever the user asks about weather.',
   inputSchema: z.object({
-    location: z.string().describe('City name, e.g. "Los Angeles"')
+    location: z.string().describe('City name, e.g. "Los Angeles"'),
   }),
   outputSchema: z.object({
     location: z.string(),
     temperatureC: z.number(),
-    condition: z.string()
+    condition: z.string(),
   }),
   execute: async ({ location }) => {
     // Deterministic pseudo-weather derived from the location string so the same
     // input always yields the same output (AIMock-friendly).
     const seed = [...location].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-    const conditions = ["Sunny", "Cloudy", "Rainy", "Windy", "Clear"];
+    const conditions = ['Sunny', 'Cloudy', 'Rainy', 'Windy', 'Clear'];
     return {
       location,
       temperatureC: 10 + (seed % 20),
-      condition: conditions[seed % conditions.length]
+      condition: conditions[seed % conditions.length],
     };
-  }
+  },
 });
 
 /** Returns documents → exercises sources/citation rendering in the UI. */
 export const searchKnowledge = createTool({
-  id: "searchKnowledge",
+  id: 'searchKnowledge',
   description:
-    "Search the knowledge base for documents relevant to a query. Use when the user asks a factual or how-to question.",
+    'Search the knowledge base for documents relevant to a query. Use when the user asks a factual or how-to question.',
   inputSchema: z.object({
-    query: z.string().describe("The search query")
+    query: z.string().describe('The search query'),
   }),
   outputSchema: z.object({
     results: z.array(
       z.object({
         title: z.string(),
         url: z.string(),
-        snippet: z.string()
-      })
-    )
+        snippet: z.string(),
+      }),
+    ),
   }),
   execute: async ({ query }) => ({
     results: [
       {
         title: `Overview: ${query}`,
         url: `https://docs.example.com/${encodeURIComponent(query)}`,
-        snippet: `A concise overview covering ${query} and how it works.`
+        snippet: `A concise overview covering ${query} and how it works.`,
       },
       {
         title: `Guide: getting started with ${query}`,
         url: `https://docs.example.com/${encodeURIComponent(query)}/guide`,
-        snippet: `Step-by-step guide for ${query}, with examples.`
-      }
-    ]
-  })
+        snippet: `Step-by-step guide for ${query}, with examples.`,
+      },
+    ],
+  }),
 });
 
 /**
@@ -92,10 +92,10 @@ export const searchKnowledge = createTool({
  * format, and a wrong label breaks the rendered <Image>. Defaults to WebP.
  */
 export function sniffImageType(base64: string): string {
-  if (base64.startsWith("iVBORw0KGgo")) return "image/png";
-  if (base64.startsWith("/9j/")) return "image/jpeg";
-  if (base64.startsWith("R0lGOD")) return "image/gif";
-  return "image/webp";
+  if (base64.startsWith('iVBORw0KGgo')) return 'image/png';
+  if (base64.startsWith('/9j/')) return 'image/jpeg';
+  if (base64.startsWith('R0lGOD')) return 'image/gif';
+  return 'image/webp';
 }
 
 /**
@@ -104,50 +104,50 @@ export function sniffImageType(base64: string): string {
  * Claude) decides to call this; the tool itself hits OpenAI's image endpoint.
  */
 export const generateImage = createTool({
-  id: "generateImage",
+  id: 'generateImage',
   description:
-    "Generate an image from a text prompt. Call this whenever the user asks for an image, picture, drawing, or illustration.",
+    'Generate an image from a text prompt. Call this whenever the user asks for an image, picture, drawing, or illustration.',
   inputSchema: z.object({
-    prompt: z.string().describe("A vivid description of the image to generate")
+    prompt: z.string().describe('A vivid description of the image to generate'),
   }),
   outputSchema: z.object({
     imageId: z.string(),
     mediaType: z.string(),
-    prompt: z.string()
+    prompt: z.string(),
   }),
   execute: async ({ prompt }) => {
-    const base = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
+    const base = process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1';
     // Keep the output SMALL: a 1024x1024 PNG base64 (~2MB) would overflow the
     // model's context on the continuation step. WebP + low quality + compression
     // yields ~30-60KB, which flows through the agent + memory cleanly.
     const res = await fetch(`${base}/images/generations`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+        'content-type': 'application/json',
+        authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-image-1-mini",
+        model: 'gpt-image-1-mini',
         prompt,
-        size: "1024x1024",
-        quality: "low",
-        output_format: "webp",
+        size: '1024x1024',
+        quality: 'low',
+        output_format: 'webp',
         output_compression: 40,
-        n: 1
-      })
+        n: 1,
+      }),
     });
     if (!res.ok) {
       throw new Error(`image generation failed: ${res.status} ${await res.text()}`);
     }
     const json = (await res.json()) as { data?: Array<{ b64_json?: string }> };
-    const base64 = json.data?.[0]?.b64_json ?? "";
+    const base64 = json.data?.[0]?.b64_json ?? '';
     const mediaType = sniffImageType(base64);
     // Stash the bytes server-side; hand the model only a tiny id (served via
     // GET /images/:id), so the image never enters the model context.
     const imageId = randomUUID();
     putImage(base64, mediaType, imageId);
     return { imageId, mediaType, prompt };
-  }
+  },
 });
 
 /**
@@ -160,25 +160,25 @@ export const generateImage = createTool({
  * context, falling back to the module singleton.
  */
 export const setGoal = createTool({
-  id: "setGoal",
+  id: 'setGoal',
   description:
     'Set a persistent objective to work toward over multiple turns. Call this when the user asks you to keep working until something is achieved, gives you a standing goal, or wants iterative refinement ("keep going until…", "your goal is…", "don\'t stop until…", "iterate until it\'s good"). Do NOT call it for one-shot requests. After calling it, start working — a judge scores each turn and you keep going until the goal is met.',
   inputSchema: z.object({
-    objective: z.string().describe("A crisp, verifiable restatement of the goal to work toward."),
+    objective: z.string().describe('A crisp, verifiable restatement of the goal to work toward.'),
     maxRuns: z
       .number()
       .int()
       .positive()
       .optional()
       .describe(
-        "Optional cap on judged iterations before the goal stops (defaults to the agent config)."
-      )
+        'Optional cap on judged iterations before the goal stops (defaults to the agent config).',
+      ),
   }),
   outputSchema: z.object({
     ok: z.boolean(),
     objective: z.string(),
     status: z.string(),
-    maxRuns: z.number().optional()
+    maxRuns: z.number().optional(),
   }),
   execute: async ({ objective, maxRuns }, ctx) => {
     const threadId = ctx?.agent?.threadId;
@@ -187,31 +187,31 @@ export const setGoal = createTool({
     // controller store the in-loop goal step reads back. Resolving by id (not by importing
     // `chatAgent`) also avoids a tool⇄agent circular reference. `setObjective` no-ops
     // without a memory-backed thread, so guard on threadId + a resolved agent.
-    const agent = ctx?.mastra?.getAgent(ctx?.agent?.agentId ?? "chat");
+    const agent = ctx?.mastra?.getAgent(ctx?.agent?.agentId ?? 'chat');
     if (!threadId || !agent) {
-      return { ok: false, objective, status: "unavailable" };
+      return { ok: false, objective, status: 'unavailable' };
     }
     const record = await agent.setObjective(objective, {
       threadId,
       ...(resourceId ? { resourceId } : {}),
-      ...(typeof maxRuns === "number" && maxRuns > 0 ? { maxRuns } : {})
+      ...(typeof maxRuns === 'number' && maxRuns > 0 ? { maxRuns } : {}),
     });
     return {
       ok: true,
       objective: record?.objective ?? objective,
-      status: record?.status ?? "active",
-      ...(record?.maxRuns ? { maxRuns: record.maxRuns } : {})
+      status: record?.status ?? 'active',
+      ...(record?.maxRuns ? { maxRuns: record.maxRuns } : {}),
     };
-  }
+  },
 });
 
-const SUBAGENT_GUIDE: Record<keyof ChatFeatures["subagents"], string> = {
+const SUBAGENT_GUIDE: Record<keyof ChatFeatures['subagents'], string> = {
   code: '"code" for building/editing/running code and tests in the sandbox',
   research: `"research" for open-ended "find out / look up / compare / what's the latest" questions that need live web browsing + sources`,
   writer: '"writer" for drafting long-form content (docs, summaries, posts, explanations)',
   review:
     '"review" to audit existing code or a draft and report findings — it is read-only, so send it work that already exists and act on its findings yourself',
-  data: '"data" for SQL against the versioned Dolt database'
+  data: '"data" for SQL against the versioned Dolt database',
 };
 
 /**
@@ -221,38 +221,38 @@ const SUBAGENT_GUIDE: Record<keyof ChatFeatures["subagents"], string> = {
  * never told about something it can't call.
  */
 export function chatInstructions(f: ChatFeatures): string {
-  const enabled = (Object.keys(SUBAGENT_GUIDE) as (keyof ChatFeatures["subagents"])[]).filter(
-    (k) => f.subagents[k]
+  const enabled = (Object.keys(SUBAGENT_GUIDE) as (keyof ChatFeatures['subagents'])[]).filter(
+    (k) => f.subagents[k],
   );
   const lines = [
     ...(f.demoTools
       ? [
-          "- When the user asks about weather, call getWeather.",
-          "- When the user asks a factual or how-to question, call searchKnowledge and ground your answer in the results, citing the document titles."
+          '- When the user asks about weather, call getWeather.',
+          '- When the user asks a factual or how-to question, call searchKnowledge and ground your answer in the results, citing the document titles.',
         ]
       : []),
     ...(f.generateImage
       ? [
-          "- When the user asks for an image, picture, drawing, or illustration, call generateImage with a vivid prompt."
+          '- When the user asks for an image, picture, drawing, or illustration, call generateImage with a vivid prompt.',
         ]
       : []),
     ...(enabled.length
       ? [
-          `- For substantial, self-contained work, delegate to a specialist subagent via the subagent tool rather than doing it inline. Pick the agentType by the task: ${enabled.map((k) => SUBAGENT_GUIDE[k]).join("; ")}. A subagent can't see this conversation, so put ALL the context it needs in the task. Handle small, quick things yourself.`
+          `- For substantial, self-contained work, delegate to a specialist subagent via the subagent tool rather than doing it inline. Pick the agentType by the task: ${enabled.map((k) => SUBAGENT_GUIDE[k]).join('; ')}. A subagent can't see this conversation, so put ALL the context it needs in the task. Handle small, quick things yourself.`,
         ]
       : []),
     '- When the user gives you a STANDING objective to work toward over multiple turns — "keep going until…", "your goal is…", "don\'t stop until…", "iterate until it\'s good" — call setGoal with a crisp, verifiable restatement, then start working. A judge scores each turn and you keep iterating until it\'s met. Do NOT call setGoal for ordinary one-shot requests; just answer those.',
-    f.workspaceMode === "plans"
+    f.workspaceMode === 'plans'
       ? "- For a task that is complex, multi-step, ambiguous, or risky (changes or deletes things, or where getting the approach wrong is costly), PLAN FIRST: write a short, ordered plan with write_plan, then call submit_plan with the path it returns and wait for approval before doing the work. Don't plan for simple, one-shot, or read-only requests — just do those directly."
       : "- For a task that is complex, multi-step, ambiguous, or risky (touches many files, changes or deletes things, or where getting the approach wrong is costly), PLAN FIRST: briefly research if needed, then call submit_plan with a short, ordered plan and wait for approval before doing the work. Don't plan for simple, one-shot, or read-only requests — just do those directly.",
     "- When you need something from the user that you don't have and can't sensibly assume — a genuinely ambiguous request (which of several things they mean) OR a required detail that's missing (a name, value, or choice you can't default) — ALWAYS ask through the ask_user tool, NEVER in plain prose. (A plain-text question just stalls the turn; ask_user gives the user a real prompt that resumes the run with their answer.) Call ask_user with ONE clear, specific question, and pass `options` (2–4 concise labels) when the likely answers are known so the user can pick instead of typing. Ask once, then continue with the answer. Don't use it for things you can reasonably infer or default — for trivial gaps, act on a sensible assumption and say what you assumed.",
     "- For a task with several distinct steps, track it with the task tools: call task_write once to lay out the steps up front, then task_update / task_complete as you finish each one, so the user can watch progress. Skip this for single-step or trivial requests — don't narrate a one-liner as a task list.",
     `- When the user wants something to happen repeatedly on a timer — "every morning…", "remind me every hour…", "run X daily…" — call start_schedule with a cron expression and the prompt to run; it returns a schedule id and fires into this conversation. To stop or cancel one, call stop_schedule with its id (use list_schedules first if you don't have it). Use these only for genuinely recurring requests, not one-off "do this now" tasks.`,
     // Cultured Matter: plain prose for a non-technical reader (replaces the kit's markdown line).
-    "- Write short, warm, plain sentences. No bold, no headings, no tables. A short list is fine when it truly helps.",
-    "- Never fabricate tool results; only state what the tools return."
+    '- Write short, warm, plain sentences. No bold, no headings, no tables. A short list is fine when it truly helps.',
+    '- Never fabricate tool results; only state what the tools return.',
   ];
-  return `${CULTURED_MATTER_PERSONA}\n\n${lines.join("\n")}`;
+  return `${CULTURED_MATTER_PERSONA}\n\n${lines.join('\n')}`;
 }
 
 /**
@@ -273,7 +273,7 @@ export function chatTools(f: ChatFeatures, root: string = WORKSPACE_ROOT) {
     startSchedule,
     stopSchedule,
     listSchedules,
-    ...(f.workspaceMode === "plans" ? { write_plan: createWritePlanTool(root) } : {})
+    ...(f.workspaceMode === 'plans' ? { write_plan: createWritePlanTool(root) } : {}),
   };
 }
 
@@ -296,18 +296,18 @@ The user has enabled web search for this turn. Use your browser tools to look th
  */
 export function createChatAgent(
   f: ChatFeatures = defaultFeatures,
-  root: string = WORKSPACE_ROOT
+  root: string = WORKSPACE_ROOT,
 ): Agent {
   const baseInstructions = chatInstructions(f);
   return new Agent({
-    id: "chat",
-    name: "Chat Assistant",
+    id: 'chat',
+    name: 'Chat Assistant',
     description:
-      "General conversational assistant that exercises the full chat UI: streamed text, reasoning, tool input/output, sources, and images. The reference agent for mastra-chat-kit.",
+      'General conversational assistant that exercises the full chat UI: streamed text, reasoning, tool input/output, sources, and images. The reference agent for mastra-chat-kit.',
     // Dynamic so the AgentController "Search" toggle (request context `webSearch`) can switch
     // the agent into browse-the-web mode. Static string otherwise.
     instructions: ({ requestContext }) =>
-      requestContext.get("webSearch") === true && f.browser
+      requestContext.get('webSearch') === true && f.browser
         ? baseInstructions + WEB_SEARCH_INSTRUCTIONS
         : baseInstructions,
     model: env.CHAT_MODEL,
@@ -337,7 +337,7 @@ export function createChatAgent(
     // THIS same instance (getChatWorkspace), so it's not double-provisioned, and every tool
     // is HITL-gated there.
     workspace: ({ requestContext }) =>
-      env.NODE_ENV !== "test" && requestContext?.get("noWorkspace") !== true
+      env.NODE_ENV !== 'test' && requestContext?.get('noWorkspace') !== true
         ? getChatWorkspace()
         : undefined,
     // Cultured Matter: the app's named actions join the kit's tools. They are loaded from
@@ -349,12 +349,12 @@ export function createChatAgent(
     // providers, so it's safe regardless of CHAT_MODEL.
     defaultOptions: {
       modelSettings: { temperature: 1 },
-      providerOptions: { anthropic: { thinking: { type: "enabled", budgetTokens: 1500 } } }
+      providerOptions: { anthropic: { thinking: { type: 'enabled', budgetTokens: 1500 } } },
     },
     memory: createDefaultMemory(),
     scorers: liveScorers,
     inputProcessors: defaultInputProcessors,
-    outputProcessors: defaultOutputProcessors
+    outputProcessors: defaultOutputProcessors,
   });
 }
 
