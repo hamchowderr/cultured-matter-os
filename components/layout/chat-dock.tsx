@@ -14,7 +14,9 @@ import {
   SheetHeader,
   SheetTitle
 } from "@/components/ui/sheet";
+import { useRefreshAfterWrites } from "@/hooks/use-refresh-after-writes";
 import { suggestionsFor } from "@/lib/chat-suggestions";
+import type { ToolEnd } from "@/lib/refresh-after-writes";
 import { cn } from "@/lib/utils";
 import {
   CHAT_DOCK_MIN,
@@ -46,6 +48,8 @@ type ChatDockState = {
   desktop: boolean | null;
   // The header's chat button, so closing the dock can hand focus back to it.
   buttonRef: React.RefObject<HTMLButtonElement | null>;
+  // After an approved write by the assistant, refresh the page beside the chat.
+  onToolEnd: (tool: ToolEnd) => void;
 };
 const ChatDockContext = React.createContext<ChatDockState | null>(null);
 
@@ -62,12 +66,16 @@ function setCookie(name: string, value: string) {
 export function ChatDockProvider({
   defaultOpen,
   defaultWidth,
+  writeActions,
   children
 }: {
   defaultOpen: boolean;
   defaultWidth: number;
+  /** The app's write actions (lib/agent-actions): when one ends, the page refreshes. */
+  writeActions: readonly string[];
   children: React.ReactNode;
 }) {
+  const onToolEnd = useRefreshAfterWrites(writeActions);
   const [open, setOpenState] = React.useState(defaultOpen);
   const [sheetOpen, setSheetOpen] = React.useState(false);
   const [width, setWidthState] = React.useState(defaultWidth);
@@ -98,8 +106,8 @@ export function ChatDockProvider({
   }, []);
 
   const value = React.useMemo<ChatDockState>(
-    () => ({ open, setOpen, sheetOpen, setSheetOpen, width, setWidth, desktop, buttonRef }),
-    [open, setOpen, sheetOpen, width, setWidth, desktop]
+    () => ({ open, setOpen, sheetOpen, setSheetOpen, width, setWidth, desktop, buttonRef, onToolEnd }),
+    [open, setOpen, sheetOpen, width, setWidth, desktop, onToolEnd]
   );
   return <ChatDockContext.Provider value={value}>{children}</ChatDockContext.Provider>;
 }
@@ -165,9 +173,11 @@ const GREETING = {
 // or the chat itself does.
 const AssistantPanel = React.memo(function AssistantPanel({
   onClose,
+  onToolEnd,
   className
 }: {
   onClose: () => void;
+  onToolEnd: (tool: ToolEnd) => void;
   className?: string;
 }) {
   // Suggestions for the page she is on: it stays mounted across pages, so they follow her.
@@ -180,6 +190,7 @@ const AssistantPanel = React.memo(function AssistantPanel({
       greeting={GREETING}
       suggestions={suggestions}
       actions={actions}
+      onToolEnd={onToolEnd}
       className={cn(COMPOSER_LOOK, className ?? "min-h-0 flex-1")}
     />
   );
@@ -266,7 +277,8 @@ function ResizeEdge() {
 }
 
 export function ChatDock() {
-  const { open, setOpen, sheetOpen, setSheetOpen, width, desktop, buttonRef } = useChatDock();
+  const { open, setOpen, sheetOpen, setSheetOpen, width, desktop, buttonRef, onToolEnd } =
+    useChatDock();
   const onChat = usePathname() === "/chat";
   const shown = open && !onChat;
 
@@ -314,6 +326,7 @@ export function ChatDock() {
                     the app header's height, so the two bottom borders run on one line. */}
                 <AssistantPanel
                   onClose={closeDock}
+                  onToolEnd={onToolEnd}
                   className="min-h-0 flex-1 bg-transparent [--chat-panel-header-height:var(--header-height)]"
                 />
               </>
@@ -348,7 +361,7 @@ export function ChatDock() {
                 Ask about your work. Changes wait for your approval.
               </SheetDescription>
             </SheetHeader>
-            <AssistantPanel onClose={closeSheet} />
+            <AssistantPanel onClose={closeSheet} onToolEnd={onToolEnd} />
           </SheetContent>
         </Sheet>
       )}

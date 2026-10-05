@@ -38,6 +38,11 @@ export const agentActions: readonly Action[] = (allActions as readonly Action[])
   (a) => !EXCLUDED.has(a.name)
 );
 
+/** The write actions the assistant can run: after one, the page beside the chat refreshes. */
+export function agentWriteActionNames(): string[] {
+  return agentActions.filter((a) => a.kind === "write").map((a) => a.name);
+}
+
 export type AgentActionInfo = {
   name: string;
   description: string;

@@ -15,6 +15,7 @@ import {
   parseDockOpen,
   parseDockWidth
 } from "@/lib/chat-dock";
+import { agentWriteActionNames } from "@/lib/agent-actions";
 import { getSession } from "@/lib/session";
 import { parseSeen } from "@/lib/tours";
 
@@ -57,6 +58,7 @@ export default async function AppLayout({
       <ChatDockProvider
         defaultOpen={parseDockOpen(cookieStore.get(CHAT_DOCK_OPEN_COOKIE)?.value)}
         defaultWidth={parseDockWidth(cookieStore.get(CHAT_DOCK_WIDTH_COOKIE)?.value)}
+        writeActions={agentWriteActionNames()}
       >
         <AppTours initialSeen={toursSeen}>
           <AppSidebar user={{ name, email, image }} />

@@ -1,4 +1,5 @@
-import { ChatSwitcher } from "@/components/chat/chat-switcher";
+import { FullChat } from "@/components/layout/full-chat";
+import { agentWriteActionNames } from "@/lib/agent-actions";
 import { CHAT_SUGGESTIONS } from "@/lib/chat-suggestions";
 import { generateMeta } from "@/lib/utils";
 
@@ -21,7 +22,8 @@ export async function generateMetadata() {
 export default function ChatPage() {
   return (
     <div className="-m-(--content-padding) h-[calc(100svh-var(--header-height)-env(safe-area-inset-top)-env(safe-area-inset-bottom)-var(--inset-gap,0px))]">
-      <ChatSwitcher
+      <FullChat
+        writeActions={agentWriteActionNames()}
         className="h-full"
         workbenchTabs={["memory", "schedules"]}
         suggestions={CHAT_SUGGESTIONS}
