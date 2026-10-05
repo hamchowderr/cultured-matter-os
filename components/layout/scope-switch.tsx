@@ -18,7 +18,7 @@ export function ScopeSwitch({
   className
 }: {
   scope: WorkScope;
-  // Anything else to do once the choice is saved. The save itself refreshes the page's data.
+  // A navigation to make once the choice is saved. Without it, the save refreshes the page.
   onChanged?: () => void;
   // The guided-tour step that points at this switch (lib/tours.ts).
   tourId?: string;
@@ -35,7 +35,8 @@ export function ScopeSwitch({
     const previous = value;
     setValue(next as WorkScope);
     startTransition(async () => {
-      const result = await setWorkScope({ scope: next as WorkScope });
+      // A caller that navigates afterwards renders the page itself; skip the action's refresh.
+      const result = await setWorkScope({ scope: next as WorkScope, refresh: !onChanged });
       if (!result.ok) {
         setValue(previous);
         toast.error(result.error.message);

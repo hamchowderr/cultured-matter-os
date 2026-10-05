@@ -209,8 +209,11 @@ export function ProjectsView({
           <ScopeSwitch
             scope={scope}
             tourId="projects-scope"
-            // A project from the other side would keep the page on All; drop it.
-            onChanged={() => router.push(href({ p: undefined }), { scroll: false })}
+            // A project from the other side would keep the page on All, so with one open the
+            // switch navigates without it (one render); otherwise the save refreshes the page.
+            onChanged={
+              projectId ? () => router.push(href({ p: undefined }), { scroll: false }) : undefined
+            }
           />
         </div>
 

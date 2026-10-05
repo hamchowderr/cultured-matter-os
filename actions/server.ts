@@ -3,13 +3,24 @@
 // The only door from UI code to the database. Each function validates its input,
 // runs the named action, and returns { ok, data } or { ok: false, error }.
 
+import { after } from "next/server";
 import type { z } from "zod/v4";
 
 import * as A from "./index";
-import { toResult } from "./define";
+import { type ActionContext, toResult } from "./define";
 import { runNewsletterSync } from "@/lib/newsletter-sync";
 
 type In<T extends { input: z.ZodType }> = z.input<T["input"]>;
+
+// Writes run with this context: a post-commit step (a push notification) goes to after(), so it
+// runs once the response is sent instead of holding it up.
+const inAction: ActionContext = { defer: (task) => after(task) };
+// Passed to toResult by writes that change what is on the page: the action's own response then
+// carries the refreshed page (Next's refresh() from next/cache), so the client does not need
+// router.refresh(). Left off for writes nothing on screen shows (tours seen, notifications read,
+// push settings, the daily email switch, the calendar link, which its card updates itself) and
+// for createProject and deleteProject, whose caller navigates straight after (one render).
+const REFRESH = { refresh: true } as const;
 
 export async function searchCompanies(input: In<typeof A.searchCompanies>) {
   return toResult(() => A.searchCompanies.run(input));
@@ -24,22 +35,22 @@ export async function radarFindsByWeek(input: In<typeof A.radarFindsByWeek>) {
   return toResult(() => A.radarFindsByWeek.run(input));
 }
 export async function starCompany(input: In<typeof A.starCompany>) {
-  return toResult(() => A.starCompany.run(input));
+  return toResult(() => A.starCompany.run(input, inAction), REFRESH);
 }
 export async function resetCompany(input: In<typeof A.resetCompany>) {
-  return toResult(() => A.resetCompany.run(input));
+  return toResult(() => A.resetCompany.run(input, inAction), REFRESH);
 }
 export async function shortlistCompany(input: In<typeof A.shortlistCompany>) {
-  return toResult(() => A.shortlistCompany.run(input));
+  return toResult(() => A.shortlistCompany.run(input, inAction), REFRESH);
 }
 export async function passCompany(input: In<typeof A.passCompany>) {
-  return toResult(() => A.passCompany.run(input));
+  return toResult(() => A.passCompany.run(input, inAction), REFRESH);
 }
 export async function searchGrants(input: In<typeof A.searchGrants>) {
   return toResult(() => A.searchGrants.run(input));
 }
 export async function setGrantStatus(input: In<typeof A.setGrantStatus>) {
-  return toResult(() => A.setGrantStatus.run(input));
+  return toResult(() => A.setGrantStatus.run(input, inAction), REFRESH);
 }
 export async function tasksDueBetween(input: In<typeof A.tasksDueBetween>) {
   return toResult(() => A.tasksDueBetween.run(input));
@@ -51,10 +62,10 @@ export async function searchContacts(input: In<typeof A.searchContacts>) {
   return toResult(() => A.searchContacts.run(input));
 }
 export async function importContacts(input: In<typeof A.importContacts>) {
-  return toResult(() => A.importContacts.run(input));
+  return toResult(() => A.importContacts.run(input, inAction), REFRESH);
 }
 export async function setContactSectors(input: In<typeof A.setContactSectors>) {
-  return toResult(() => A.setContactSectors.run(input));
+  return toResult(() => A.setContactSectors.run(input, inAction), REFRESH);
 }
 export async function findWarmPath(input: In<typeof A.findWarmPath>) {
   return toResult(() => A.findWarmPath.run(input));
@@ -69,31 +80,31 @@ export async function listPairings(input: In<typeof A.listPairings>) {
   return toResult(() => A.listPairings.run(input));
 }
 export async function addPairing(input: In<typeof A.addPairing>) {
-  return toResult(() => A.addPairing.run(input));
+  return toResult(() => A.addPairing.run(input, inAction), REFRESH);
 }
 export async function removePairing(input: In<typeof A.removePairing>) {
-  return toResult(() => A.removePairing.run(input));
+  return toResult(() => A.removePairing.run(input, inAction), REFRESH);
 }
 export async function linkContact(input: In<typeof A.linkContact>) {
-  return toResult(() => A.linkContact.run(input));
+  return toResult(() => A.linkContact.run(input, inAction), REFRESH);
 }
 export async function unlinkContact(input: In<typeof A.unlinkContact>) {
-  return toResult(() => A.unlinkContact.run(input));
+  return toResult(() => A.unlinkContact.run(input, inAction), REFRESH);
 }
 export async function createCapture(input: In<typeof A.createCapture>) {
-  return toResult(() => A.createCapture.run(input));
+  return toResult(() => A.createCapture.run(input, inAction), REFRESH);
 }
 export async function classifyCapture(input: In<typeof A.classifyCapture>) {
-  return toResult(() => A.classifyCapture.run(input));
+  return toResult(() => A.classifyCapture.run(input, inAction), REFRESH);
 }
 export async function createTask(input: In<typeof A.createTask>) {
-  return toResult(() => A.createTask.run(input));
+  return toResult(() => A.createTask.run(input, inAction), REFRESH);
 }
 export async function setTaskStatus(input: In<typeof A.setTaskStatus>) {
-  return toResult(() => A.setTaskStatus.run(input));
+  return toResult(() => A.setTaskStatus.run(input, inAction), REFRESH);
 }
 export async function requestApproval(input: In<typeof A.requestApproval>) {
-  return toResult(() => A.requestApproval.run(input));
+  return toResult(() => A.requestApproval.run(input, inAction), REFRESH);
 }
 export async function listProjects(input: In<typeof A.listProjects>) {
   return toResult(() => A.listProjects.run(input));
@@ -102,25 +113,25 @@ export async function getProject(input: In<typeof A.getProject>) {
   return toResult(() => A.getProject.run(input));
 }
 export async function createProject(input: In<typeof A.createProject>) {
-  return toResult(() => A.createProject.run(input));
+  return toResult(() => A.createProject.run(input, inAction));
 }
 export async function updateProject(input: In<typeof A.updateProject>) {
-  return toResult(() => A.updateProject.run(input));
+  return toResult(() => A.updateProject.run(input, inAction), REFRESH);
 }
 export async function deleteProject(input: In<typeof A.deleteProject>) {
-  return toResult(() => A.deleteProject.run(input));
+  return toResult(() => A.deleteProject.run(input, inAction));
 }
 export async function listTasks(input: In<typeof A.listTasks>) {
   return toResult(() => A.listTasks.run(input));
 }
 export async function updateTask(input: In<typeof A.updateTask>) {
-  return toResult(() => A.updateTask.run(input));
+  return toResult(() => A.updateTask.run(input, inAction), REFRESH);
 }
 export async function linkTaskToProject(input: In<typeof A.linkTaskToProject>) {
-  return toResult(() => A.linkTaskToProject.run(input));
+  return toResult(() => A.linkTaskToProject.run(input, inAction), REFRESH);
 }
 export async function unlinkTaskFromProject(input: In<typeof A.unlinkTaskFromProject>) {
-  return toResult(() => A.unlinkTaskFromProject.run(input));
+  return toResult(() => A.unlinkTaskFromProject.run(input, inAction), REFRESH);
 }
 export async function listCaptures(input: In<typeof A.listCaptures>) {
   return toResult(() => A.listCaptures.run(input));
@@ -132,36 +143,36 @@ export async function listApprovals(input: In<typeof A.listApprovals>) {
   return toResult(() => A.listApprovals.run(input));
 }
 export async function decideApproval(input: In<typeof A.decideApproval>) {
-  return toResult(() => A.decideApproval.run(input));
+  return toResult(() => A.decideApproval.run(input, inAction), REFRESH);
 }
 export async function setNewsletter(input: In<typeof A.setNewsletter>) {
-  return toResult(() => A.setNewsletter.run(input));
+  return toResult(() => A.setNewsletter.run(input, inAction), REFRESH);
 }
 export async function newsletterStatus(input: In<typeof A.newsletterStatus>) {
   return toResult(() => A.newsletterStatus.run(input));
 }
 export async function syncNewsletter() {
-  return toResult(() => runNewsletterSync());
+  return toResult(() => runNewsletterSync({ ctx: inAction }), REFRESH);
 }
 export async function googleStatus(input: In<typeof A.googleStatus>) {
   return toResult(() => A.googleStatus.run(input));
 }
 export async function syncGoogle(input: In<typeof A.syncGoogle>) {
-  return toResult(() => A.syncGoogle.run(input));
+  return toResult(() => A.syncGoogle.run(input, inAction), REFRESH);
 }
 export async function listContactEmails(input: In<typeof A.listContactEmails>) {
   return toResult(() => A.listContactEmails.run(input));
 }
 export async function draftFollowUp(input: In<typeof A.draftFollowUp>) {
-  return toResult(() => A.draftFollowUp.run(input));
+  return toResult(() => A.draftFollowUp.run(input, inAction), REFRESH);
 }
 // The Inbox camera button: a photo (fields "photo" and "caption") from the signed-in session,
 // stored the same way as iPhone Shortcut photos.
 export async function captureInboxPhoto(form: FormData) {
   return toResult(async () => {
     const capture = await import("@/lib/capture");
-    return capture.captureInboxPhoto(form);
-  });
+    return capture.captureInboxPhoto(form, { ctx: inAction });
+  }, REFRESH);
 }
 export async function setupStatus(input: In<typeof A.setupStatus>) {
   return toResult(() => A.setupStatus.run(input));
@@ -209,8 +220,16 @@ export async function setDailyEmail(input: { enabled: boolean }) {
   );
 }
 // The Business / Personal / All switch on Today and Projects, remembered per user.
-export async function setWorkScope(input: Omit<In<typeof A.setWorkScope>, "userId">) {
-  return toResult(async () => A.setWorkScope.run({ ...input, userId: await sessionUserId() }));
+// refresh: false when the caller navigates right after (Projects drops its project filter), so
+// the page renders once.
+export async function setWorkScope({
+  refresh = true,
+  ...input
+}: Omit<In<typeof A.setWorkScope>, "userId"> & { refresh?: boolean }) {
+  return toResult(
+    async () => A.setWorkScope.run({ ...input, userId: await sessionUserId() }, inAction),
+    { refresh }
+  );
 }
 export async function markTourSeen(input: Omit<In<typeof A.markTourSeen>, "userId">) {
   return toResult(async () => A.markTourSeen.run({ ...input, userId: await sessionUserId() }));
@@ -286,5 +305,5 @@ export async function getNote(input: In<typeof A.getNote>) {
   return toResult(() => A.getNote.run(input));
 }
 export async function fileNoteToInbox(input: In<typeof A.fileNoteToInbox>) {
-  return toResult(() => A.fileNoteToInbox.run(input));
+  return toResult(() => A.fileNoteToInbox.run(input, inAction), REFRESH);
 }
