@@ -18,9 +18,10 @@ jobs:
           node-version: 24
           cache: npm
 
-      # The project's documented install (CLAUDE.md) for its peer-dependency ranges.
+      # Plain `npm ci`, not --legacy-peer-deps: the lockfile resolves cleanly, and vitest 5
+      # needs its `vite` peer (marked "peer": true in the lockfile), which legacy mode skips.
       - name: Install
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Typecheck
         run: npx tsc --noEmit
