@@ -1,7 +1,7 @@
 import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
 
-import { getVoiceGuide } from "@/actions/server";
+import { getVoiceGuideForEditing } from "@/actions/server";
 import { PageHeader } from "@/components/layout/page-shell";
 import { VoiceGuideEditor } from "@/components/settings/voice-guide-editor";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ export async function generateMetadata() {
 export default async function Page() {
   // Session first: it marks the page as dynamic before the action runs.
   await getSession();
-  const result = await getVoiceGuide();
+  const result = await getVoiceGuideForEditing();
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">

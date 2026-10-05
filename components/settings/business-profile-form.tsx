@@ -546,7 +546,7 @@ export function BusinessProfileForm({ initial }: { initial: ProfileFields }) {
           <TextField control={control} name="notes" label="Notes" multiline wide />
         </Section>
 
-        <div className="bg-background/95 sticky bottom-0 z-10 -mx-1 flex items-center justify-end gap-3 px-1 py-3 backdrop-blur">
+        <div className="bg-background/95 sticky bottom-0 z-10 -mx-1 flex items-center justify-end gap-3 px-1 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">
           {form.formState.isDirty && (
             <span className="text-muted-foreground text-sm">Unsaved changes</span>
           )}

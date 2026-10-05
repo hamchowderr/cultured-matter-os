@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 import type { Executor } from "@/db";
 import { notes, voiceGuide as voiceGuideTable } from "@/db/schema";
 import { gmail, googleSession, mapLimit, parseAddressList, type GoogleSession } from "@/lib/google";
+import { fetchPublicText } from "@/lib/safe-fetch";
 import { distilVoiceGuide, VOICE_MODEL } from "@/lib/voice-ai";
 import {
   clipText,
@@ -48,17 +49,31 @@ const storedSchema = z.object({
   updatedAt: z.date().nullable()
 });
 
+// What the agent sees: the guide and when it changed. The sample labels (her email subjects and
+// note titles) stay out; only the Settings page reads them.
 export const getVoiceGuide = defineAction({
   name: "getVoiceGuide",
   description:
-    "Simone's voice guide: how she writes (vocabulary, sentence length, warmth, greetings and sign-offs, do's and don'ts). Follow it whenever you draft text for her: emails, follow-ups, posts, messages. guide is the full text she keeps in Settings → Your voice; context is the same guide shortened for instructions. Both are empty when she hasn't made one yet. sources lists the kinds of writing it was built from.",
+    "Simone's voice guide: how she writes (vocabulary, sentence length, warmth, greetings and sign-offs, do's and don'ts), as she keeps it in Settings → Your voice, and when it was last updated. Empty when she hasn't made one yet.",
   kind: "read",
   input: z.object({}),
-  output: storedSchema.extend({ context: z.string() }),
+  output: z.object({ guide: z.string(), updatedAt: z.date().nullable() }),
   async handler(_input, db) {
-    const stored = await loadVoiceGuide(db);
-    return { ...stored, context: voiceGuide(stored.guide) };
+    const { guide, updatedAt } = await loadVoiceGuide(db);
+    return { guide, updatedAt };
   }
+});
+
+// The guide with the samples it was built from, for the Settings → Your voice page only. Not in
+// allActions, so the labels never reach the agent.
+export const getVoiceGuideForEditing = defineAction({
+  name: "getVoiceGuideForEditing",
+  description:
+    "Simone's voice guide with the samples it was built from, for Settings → Your voice.",
+  kind: "read",
+  input: z.object({}),
+  output: storedSchema,
+  handler: (_input, db) => loadVoiceGuide(db)
 });
 
 // ------------------------------------------------------------------ Gathering samples
@@ -119,13 +134,15 @@ async function sentEmailSamples(session: GoogleSession) {
   const list = await gmail<{ messages?: { id: string }[] }>(session, "/messages", {
     query: { q: "in:sent -in:chats newer_than:365d", maxResults: SENT_SCANNED }
   });
+  // One message that fails to load is skipped; the rest are still offered.
   const messages = await mapLimit(list.messages ?? [], 6, (m) =>
     gmail<GmailFullMessage>(session, `/messages/${encodeURIComponent(m.id)}`, {
       query: { format: "full" }
-    })
+    }).catch(() => null)
   );
   const out: VoiceSample[] = [];
   for (const m of messages) {
+    if (!m) continue;
     const sample = sentEmailSample(m, session.me);
     if (sample) out.push(sample);
     if (out.length >= SENT_OFFERED) break;
@@ -133,24 +150,25 @@ async function sentEmailSamples(session: GoogleSession) {
   return out;
 }
 
-function websiteUrl(website: string | null) {
+// Her website from the business profile, always over https: an http:// address is asked for
+// over https, and any other scheme is not fetched.
+export function websiteUrl(website: string | null) {
   const w = website?.trim();
   if (!w) return null;
   try {
-    const url = new URL(/^https?:\/\//i.test(w) ? w : `https://${w}`);
-    return url.protocol === "https:" || url.protocol === "http:" ? url.href : null;
+    const url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(w) ? w : `https://${w}`);
+    if (url.protocol === "http:") url.protocol = "https:";
+    return url.protocol === "https:" ? url.href : null;
   } catch {
     return null;
   }
 }
 
+// Through fetchPublicText, since the address is whatever she typed: private and metadata hosts
+// are refused on every redirect hop, and the body is capped.
 async function websiteSample(url: string): Promise<VoiceSample | null> {
-  const res = await fetch(url, {
-    headers: { Accept: "text/html" },
-    signal: AbortSignal.timeout(WEBSITE_TIMEOUT_MS)
-  });
-  if (!res.ok) throw new Error(`website ${res.status}`);
-  const text = clipText(websiteCopy(await res.text()), SAMPLE_MAX);
+  const { text: html } = await fetchPublicText(url, { timeoutMs: WEBSITE_TIMEOUT_MS });
+  const text = clipText(websiteCopy(html), SAMPLE_MAX);
   if (!text) return null;
   return { id: "website:home", source: "website", label: new URL(url).host, text };
 }

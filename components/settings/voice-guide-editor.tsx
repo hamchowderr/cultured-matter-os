@@ -233,7 +233,7 @@ export function VoiceGuideEditor({ initial }: { initial: Stored }) {
             onChange={(e) => setDraft(e.target.value)}
             maxLength={VOICE_GUIDE_TEXT_MAX}
             placeholder="No voice guide yet. Build one from your writing below, or write it here yourself: the words you use, how long your sentences run, how warm you are, how you sign off."
-            className="min-h-72 text-sm leading-relaxed"
+            className="min-h-72 leading-relaxed"
           />
           <div className="text-muted-foreground flex flex-wrap justify-between gap-x-4 gap-y-1 text-xs">
             <span>
@@ -265,9 +265,9 @@ export function VoiceGuideEditor({ initial }: { initial: Stored }) {
         <CardHeader>
           <CardTitle className="text-base">Build from my writing</CardTitle>
           <CardDescription>
-            Gathers emails you sent recently, your website and your business profile. Tick the ones
-            that sound most like you, and one AI pass turns them into a guide. Nothing is kept until
-            you build.
+            Gathers emails you sent recently, your website, your business profile and longer Apple
+            Notes. Tick the ones that sound most like you, and one AI pass turns them into a guide.
+            Nothing is kept until you build.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -333,7 +333,7 @@ export function VoiceGuideEditor({ initial }: { initial: Stored }) {
           )}
         </CardContent>
         {gathered && gathered.samples.length > 0 && (
-          <CardFooter className="bg-background/95 sticky bottom-0 z-10 flex-wrap justify-between gap-3 border-t py-3 backdrop-blur">
+          <CardFooter className="bg-background/95 sticky bottom-0 z-10 flex-wrap justify-between gap-3 border-t pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">
             <span className="text-muted-foreground text-sm">
               {plural(chosen.length, "sample")} picked
               {chosenChars > SAMPLES_TOTAL_MAX &&

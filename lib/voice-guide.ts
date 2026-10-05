@@ -82,48 +82,109 @@ export function copyBlock(guide: string) {
 
 // ------------------------------------------------------------------ Turning sources into text
 
-const BLOCK_END = /<\/(p|div|h[1-6]|li|ul|ol|section|article|header|footer|blockquote|tr|table)>/gi;
+// Elements whose content is never text, and elements whose end is a line break.
+const SKIPPED = new Set(["script", "style", "noscript", "svg", "head", "template"]);
+const BLOCKS = new Set([
+  "p",
+  "div",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "li",
+  "ul",
+  "ol",
+  "section",
+  "article",
+  "header",
+  "footer",
+  "blockquote",
+  "tr",
+  "table"
+]);
+const TAG_NAME = /^(\/?)([a-z][a-z0-9-]*)/i;
 
 // Readable text from an HTML page or email: scripts, styles and markup dropped, block ends
-// turned into line breaks, entities decoded.
+// turned into line breaks, entities decoded. One pass with indexOf, never a backtracking regex,
+// so a page full of unclosed tags or comments still takes linear time; anything after an
+// unclosed tag or comment is dropped.
 export function htmlToText(html: string) {
-  return collapse(
-    decodeHTML(
-      html
-        .replace(/<!--[\s\S]*?-->/g, " ")
-        .replace(/<(script|style|noscript|svg|head|template)\b[\s\S]*?<\/\1>/gi, " ")
-        .replace(/<br\s*\/?>/gi, "\n")
-        .replace(BLOCK_END, "\n")
-        .replace(/<[^>]+>/g, " ")
-    )
-  );
+  const lower = html.toLowerCase();
+  const out: string[] = [];
+  let i = 0;
+  while (i < html.length) {
+    const lt = html.indexOf("<", i);
+    if (lt === -1) {
+      out.push(html.slice(i));
+      break;
+    }
+    out.push(html.slice(i, lt));
+    if (html.startsWith("<!--", lt)) {
+      const end = html.indexOf("-->", lt + 4);
+      if (end === -1) break;
+      out.push(" ");
+      i = end + 3;
+      continue;
+    }
+    const gt = html.indexOf(">", lt + 1);
+    if (gt === -1) break;
+    i = gt + 1;
+    const m = TAG_NAME.exec(html.slice(lt + 1, Math.min(gt, lt + 40)));
+    if (!m) {
+      out.push(" ");
+      continue;
+    }
+    const name = m[2].toLowerCase();
+    const closing = m[1] === "/";
+    if (!closing && SKIPPED.has(name) && html[gt - 1] !== "/") {
+      const close = lower.indexOf(`</${name}`, i);
+      const closeGt = close === -1 ? -1 : html.indexOf(">", close);
+      if (closeGt === -1) break;
+      out.push(" ");
+      i = closeGt + 1;
+      continue;
+    }
+    out.push(name === "br" || (closing && BLOCKS.has(name)) ? "\n" : " ");
+  }
+  return collapse(decodeHTML(out.join("")));
 }
 
 // Website copy: the lines that read as sentences (six words or more), so menus, buttons and
 // footers are left out.
 export function websiteCopy(html: string) {
+  const seen = new Set<string>();
   return htmlToText(html)
     .split("\n")
     .map((l) => l.trim())
-    .filter((l) => l.split(/\s+/).length >= 6)
-    .filter((l, i, all) => all.indexOf(l) === i)
+    .filter((l) => l.split(" ").length >= 6 && !seen.has(l) && !!seen.add(l))
     .join("\n\n");
 }
 
+// The most of one email read: her words come first, so a long thread's tail is never needed.
+const EMAIL_READ_MAX = 20_000;
+
 // What she wrote in a sent email: the quoted message she replied to and forwarded parts are cut.
 export function ownEmailText(body: string) {
-  let t = body.replace(/\r\n?/g, "\n");
-  const cuts = [
-    // "On Mon, Oct 5, 2026 at 9:12 AM Lena <lena@x.com> wrote:", which Gmail may wrap once.
-    /\n[^\n]*\bOn\b[^\n]*(\n[^\n]*)?\bwrote:\s*(\n|$)/,
-    /\n-{2,} ?(Original Message|Forwarded message) ?-{2,}/i,
-    /\n_{10,}\s*\n/,
-    /\nFrom: [^\n]+\n(Sent|Date): /
-  ];
-  for (const re of cuts) {
-    const m = re.exec(t);
+  let t = body.slice(0, EMAIL_READ_MAX).replace(/\r\n?/g, "\n");
+  // "On Mon, Oct 5, 2026 at 9:12 AM Lena <lena@x.com> wrote:", which Gmail may wrap once. Checked
+  // line by line with plain string tests, so a long line never makes a regex backtrack.
+  const lines = t.split("\n");
+  const isOn = (l: string) => l.startsWith("On ") || l.includes(" On ");
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.endsWith("wrote:") && (isOn(line) || isOn(lines[i - 1].trim()))) {
+      t = lines.slice(0, isOn(line) ? i : i - 1).join("\n");
+      break;
+    }
+  }
+  for (const marker of [/\n-{2,} ?(Original Message|Forwarded message) ?-{2,}/i, /\n_{10,}\n/]) {
+    const m = marker.exec(t);
     if (m) t = t.slice(0, m.index);
   }
+  const outlook = t.search(/\nFrom: [^\n]{1,300}\n(Sent|Date): /);
+  if (outlook !== -1) t = t.slice(0, outlook);
   return collapse(
     t
       .split("\n")

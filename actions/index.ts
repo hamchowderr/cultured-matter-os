@@ -91,6 +91,7 @@ import {
   buildVoiceGuide,
   gatherVoiceSamples,
   getVoiceGuide,
+  getVoiceGuideForEditing,
   updateVoiceGuide
 } from "./voice";
 
@@ -172,6 +173,7 @@ export {
   getBusinessProfileForEditing,
   updateBusinessProfile,
   getVoiceGuide,
+  getVoiceGuideForEditing,
   gatherVoiceSamples,
   buildVoiceGuide,
   updateVoiceGuide
@@ -248,7 +250,8 @@ export const allActions = [
   // bookkeeping), markTourSeen (the guided tours' bookkeeping), importNotes (the Apple Notes
   // Shortcut's endpoint), the push device actions (they need a browser's push subscription) and
   // getBusinessProfileForEditing (it returns the EIN and SAM UEI; getBusinessProfile leaves them out),
-  // and the voice guide's Settings actions: gatherVoiceSamples (it reads her sent mail in full),
+  // and the voice guide's Settings actions: getVoiceGuideForEditing (sample labels are her email
+  // subjects), gatherVoiceSamples (it reads her sent mail in full),
   // buildVoiceGuide (it spends AI budget) and updateVoiceGuide (she edits her own voice).
 ] as const;
 

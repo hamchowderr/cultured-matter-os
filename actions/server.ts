@@ -324,6 +324,10 @@ export async function updateBusinessProfile(input: In<typeof A.updateBusinessPro
 export async function getVoiceGuide() {
   return toResult(() => A.getVoiceGuide.run({}));
 }
+// The page also shows which samples the guide came from; the agent never sees those.
+export async function getVoiceGuideForEditing() {
+  return toResult(() => A.getVoiceGuideForEditing.run({}));
+}
 export async function gatherVoiceSamples() {
   return toResult(() => A.gatherVoiceSamples.run({}));
 }

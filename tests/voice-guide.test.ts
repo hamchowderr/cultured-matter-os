@@ -7,14 +7,36 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 const getAccessToken = vi.hoisted(() => vi.fn(async () => ({ accessToken: "test-token" })));
 vi.mock("@/lib/auth", () => ({ auth: { api: { getAccessToken } } }));
 
+// DNS for the website fetch: the test hosts resolve to fixed addresses, public or private.
+const HOSTS: Record<string, string> = {
+  "culturedmatter.example": "93.184.216.34",
+  "big.example": "93.184.216.35",
+  "hop.example": "93.184.216.36",
+  "intranet.example": "10.0.0.5",
+  "rebind.example": "169.254.169.254"
+};
+vi.mock("node:dns/promises", () => ({
+  lookup: vi.fn(async (host: string) => {
+    const address = HOSTS[host];
+    if (!address) throw Object.assign(new Error("ENOTFOUND"), { code: "ENOTFOUND" });
+    return [{ address, family: 4 }];
+  })
+}));
+
 import * as A from "@/actions";
-import { loadVoiceGuideContext, sentEmailSample, type GmailFullMessage } from "@/actions/voice";
+import {
+  loadVoiceGuideContext,
+  sentEmailSample,
+  websiteUrl,
+  type GmailFullMessage
+} from "@/actions/voice";
 import type { Database } from "@/db";
 import * as t from "@/db/schema";
 import { GOOGLE_SCOPES } from "@/lib/google-scopes";
 import {
   buildVoicePrompt,
   copyBlock,
+  htmlToText,
   COPY_INTRO,
   ownEmailText,
   SAMPLE_MAX,
@@ -25,6 +47,8 @@ import {
   websiteCopy,
   type VoiceSample
 } from "@/lib/voice-guide";
+import { fetchPublicText, MAX_BODY_BYTES, UnsafeUrlError } from "@/lib/safe-fetch";
+import { useAimockProvider } from "./aimock-provider";
 import { freshDb } from "./test-db";
 
 // Every model call here goes to AIMock with tests/fixtures/voice-aimock.json; Gmail and the
@@ -33,6 +57,7 @@ import { freshDb } from "./test-db";
 let db: Database;
 let cleanup: () => void;
 let mock: LLMock;
+let restoreProvider: () => void;
 const ctx = () => ({ db });
 
 const ME = "simone@simonepaz.com";
@@ -124,8 +149,7 @@ beforeAll(async () => {
   mock = new LLMock({ port: 0 });
   mock.loadFixtureFile(join(__dirname, "fixtures", "voice-aimock.json"));
   await mock.start();
-  process.env.USE_AIMOCK = "true";
-  process.env.AIMOCK_URL = mock.url;
+  restoreProvider = useAimockProvider(mock.url);
 
   vi.stubGlobal(
     "fetch",
@@ -143,8 +167,7 @@ beforeAll(async () => {
 afterAll(async () => {
   vi.unstubAllGlobals();
   await mock.stop();
-  delete process.env.USE_AIMOCK;
-  delete process.env.AIMOCK_URL;
+  restoreProvider();
   cleanup();
 });
 beforeEach(() => {
@@ -211,11 +234,11 @@ describe("voice guide text", () => {
 
 describe("voice guide actions", () => {
   it("reads an empty guide before anything is saved", async () => {
-    expect(await A.getVoiceGuide.run({}, ctx())).toEqual({
+    expect(await A.getVoiceGuide.run({}, ctx())).toEqual({ guide: "", updatedAt: null });
+    expect(await A.getVoiceGuideForEditing.run({}, ctx())).toEqual({
       guide: "",
       sources: [],
-      updatedAt: null,
-      context: ""
+      updatedAt: null
     });
   });
 
@@ -281,6 +304,13 @@ describe("voice guide actions", () => {
     expect(r.samples.some((s) => s.source === "business")).toBe(true);
   });
 
+  it("skips one email that fails to load and still offers the others", async () => {
+    routes[`${GMAIL}/messages/m1`] = () => json({ error: {} }, 500);
+    const r = await A.gatherVoiceSamples.run({}, ctx());
+    expect(r.gmail).toBe("included");
+    expect(r.samples.filter((s) => s.source === "gmail").map((s) => s.id)).toEqual(["gmail:m4"]);
+  });
+
   it("builds the guide in one AI call from the samples she picked, and saves it", async () => {
     const gathered = await A.gatherVoiceSamples.run({}, ctx());
     // As the page does: notes start unticked.
@@ -300,8 +330,10 @@ describe("voice guide actions", () => {
 
     const read = await A.getVoiceGuide.run({}, ctx());
     expect(read.guide).toBe(r.guide);
-    expect(read.context).toBe(voiceGuide(r.guide));
-    expect(await loadVoiceGuideContext(db)).toBe(read.context);
+    // The agent gets the guide and the date only: no sample labels (her email subjects).
+    expect(Object.keys(read).sort()).toEqual(["guide", "updatedAt"]);
+    expect(JSON.stringify(read)).not.toContain("Soliome intro");
+    expect(await loadVoiceGuideContext(db)).toBe(voiceGuide(r.guide));
 
     const [entry] = await guideLog();
     expect(entry.summary).toBe(
@@ -314,7 +346,7 @@ describe("voice guide actions", () => {
 
   it("keeps the current guide when the AI can't be reached", async () => {
     const before = await A.getVoiceGuide.run({}, ctx());
-    process.env.AIMOCK_URL = "http://127.0.0.1:9";
+    const restoreMock = useAimockProvider("http://127.0.0.1:9");
     vi.spyOn(console, "error").mockImplementation(() => {});
     try {
       await expect(
@@ -324,7 +356,7 @@ describe("voice guide actions", () => {
         )
       ).rejects.toMatchObject({ code: "unavailable" });
     } finally {
-      process.env.AIMOCK_URL = mock.url;
+      restoreMock();
       vi.mocked(console.error).mockRestore();
     }
     expect(await A.getVoiceGuide.run({}, ctx())).toEqual(before);
@@ -336,7 +368,7 @@ describe("voice guide actions", () => {
   });
 
   it("saves her edits, keeps the sources, and clears on empty", async () => {
-    const before = await A.getVoiceGuide.run({}, ctx());
+    const before = await A.getVoiceGuideForEditing.run({}, ctx());
     const edited = `${before.guide}\nDon't:\n- Don't use emoji.`;
     const r = await A.updateVoiceGuide.run({ guide: `  ${edited}\r\n` }, ctx());
     expect(r.changed).toBe(true);
@@ -347,7 +379,7 @@ describe("voice guide actions", () => {
 
     const cleared = await A.updateVoiceGuide.run({ guide: " " }, ctx());
     expect(cleared.guide).toBe("");
-    expect((await A.getVoiceGuide.run({}, ctx())).context).toBe("");
+    expect(await loadVoiceGuideContext(db)).toBe("");
 
     const summaries = (await guideLog()).map((e) => e.summary);
     expect(summaries).toEqual(
@@ -362,6 +394,7 @@ describe("voice guide actions", () => {
   it("offers getVoiceGuide to the agent, but not the Settings-only actions", () => {
     const names = A.allActions.map((a) => a.name as string);
     expect(names).toContain("getVoiceGuide");
+    expect(names).not.toContain("getVoiceGuideForEditing");
     expect(names).not.toContain("gatherVoiceSamples");
     expect(names).not.toContain("buildVoiceGuide");
     expect(names).not.toContain("updateVoiceGuide");
@@ -374,5 +407,85 @@ describe("sent email samples", () => {
     expect(sentEmailSample(MESSAGES[1], me)).toBeNull();
     expect(sentEmailSample(MESSAGES[2], me)).toBeNull();
     expect(sentEmailSample(MESSAGES[3], me)?.text).toContain("Warmly,\nSimone");
+  });
+});
+
+describe("website fetch", () => {
+  it("refuses http, localhost, metadata and private hosts before any request", async () => {
+    for (const url of [
+      "http://culturedmatter.example/",
+      "https://localhost/",
+      "https://127.0.0.1/",
+      "https://10.0.0.1/",
+      "https://[::1]/",
+      "https://[::ffff:192.168.1.1]/",
+      "https://169.254.169.254/latest/meta-data/",
+      "https://metadata.google.internal/",
+      // Public-looking names that resolve to private addresses.
+      "https://intranet.example/",
+      "https://rebind.example/"
+    ]) {
+      await expect(fetchPublicText(url), url).rejects.toBeInstanceOf(UnsafeUrlError);
+    }
+    expect(calls).toHaveLength(0);
+  });
+
+  it("refuses a redirect to a private address", async () => {
+    routes["hop.example/"] = () =>
+      new Response(null, { status: 302, headers: { Location: "https://intranet.example/admin" } });
+    await expect(fetchPublicText("https://hop.example/")).rejects.toBeInstanceOf(UnsafeUrlError);
+    routes["hop.example/"] = () =>
+      new Response(null, { status: 301, headers: { Location: "https://10.1.2.3/" } });
+    await expect(fetchPublicText("https://hop.example/")).rejects.toBeInstanceOf(UnsafeUrlError);
+    expect(calls.map((c) => c.url.host)).toEqual(["hop.example", "hop.example"]);
+    // fetch never follows a redirect itself.
+    expect(calls.every((c) => c.init?.redirect === "manual")).toBe(true);
+  });
+
+  it("follows at most three public redirects", async () => {
+    routes["hop.example/"] = () =>
+      new Response(null, { status: 302, headers: { Location: "/again" } });
+    routes["hop.example/again"] = () =>
+      new Response(null, { status: 302, headers: { Location: "/again" } });
+    await expect(fetchPublicText("https://hop.example/")).rejects.toThrow(/Too many redirects/);
+    expect(calls).toHaveLength(4);
+  });
+
+  it("cuts off an oversized body without downloading the rest", async () => {
+    const chunk = new Uint8Array(64 * 1024).fill(0x61);
+    const total = 50;
+    let pulled = 0;
+    routes["big.example/"] = () =>
+      new Response(
+        new ReadableStream({
+          pull(controller) {
+            if (pulled++ >= total) controller.close();
+            else controller.enqueue(chunk);
+          }
+        }),
+        { status: 200 }
+      );
+    const r = await fetchPublicText("https://big.example/");
+    expect(r.truncated).toBe(true);
+    expect(r.text.length).toBe(MAX_BODY_BYTES);
+    expect(pulled).toBeLessThan(total);
+  });
+
+  it("asks for her website over https only", () => {
+    expect(websiteUrl("culturedmatter.com")).toBe("https://culturedmatter.com/");
+    expect(websiteUrl("http://culturedmatter.com/about")).toBe("https://culturedmatter.com/about");
+    expect(websiteUrl("ftp://culturedmatter.com")).toBeNull();
+    expect(websiteUrl("  ")).toBeNull();
+  });
+
+  it("reads hostile HTML and email in linear time", () => {
+    const started = performance.now();
+    htmlToText("<a".repeat(200_000));
+    htmlToText("<!--".repeat(200_000));
+    htmlToText("<script>".repeat(100_000));
+    htmlToText("x<p>".repeat(100_000) + "<div");
+    ownEmailText(`${"On a long line ".repeat(20_000)}\n`.repeat(3));
+    expect(performance.now() - started).toBeLessThan(2_000);
+    expect(htmlToText("<p>Hi <b>there</b></p><script>bad()</script><p>Bye")).toBe("Hi there\nBye");
   });
 });

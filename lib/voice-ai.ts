@@ -1,27 +1,17 @@
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { generateText, type LanguageModel } from "ai";
+import { generateText } from "ai";
 
 import { ActionError } from "@/actions/define";
 import { buildVoicePrompt, VOICE_GUIDE_TEXT_MAX, type VoiceSample } from "@/lib/voice-guide";
 
-// The one model call behind "Build from my writing". A Vercel AI Gateway model id (the AI SDK's
-// default provider reads AI_GATEWAY_API_KEY, or the Vercel OIDC token when deployed). A small,
-// cheap model is plenty for style analysis: one build is about 3,500 tokens in and at most
-// VOICE_MAX_OUTPUT_TOKENS out, about a cent, so it stays well inside the $10 a month cap.
+// The one model call behind "Build from my writing". A plain "provider/model" id: the AI SDK's
+// default provider is the Vercel AI Gateway (AI_GATEWAY_API_KEY, or the Vercel OIDC token when
+// deployed). Tests and the local dev loop swap the default provider for AIMock through
+// globalThis.AI_SDK_DEFAULT_PROVIDER (tests/aimock-provider.ts, scripts/aimock-dev-provider.mjs),
+// so nothing here knows about the mock. A small, cheap model is plenty for style analysis: one
+// build is about 3,500 tokens in and at most VOICE_MAX_OUTPUT_TOKENS out, about a cent, well
+// inside the $10 a month cap.
 export const VOICE_MODEL = "anthropic/claude-haiku-4.5";
 export const VOICE_MAX_OUTPUT_TOKENS = 800;
-
-// Under AIMock (tests and the zero-cost dev loop) the call goes to the local mock's
-// OpenAI-compatible endpoint instead of the gateway, so no key is read and nothing is billed.
-export function voiceModel(): LanguageModel {
-  if (process.env.USE_AIMOCK === "true") {
-    const base = (process.env.AIMOCK_URL ?? "http://127.0.0.1:4010").replace(/\/$/, "");
-    return createOpenAICompatible({ name: "aimock", baseURL: `${base}/v1`, apiKey: "mock" })(
-      "voice-guide"
-    );
-  }
-  return VOICE_MODEL;
-}
 
 // Distils a guide from the samples she approved. Throws ActionError("unavailable") when the
 // model can't be reached; the error log names the failure only, never the samples (her email).
@@ -31,7 +21,7 @@ export async function distilVoiceGuide(samples: VoiceSample[]) {
   let text: string;
   try {
     ({ text } = await generateText({
-      model: voiceModel(),
+      model: VOICE_MODEL,
       system,
       prompt,
       maxOutputTokens: VOICE_MAX_OUTPUT_TOKENS,
