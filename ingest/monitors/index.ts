@@ -9,8 +9,10 @@ import { CHECK_EVERY_DAYS, MAX_PAGES_PER_RUN, MONITORS, type Monitor } from "./p
 export { MONITORS } from "./pages";
 
 const DAY = 24 * 60 * 60 * 1000;
-// Vercel Hobby crons fire anywhere within their hour, so a page checked a week ago
-// at 12:50 is still due at 12:05.
+// A page's check time is the start of the run that checked it, and the daily cron's start moves
+// by seconds from day to day (or more for a run started by hand). Without slack, a page checked
+// a week ago at 12:00:40 would not be due at 12:00:10 today and would wait a whole extra day.
+// Any value under a day works; two hours also covers a late or hand-started run.
 const SLACK = 2 * 60 * 60 * 1000;
 
 // Pages due a check: never checked or failed last time first, then the oldest check.

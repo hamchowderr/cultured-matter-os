@@ -19,8 +19,8 @@ import {
   type LucideIcon
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import {
@@ -105,11 +105,9 @@ export function RadarList({
   // True when Radar holds no companies at all, not just none matching the filters.
   radarEmpty?: boolean;
 }) {
-  const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
   const [noteFor, setNoteFor] = useState<NoteAction | null>(null);
   // Kept separate so the dialog title does not change while it animates closed.
   const [noteOpen, setNoteOpen] = useState(false);
@@ -130,7 +128,6 @@ export function RadarList({
     }
     toast.success(done);
     setDetail(null);
-    startTransition(() => router.refresh());
   }
 
   async function openDetail(company: RadarCompany) {
@@ -303,7 +300,6 @@ export function RadarList({
             <CompanyDetail
               company={detail.company}
               data={detail.data}
-              onWarmPathsChange={() => startTransition(() => router.refresh())}
             />
           )}
         </SheetContent>
@@ -756,12 +752,10 @@ function RadarEmpty({
 
 function CompanyDetail({
   company,
-  data,
-  onWarmPathsChange
+  data
 }: {
   company: RadarCompany;
   data: Detail | null;
-  onWarmPathsChange: () => void;
 }) {
   const c = data?.company ?? company;
   const facts = [
@@ -845,7 +839,7 @@ function CompanyDetail({
         )}
       </section>
 
-      <WarmPaths company={c} onChange={onWarmPathsChange} />
+      <WarmPaths company={c} />
     </div>
   );
 }

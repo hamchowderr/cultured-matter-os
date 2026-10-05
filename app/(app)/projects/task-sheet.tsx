@@ -38,14 +38,12 @@ export function TaskSheet({
   task,
   projects,
   currentProjectId,
-  onClose,
-  onChanged
+  onClose
 }: {
   task: ProjectTask | null;
   projects: ProjectSummary[];
   currentProjectId: string | null;
   onClose: () => void;
-  onChanged: () => void;
 }) {
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
@@ -61,13 +59,11 @@ export function TaskSheet({
     const result = await updateTask(patch);
     if (!result.ok) return toast.error(result.error.message);
     if (done) toast.success(done);
-    onChanged();
   }
 
   async function call(fn: () => Promise<{ ok: boolean; error?: { message: string } }>) {
     const result = await fn();
     if (!result.ok) return toast.error(result.error?.message ?? "Something went wrong");
-    onChanged();
   }
 
   async function addSubtask(e: React.FormEvent) {
@@ -200,7 +196,6 @@ export function TaskSheet({
                 onOpenChange={setDrafting}
                 taskId={task.id}
                 defaultSubject={task.title}
-                onQueued={onChanged}
               />
             </section>
 

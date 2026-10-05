@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
@@ -19,34 +18,37 @@ export function ScopeSwitch({
   className
 }: {
   scope: WorkScope;
-  // What to do once the choice is saved; reloads the page's data by default.
+  // A navigation to make once the choice is saved. Without it, the save refreshes the page.
   onChanged?: () => void;
   // The guided-tour step that points at this switch (lib/tours.ts).
   tourId?: string;
   className?: string;
 }) {
-  const router = useRouter();
   const [value, setValue] = useState(scope);
   const [pending, startTransition] = useTransition();
   // The server's answer wins once the page refreshes.
   useEffect(() => setValue(scope), [scope]);
 
-  async function change(next: string) {
+  function change(next: string) {
     // Radix sends "" when the active item is pressed again; keep the current choice.
     if (!next || next === value) return;
     const previous = value;
     setValue(next as WorkScope);
-    const result = await setWorkScope({ scope: next as WorkScope });
-    if (!result.ok) {
-      setValue(previous);
-      return toast.error(result.error.message);
-    }
-    if (result.data.added.length) {
-      toast.success("Added personal projects to get you started", {
-        description: `${result.data.added.join(", ")}. Delete any you don't need.`
-      });
-    }
-    startTransition(() => (onChanged ? onChanged() : router.refresh()));
+    startTransition(async () => {
+      // A caller that navigates afterwards renders the page itself; skip the action's refresh.
+      const result = await setWorkScope({ scope: next as WorkScope, refresh: !onChanged });
+      if (!result.ok) {
+        setValue(previous);
+        toast.error(result.error.message);
+        return;
+      }
+      if (result.data.added.length) {
+        toast.success("Added personal projects to get you started", {
+          description: `${result.data.added.join(", ")}. Delete any you don't need.`
+        });
+      }
+      onChanged?.();
+    });
   }
 
   return (

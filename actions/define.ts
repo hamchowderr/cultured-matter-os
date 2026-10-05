@@ -3,7 +3,13 @@ import { z } from "zod/v4";
 import type { Database, Executor } from "@/db";
 import { activityLog } from "@/db/schema";
 
-export type ActionContext = { db: Database };
+export type ActionContext = {
+  db?: Database;
+  // Where a write's post-commit step goes. Server actions pass after() from next/server so the
+  // step runs once the response is sent; cron routes, scripts and tests leave it out and the
+  // step is awaited before .run returns.
+  defer?: (task: () => Promise<void>) => void;
+};
 
 type LogEntry = {
   entityType: string;
@@ -49,6 +55,7 @@ type ActionConfig<I extends z.ZodType, O extends z.ZodType, P = undefined> = {
       log: (input: z.output<I>, result: z.output<O>) => LogEntry;
       // Optional step that runs after the transaction commits (e.g. a push notification about
       // what was just written). It never undoes the write: a failure is logged and swallowed.
+      // With ctx.defer (server actions pass after()), it runs after the response is sent.
       after?: (input: z.output<I>, result: z.output<O>, db: Database) => Promise<void>;
     }
 );
@@ -91,12 +98,17 @@ export function defineAction<I extends z.ZodType, O extends z.ZodType, P = undef
         });
         return result;
       });
-      if (config.after) {
-        try {
-          await config.after(input, committed, db);
-        } catch (e) {
-          console.error(`${config.name}: follow-up step failed`, e);
-        }
+      const after = config.after;
+      if (after) {
+        const followUp = async () => {
+          try {
+            await after(input, committed, db);
+          } catch (e) {
+            console.error(`${config.name}: follow-up step failed`, e);
+          }
+        };
+        if (ctx?.defer) ctx.defer(followUp);
+        else await followUp();
       }
       return committed;
     }
@@ -104,8 +116,7 @@ export function defineAction<I extends z.ZodType, O extends z.ZodType, P = undef
 }
 
 export type ActionResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; error: { code: string; message: string } };
+  { ok: true; data: T } | { ok: false; error: { code: string; message: string } };
 
 // Every server action in actions/server.ts passes through toResult, so this is the one place
 // that refuses anonymous calls. Imported lazily so tests and scripts that call `.run` directly
@@ -116,11 +127,20 @@ async function requireSession() {
 }
 
 // Server-action boundary: check the session, then turn thrown errors into a plain result the
-// UI can render.
-export async function toResult<T>(fn: () => Promise<T>): Promise<ActionResult<T>> {
+// UI can render. A write that changes what is on the page passes { refresh: true }: once it
+// succeeds, refresh() from next/cache sends the fresh page back with this same response, so the
+// client needs no router.refresh() round trip. refresh() only works inside a server action, so
+// page renders (which read through toResult) never pass it. Any post-commit step was handed to
+// ctx.defer inside fn, before this refresh runs, so a refresh error cannot lose it.
+export async function toResult<T>(
+  fn: () => Promise<T>,
+  options: { refresh?: boolean } = {}
+): Promise<ActionResult<T>> {
   try {
     await requireSession();
-    return { ok: true, data: await fn() };
+    const data = await fn();
+    if (options.refresh) (await import("next/cache")).refresh();
+    return { ok: true, data };
   } catch (e) {
     if (e instanceof ActionError) return { ok: false, error: { code: e.code, message: e.message } };
     if (e instanceof z.ZodError) {

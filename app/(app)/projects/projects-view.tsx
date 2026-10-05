@@ -83,7 +83,6 @@ export function ProjectsView({
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
-  const refresh = useCallback(() => startTransition(() => router.refresh()), [router]);
 
   const href = (patch: Record<string, string | undefined>) => {
     const next = new URLSearchParams(params.toString());
@@ -133,24 +132,28 @@ export function ProjectsView({
   }, [projectId, dueSoon]);
 
   const openTask = useCallback((task: { id: string }) => setOpenTaskId(task.id), []);
-  const changeStatus = useCallback(
-    async (task: { id: string; title: string }, status: TaskStatus) => {
+  // Saves refresh the page from the server action itself (actions/define.ts toResult); the
+  // transition keeps the page dimmed until the new data is on screen.
+  const changeStatus = useCallback((task: { id: string; title: string }, status: TaskStatus) => {
+    startTransition(async () => {
       const result = await setTaskStatus({ taskId: task.id, status });
-      if (!result.ok) return toast.error(result.error.message);
+      if (!result.ok) {
+        toast.error(result.error.message);
+        return;
+      }
       if (status === "done") toast.success(`Marked "${task.title}" done`);
-      refresh();
-    },
-    [refresh]
-  );
-  const setProjectStatus = useCallback(
-    async (project: ProjectSummary, status: ProjectStatus) => {
+    });
+  }, []);
+  const setProjectStatus = useCallback((project: ProjectSummary, status: ProjectStatus) => {
+    startTransition(async () => {
       const result = await updateProject({ projectId: project.id, status });
-      if (!result.ok) return toast.error(result.error.message);
+      if (!result.ok) {
+        toast.error(result.error.message);
+        return;
+      }
       toast.success(`Marked ${project.name} ${status === "done" ? "finished" : status}`);
-      refresh();
-    },
-    [refresh]
-  );
+    });
+  }, []);
   const removeProject = useCallback(
     async (project: ProjectSummary) => {
       const result = await deleteProject({ projectId: project.id });
@@ -206,8 +209,11 @@ export function ProjectsView({
           <ScopeSwitch
             scope={scope}
             tourId="projects-scope"
-            // A project from the other side would keep the page on All; drop it.
-            onChanged={() => router.push(href({ p: undefined }), { scroll: false })}
+            // A project from the other side would keep the page on All, so with one open the
+            // switch navigates without it (one render); otherwise the save refreshes the page.
+            onChanged={
+              projectId ? () => router.push(href({ p: undefined }), { scroll: false }) : undefined
+            }
           />
         </div>
 
@@ -309,7 +315,6 @@ export function ProjectsView({
         onOpenChange={setAddOpen}
         projects={openProjects}
         defaultProjectId={current && current.status !== "done" ? current.id : null}
-        onCreated={refresh}
       />
 
       <NewProjectDrawer
@@ -327,7 +332,6 @@ export function ProjectsView({
         projects={projects}
         currentProjectId={view === "tasks" ? projectId : null}
         onClose={() => setOpenTaskId(null)}
-        onChanged={refresh}
       />
     </div>
   );
