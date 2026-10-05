@@ -7,6 +7,7 @@ import { AppSidebar } from "@/components/layout/sidebar/app-sidebar";
 import { SiteHeader } from "@/components/layout/header";
 import { getUserSettings } from "@/actions/server";
 import { AppTours } from "@/components/tours/app-tours";
+import { ChatDock, ChatDockProvider } from "@/components/layout/chat-dock";
 import { getSession } from "@/lib/session";
 import { parseSeen } from "@/lib/tours";
 
@@ -44,17 +45,21 @@ export default async function AppLayout({
         } as React.CSSProperties
       }
     >
-      <AppTours initialSeen={toursSeen}>
-        <AppSidebar user={{ name, email, image }} />
-        <SidebarInset>
-          <SiteHeader />
-          <div className="bg-background flex flex-1 flex-col">
-            <div className="@container/main p-(--content-padding) pb-[calc(var(--content-padding)+env(safe-area-inset-bottom))] xl:group-data-[theme-content-layout=centered]/layout:container xl:group-data-[theme-content-layout=centered]/layout:mx-auto">
-              {children}
+      {/* The header's chat button opens the chat panel beside every page. */}
+      <ChatDockProvider>
+        <AppTours initialSeen={toursSeen}>
+          <AppSidebar user={{ name, email, image }} />
+          <SidebarInset className="min-w-0">
+            <SiteHeader />
+            <div className="bg-background flex flex-1 flex-col">
+              <div className="@container/main p-(--content-padding) pb-[calc(var(--content-padding)+env(safe-area-inset-bottom))] xl:group-data-[theme-content-layout=centered]/layout:container xl:group-data-[theme-content-layout=centered]/layout:mx-auto">
+                {children}
+              </div>
             </div>
-          </div>
-        </SidebarInset>
-      </AppTours>
+          </SidebarInset>
+          <ChatDock />
+        </AppTours>
+      </ChatDockProvider>
     </SidebarProvider>
   );
 }

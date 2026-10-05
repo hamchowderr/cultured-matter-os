@@ -32,6 +32,7 @@ import { dataSubagent } from '../agents/data';
 import { researchSubagent } from '../agents/research';
 import { reviewerSubagent } from '../agents/reviewer';
 import { writerSubagent } from '../agents/writer';
+import { readActionNames } from '../tools/app-actions';
 import { type ChatFeatures, features as defaultFeatures } from './features';
 import { createDefaultMemory, getSharedStore } from './memory';
 import { resolveToolCategory } from './tool-categories';
@@ -296,6 +297,10 @@ export async function getChatSession(resourceId: string = CHAT_RESOURCE_ID): Pro
   const session = existing ?? (await controller.createSession({ resourceId }));
   // In-memory + idempotent, so re-granting each call is free.
   for (const tool of AUTO_ALLOWED_TOOLS) {
+    session.grantTool(tool);
+  }
+  // Cultured Matter: app actions that only read run without a card; writes stay gated.
+  for (const tool of readActionNames()) {
     session.grantTool(tool);
   }
   return session;

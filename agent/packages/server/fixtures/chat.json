@@ -904,6 +904,36 @@
     },
 
     {
+      "_comment": "CULTURED MATTER app actions (tools/app-actions.ts). A READ action: the session grants it, so it runs with no approval card and the answer quotes its result.",
+      "match": { "userMessage": "Which grants are we watching?", "hasToolResult": false },
+      "response": {
+        "toolCalls": [{ "id": "toolu_cm_grants", "name": "searchGrants", "arguments": { "status": "watching" } }]
+      }
+    },
+    {
+      "match": { "toolCallId": "toolu_cm_grants" },
+      "response": { "content": "You're watching one grant: the Climate Seed Fund, which closes on 31 October." }
+    },
+
+    {
+      "_comment": "A WRITE action: createTask stays gated, so the run stops at the approval card. Approving runs it through the app; declining comes back as Mastra's 'not approved' result and the app is never called. The decline fixture MUST precede the approved one (first match wins).",
+      "match": { "userMessage": "Add a task to call the lab on Friday", "hasToolResult": false },
+      "response": {
+        "toolCalls": [
+          { "id": "toolu_cm_task", "name": "createTask", "arguments": { "title": "Call the lab", "dueDate": "2026-10-09" } }
+        ]
+      }
+    },
+    {
+      "match": { "toolCallId": "toolu_cm_task", "toolResultContains": "not approved by the user" },
+      "response": { "content": "Okay, I didn't add the task." }
+    },
+    {
+      "match": { "toolCallId": "toolu_cm_task" },
+      "response": { "content": "Done. I added \"Call the lab\" for Friday." }
+    },
+
+    {
       "_comment": "Catch-all — MUST be last. `match` omits userMessage so it matches any request the specific fixtures above don't, so the reference chat always responds deterministically instead of 404 'No fixture matched'. The controller sends extra tools + a working-memory system prompt; this keeps the demo working for arbitrary input. Dedicated controller tool/approval fixtures are tracked in beads 6d2.",
       "match": {},
       "response": {

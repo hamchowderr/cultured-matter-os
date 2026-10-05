@@ -1,3 +1,29 @@
+> **Cultured Matter OS: this folder is the chat agent server.** It is
+> [mastra-chat-kit](https://github.com/hamchowderr/mastra-chat-kit), brought in as a
+> git subtree, plus a few Cultured Matter changes (the app's actions as tools in
+> `packages/server/src/mastra/tools/app-actions.ts`, the assistant's instructions in
+> `agents/chat.ts`). Only `packages/server` is deployed (Coolify, with
+> `packages/server/Dockerfile`); the app's own chat UI comes from the kit's shadcn
+> registry, not from `packages/web`.
+>
+> Pull kit updates from the repo root, then resolve any conflicts in the Cultured
+> Matter changes. The kit's `.beads/` folder is left out on purpose (this repo tracks
+> work in its own beads); if a pull brings it back, `git rm -r agent/.beads`.
+>
+> ```bash
+> git subtree pull --prefix=agent https://github.com/hamchowderr/mastra-chat-kit.git main --squash
+> ```
+>
+> Run it locally (from `agent/`, after `pnpm install`):
+>
+> ```bash
+> infisical run --path=/cultured-matter-agent -- pnpm --filter @mastra-chat-kit/server dev
+> ```
+>
+> The switches that make it Cultured Matter's assistant (plans-only workspace, the
+> writer subagent, everything else off), `MASTRA_JWT_SECRET`, `AGENT_SERVICE_TOKEN`
+> and `CMOS_APP_URL` live in Infisical `/cultured-matter-agent`.
+
 <div align="center">
 
 # 💬 mastra-chat-kit

@@ -25,6 +25,7 @@
         "Authorization": "Bearer ${SHADCN_UI_KIT_TOKEN}"
       }
     },
-    "@tour": "https://onboarding-tour.vercel.app/r/{name}.json"
+    "@tour": "https://onboarding-tour.vercel.app/r/{name}.json",
+    "@mastra-chat-kit": "https://mastra-chat-kit-registry.vercel.app/r/{name}.json"
   }
 }

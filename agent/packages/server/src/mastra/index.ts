@@ -30,6 +30,7 @@ import { getImage } from './lib/image-store';
 import { createMcpServer } from './lib/mcp';
 import { getSharedStore, getSharedVector, MESSAGE_VECTOR_INDEX } from './lib/memory';
 import { readWorkspaceFile, readWorkspaceTree } from './lib/workspace-files';
+import { loadAppActions } from './tools/app-actions';
 // The AgentController route contract, split by surface — see routes/. The modules
 // are FACTORIES over a dependency contract (routes/types.ts) rather than importers
 // of this file's wiring: the routes are the portable half (the HTTP contract the
@@ -40,6 +41,10 @@ import { createControllerRoutes } from './routes/controller';
 import { createThreadRoutes } from './routes/threads';
 import type { ChatServerDeps } from './routes/types';
 import { createWorkspaceRoutes } from './routes/workspace';
+
+// Load the Cultured Matter app's actions so the chat agent has its tools from the
+// first request. If the app isn't up yet, the first chat request tries again.
+await loadAppActions();
 
 // Bootstrap the versioned Dolt database on first boot (no-op if Dolt isn't configured).
 if (doltConfigured) {

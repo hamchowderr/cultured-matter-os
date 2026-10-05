@@ -1,5 +1,6 @@
 import type { ToolCategory } from '@mastra/core/agent-controller';
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace';
+import { appActionCategory } from '../tools/app-actions';
 
 const { FILESYSTEM, SANDBOX, SEARCH, LSP } = WORKSPACE_TOOLS;
 
@@ -53,5 +54,6 @@ const CATEGORIES: Record<string, ToolCategory> = {
 };
 
 export function resolveToolCategory(toolName: string): ToolCategory | null {
-  return CATEGORIES[toolName] ?? null;
+  // Cultured Matter app actions are categorized by their own read/write kind.
+  return CATEGORIES[toolName] ?? appActionCategory(toolName);
 }

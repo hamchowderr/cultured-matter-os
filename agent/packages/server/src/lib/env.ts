@@ -101,6 +101,15 @@ const envSchema = z
     MASTRA_TELEMETRY_DISABLED: z.string().optional(),
     MASTRA_CLOUD_ACCESS_TOKEN: z.string().optional(),
 
+    // The Cultured Matter OS app whose named actions become the chat agent's tools
+    // (tools/app-actions.ts). Both unset = no app tools (tests, a bare kit run).
+    CMOS_APP_URL: z.string().url().optional(),
+    // Shared secret the app checks on /api/agent/actions. Same value in both services.
+    AGENT_SERVICE_TOKEN: z
+      .string()
+      .min(32, 'AGENT_SERVICE_TOKEN must be at least 32 chars')
+      .optional(),
+
     // Shared HMAC secret for JWT auth (@mastra/auth). When set, the server
     // gates all /api/* routes, the chat-kit contract routes AND Studio behind a
     // Bearer JWT signed with this secret. Leave unset for open local dev. Must be
