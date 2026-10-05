@@ -80,7 +80,8 @@ export function ProjectsView({
   const router = useRouter();
   const params = useSearchParams();
   const [pending, startTransition] = useTransition();
-  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
+  // ?task=<id> (a link from the Map) opens that task's sheet on arrival.
+  const [openTaskId, setOpenTaskId] = useState<string | null>(() => params.get("task"));
   const [addOpen, setAddOpen] = useState(false);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
 
@@ -331,7 +332,11 @@ export function ProjectsView({
         task={sheetRow ? toSheetTask(sheetRow, view === "tasks" ? projectId : null) : null}
         projects={projects}
         currentProjectId={view === "tasks" ? projectId : null}
-        onClose={() => setOpenTaskId(null)}
+        onClose={() => {
+          setOpenTaskId(null);
+          // Drop ?task so a refresh doesn't open the sheet again.
+          if (params.has("task")) router.replace(href({ task: undefined }), { scroll: false });
+        }}
       />
     </div>
   );

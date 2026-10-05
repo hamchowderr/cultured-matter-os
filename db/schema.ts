@@ -523,6 +523,42 @@ export const voiceGuide = sqliteTable(
   (t) => [check("voice_guide_single_row", sql`${t.id} = 'main'`)]
 );
 
+// ---------------------------------------------------------------- Mind maps
+
+// A saved mind map (brainstorms, project plans, sponsor maps). Nodes and edges are stored whole
+// as JSON, in the shapes lib/mind-map.ts defines and validates; a node may point at a real record
+// (a project, task, contact, Radar company, grant or idea). The live business map is not stored:
+// getBusinessMap builds it from the tables each time.
+export const mindMaps = sqliteTable(
+  "mind_maps",
+  {
+    id: id(),
+    title: text("title").notNull(),
+    nodes: text("nodes", { mode: "json" })
+      .$type<MindMapNodeRow[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    edges: text("edges", { mode: "json" })
+      .$type<MindMapEdgeRow[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    createdAt: createdAt(),
+    updatedAt: updatedAt()
+  },
+  (t) => [index("mind_maps_updated_idx").on(t.updatedAt)]
+);
+
+// Kept here (not imported from lib/) so the schema has no app dependencies; lib/mind-map.ts
+// validates against the same shape.
+type MindMapNodeRow = {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  link?: { type: "project" | "task" | "contact" | "company" | "grant" | "idea"; id: string } | null;
+};
+type MindMapEdgeRow = { id: string; source: string; target: string };
+
 // ---------------------------------------------------------------- Log
 
 export const activityLog = sqliteTable(

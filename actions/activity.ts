@@ -9,6 +9,7 @@ import {
   companies,
   contacts,
   grants,
+  mindMaps,
   projects,
   taskProjects,
   tasks
@@ -125,6 +126,15 @@ async function resolveEntities(
   }
   for (const r of captureRows) out.set(key("capture", r.id), ref(r.name, { filed: !!r.filedAt }));
   for (const r of approvalRows) out.set(key("approval", r.id), ref(r.name));
+
+  const mindMapIds = ids("mind_map");
+  if (mindMapIds.length) {
+    const maps = await db
+      .select({ id: mindMaps.id, name: mindMaps.title })
+      .from(mindMaps)
+      .where(inArray(mindMaps.id, mindMapIds));
+    for (const r of maps) out.set(key("mind_map", r.id), ref(r.name));
+  }
 
   if (taskRows.length) {
     // A task without a home project may still be cross-linked into one.

@@ -273,8 +273,8 @@ async function collectWarmPaths(db: Executor, scope: WarmPathScope): Promise<Fou
 }
 
 // Warm paths grouped by radar company. findWarmPath and countWarmPaths share it so the list
-// and the detail panel always agree.
-async function warmPathsFor(db: Executor, companyIds: string[]) {
+// and the detail panel always agree. The business map (actions/maps.ts) uses it too.
+export async function warmPathsFor(db: Executor, companyIds: string[]) {
   const result = new Map<string, WarmPath[]>(companyIds.map((cid) => [cid, []]));
   for (const { companyId, companyName: _name, ...path } of await collectWarmPaths(db, {
     companyIds

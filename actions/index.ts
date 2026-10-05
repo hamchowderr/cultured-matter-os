@@ -94,6 +94,14 @@ import {
   getVoiceGuideForEditing,
   updateVoiceGuide
 } from "./voice";
+import {
+  createMindMap,
+  deleteMindMap,
+  getBusinessMap,
+  getMindMap,
+  listMindMaps,
+  updateMindMap
+} from "./maps";
 
 export {
   searchCompanies,
@@ -176,7 +184,13 @@ export {
   getVoiceGuideForEditing,
   gatherVoiceSamples,
   buildVoiceGuide,
-  updateVoiceGuide
+  updateVoiceGuide,
+  getBusinessMap,
+  listMindMaps,
+  getMindMap,
+  createMindMap,
+  updateMindMap,
+  deleteMindMap
 };
 
 // Every named action, for the phase-2 agent to wrap as tools.
@@ -245,7 +259,13 @@ export const allActions = [
   fileNoteToInbox,
   getBusinessProfile,
   updateBusinessProfile,
-  getVoiceGuide
+  getVoiceGuide,
+  getBusinessMap,
+  listMindMaps,
+  getMindMap,
+  createMindMap,
+  updateMindMap,
+  deleteMindMap
   // Not tools: calendarFeed (keyed by the feed's secret token), recordDailySummary (the cron's
   // bookkeeping), markTourSeen (the guided tours' bookkeeping), importNotes (the Apple Notes
   // Shortcut's endpoint), the push device actions (they need a browser's push subscription) and
