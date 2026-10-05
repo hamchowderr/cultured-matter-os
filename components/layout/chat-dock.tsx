@@ -17,11 +17,12 @@ import {
 import { suggestionsFor } from "@/lib/chat-suggestions";
 import { cn } from "@/lib/utils";
 import {
-  CHAT_DOCK_MAX,
   CHAT_DOCK_MIN,
   CHAT_DOCK_OPEN_COOKIE,
   CHAT_DOCK_WIDTH_COOKIE,
-  clampDockWidth
+  clampDockWidth,
+  dockCap,
+  dockWidthCss
 } from "@/lib/chat-dock";
 
 // The assistant docked on the right of every page, like a browser's assistant side panel:
@@ -40,7 +41,11 @@ type ChatDockState = {
   setSheetOpen: (open: boolean) => void;
   width: number;
   setWidth: (width: number) => void;
-  desktop: boolean;
+  // null until the browser has been asked; the panel mounts only once it is known, so a
+  // phone never loads the hidden dock (and its /goal, /om, /schedules, /threads calls).
+  desktop: boolean | null;
+  // The header's chat button, so closing the dock can hand focus back to it.
+  buttonRef: React.RefObject<HTMLButtonElement | null>;
 };
 const ChatDockContext = React.createContext<ChatDockState | null>(null);
 
@@ -66,11 +71,12 @@ export function ChatDockProvider({
   const [open, setOpenState] = React.useState(defaultOpen);
   const [sheetOpen, setSheetOpen] = React.useState(false);
   const [width, setWidthState] = React.useState(defaultWidth);
-  // Assume a desktop until the browser says otherwise: the dock column is CSS-hidden
-  // below 1024px anyway, so a phone never sees it flash.
-  const [desktop, setDesktop] = React.useState(true);
+  const [desktop, setDesktop] = React.useState<boolean | null>(null);
+  const buttonRef = React.useRef<HTMLButtonElement | null>(null);
 
-  React.useEffect(() => {
+  // Read before the first paint after hydration, so on a desktop the panel fills the
+  // server-rendered column at once.
+  React.useLayoutEffect(() => {
     const mql = window.matchMedia(DESKTOP);
     const onChange = () => setDesktop(mql.matches);
     onChange();
@@ -78,34 +84,33 @@ export function ChatDockProvider({
     return () => mql.removeEventListener("change", onChange);
   }, []);
 
+  // Stable setters, so a toggle changes only the state that changed.
+  const setOpen = React.useCallback((next: boolean) => {
+    setOpenState(next);
+    setCookie(CHAT_DOCK_OPEN_COOKIE, String(next));
+  }, []);
+  // Clamped to the same cap as the column's CSS, so the cookie never holds a width the
+  // dock can't show in this window.
+  const setWidth = React.useCallback((next: number) => {
+    const w = Math.min(clampDockWidth(next), dockCap(window.innerWidth));
+    setWidthState(w);
+    setCookie(CHAT_DOCK_WIDTH_COOKIE, String(w));
+  }, []);
+
   const value = React.useMemo<ChatDockState>(
-    () => ({
-      open,
-      setOpen: (next) => {
-        setOpenState(next);
-        setCookie(CHAT_DOCK_OPEN_COOKIE, String(next));
-      },
-      sheetOpen,
-      setSheetOpen,
-      width,
-      setWidth: (next) => {
-        const w = clampDockWidth(next);
-        setWidthState(w);
-        setCookie(CHAT_DOCK_WIDTH_COOKIE, String(w));
-      },
-      desktop
-    }),
-    [open, sheetOpen, width, desktop]
+    () => ({ open, setOpen, sheetOpen, setSheetOpen, width, setWidth, desktop, buttonRef }),
+    [open, setOpen, sheetOpen, width, setWidth, desktop]
   );
   return <ChatDockContext.Provider value={value}>{children}</ChatDockContext.Provider>;
 }
 
 // The header button: docks or undocks the panel on a desktop, opens the sheet on a phone.
 export function ChatButton() {
-  const { open, setOpen, desktop, setSheetOpen } = useChatDock();
+  const { open, setOpen, desktop, setSheetOpen, buttonRef } = useChatDock();
   if (usePathname() === "/chat") return null;
   return (
     <Button
+      ref={buttonRef}
       variant="ghost"
       size="icon"
       aria-label={desktop && open ? "Close chat" : "Chat"}
@@ -150,22 +155,35 @@ const COMPOSER_LOOK = cn(
   "[&_button[aria-label=Dictate]:not(.bg-destructive):hover]:text-foreground"
 );
 
-function AssistantPanel({ onClose, className }: { onClose: () => void; className?: string }) {
+const GREETING = {
+  title: "How can I help you today?",
+  description: "Ask about your grants, Radar, people or tasks."
+};
+
+// Memoised with stable props, so opening, closing or resizing the dock (or toggling the
+// left sidebar) doesn't re-render the conversation; only a new page (its suggestions)
+// or the chat itself does.
+const AssistantPanel = React.memo(function AssistantPanel({
+  onClose,
+  className
+}: {
+  onClose: () => void;
+  className?: string;
+}) {
   // Suggestions for the page she is on: it stays mounted across pages, so they follow her.
-  const suggestions = suggestionsFor(usePathname());
+  const pathname = usePathname();
+  const suggestions = React.useMemo(() => suggestionsFor(pathname), [pathname]);
+  const actions = React.useMemo(() => <PanelActions onClose={onClose} />, [onClose]);
   return (
     <ChatPanel
       title="Assistant"
-      greeting={{
-        title: "How can I help you today?",
-        description: "Ask about your grants, Radar, people or tasks."
-      }}
+      greeting={GREETING}
       suggestions={suggestions}
-      actions={<PanelActions onClose={onClose} />}
+      actions={actions}
       className={cn(COMPOSER_LOOK, className ?? "min-h-0 flex-1")}
     />
   );
-}
+});
 
 // Drag the dock's left edge to resize it (or focus the edge and use the arrow keys).
 function ResizeEdge() {
@@ -184,11 +202,10 @@ function ResizeEdge() {
   };
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragging) return;
-    // Leave the page at least ~35rem beside the left sidebar, however far she drags.
-    const sidebar = document.querySelector<HTMLElement>('[data-slot="sidebar-gap"]')?.offsetWidth ?? 0;
-    const room = window.innerWidth - sidebar - 560;
-    live.current = clampDockWidth(
-      Math.min(room, start.current.width + (start.current.x - e.clientX))
+    // The same cap as the column's CSS: the page keeps ~35rem beside the sidebar.
+    live.current = Math.min(
+      clampDockWidth(start.current.width + (start.current.x - e.clientX)),
+      dockCap(window.innerWidth)
     );
     setPreview(live.current);
   };
@@ -211,22 +228,33 @@ function ResizeEdge() {
     };
   }, [preview]);
 
+  // What the column actually shows: the stored width under this window's cap.
+  const [cap, setCap] = React.useState<number | null>(null);
+  React.useEffect(() => {
+    const measure = () => setCap(dockCap(window.innerWidth));
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+  const shown = cap === null ? width : Math.min(width, cap);
+
   return (
     <div
       role="separator"
       aria-orientation="vertical"
       aria-label="Resize the chat"
       aria-valuemin={CHAT_DOCK_MIN}
-      aria-valuemax={CHAT_DOCK_MAX}
-      aria-valuenow={width}
+      aria-valuemax={cap ?? undefined}
+      aria-valuenow={preview ?? shown}
       tabIndex={0}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      // Arrow keys step from what is shown; setWidth clamps to the same cap.
       onKeyDown={(e) => {
-        if (e.key === "ArrowLeft") setWidth(width + 24);
-        if (e.key === "ArrowRight") setWidth(width - 24);
+        if (e.key === "ArrowLeft") setWidth(shown + 24);
+        if (e.key === "ArrowRight") setWidth(shown - 24);
       }}
       // An 8px grab area starting on the border (the column clips anything outside it).
       // The line drawn over the border only shows on hover, focus or drag, so the single
@@ -238,15 +266,24 @@ function ResizeEdge() {
 }
 
 export function ChatDock() {
-  const { open, setOpen, sheetOpen, setSheetOpen, width, desktop } = useChatDock();
+  const { open, setOpen, sheetOpen, setSheetOpen, width, desktop, buttonRef } = useChatDock();
   const onChat = usePathname() === "/chat";
   const shown = open && !onChat;
+
+  // The dock's X: close it and hand focus back to the header's chat button (the column
+  // goes inert, so focus would otherwise be lost).
+  const closeDock = React.useCallback(() => {
+    setOpen(false);
+    requestAnimationFrame(() => buttonRef.current?.focus());
+  }, [setOpen, buttonRef]);
+  const closeSheet = React.useCallback(() => setSheetOpen(false), [setSheetOpen]);
 
   return (
     <>
       {/* The docked column, the right-hand mirror of the left sidebar: the sidebar
           surface, one border-l as the only divider, and its header row on the app
-          header's line. Its width animates open and closed the way the left sidebar
+          header's line (with the inset sidebar variant the page card sits 8px down, so
+          the column does too). Its width animates open and closed the way the left sidebar
           does (no animation when reduced motion is asked for, or while dragging). It
           stays mounted when closed or on /chat, so the conversation survives, and it
           is never shown below 1024px. */}
@@ -258,30 +295,40 @@ export function ChatDock() {
         style={
           {
             // Never so wide that the page gets less than ~35rem beside the left sidebar.
-            "--chat-dock-w": `max(${CHAT_DOCK_MIN}px, min(var(--chat-dock-width, ${width}px), calc(100vw - var(--sidebar-width) - 35rem)))`,
+            "--chat-dock-w": dockWidthCss(width),
             width: shown ? "var(--chat-dock-w)" : 0
           } as React.CSSProperties
         }
-        className="bg-sidebar text-sidebar-foreground sticky top-0 hidden h-svh shrink-0 overflow-hidden transition-[width] duration-200 ease-linear motion-reduce:transition-none lg:block [.chat-dock-dragging_&]:transition-none"
+        className="bg-sidebar text-sidebar-foreground sticky top-0 hidden h-svh shrink-0 overflow-hidden transition-[width] duration-200 ease-linear motion-reduce:transition-none lg:block lg:peer-data-[variant=inset]:pt-2 [.chat-dock-dragging_&]:transition-none"
       >
-        {desktop && (
+        {desktop !== false && (
           // A fixed-width inner column, so the panel never reflows while the width animates.
           <div
             className="relative flex h-full flex-col border-l"
             style={{ width: "var(--chat-dock-w)" }}
           >
-            <ResizeEdge />
-            {/* Transparent, so the column's sidebar surface shows; the header row takes the
-                app header's height, so the two bottom borders run on one line. */}
-            <AssistantPanel
-              onClose={() => setOpen(false)}
-              className="min-h-0 flex-1 bg-transparent [--chat-panel-header-height:var(--header-height)]"
-            />
+            {desktop ? (
+              <>
+                <ResizeEdge />
+                {/* Transparent, so the column's sidebar surface shows; the header row takes
+                    the app header's height, so the two bottom borders run on one line. */}
+                <AssistantPanel
+                  onClose={closeDock}
+                  className="min-h-0 flex-1 bg-transparent [--chat-panel-header-height:var(--header-height)]"
+                />
+              </>
+            ) : (
+              // Server render and hydration: the panel's header row, so the column and the
+              // header line are there from the first paint.
+              <div className="flex h-(--header-height) shrink-0 items-center border-b px-3 text-sm font-medium">
+                Assistant
+              </div>
+            )}
           </div>
         )}
       </aside>
 
-      {!desktop && !onChat && (
+      {desktop === false && !onChat && (
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           {/* Full screen, so no edge border, and clear of the notch and the home bar. Focus
               goes to the sheet itself rather than its first button (no focus ring on
@@ -301,7 +348,7 @@ export function ChatDock() {
                 Ask about your work. Changes wait for your approval.
               </SheetDescription>
             </SheetHeader>
-            <AssistantPanel onClose={() => setSheetOpen(false)} />
+            <AssistantPanel onClose={closeSheet} />
           </SheetContent>
         </Sheet>
       )}

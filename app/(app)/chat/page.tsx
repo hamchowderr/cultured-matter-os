@@ -13,9 +13,14 @@ export async function generateMetadata() {
 // same session and threads as the chat panel in the header. It fills the space under the
 // header; the agent has no files, terminal or browser, so the workbench keeps only Memory
 // and Schedules, and the model picker and web search are off.
+//
+// Exactly one screen, so the page never scrolls: the height leaves out the header (with
+// the notch inset above it), the home-bar inset the layout pads below the page (so the
+// composer sits above the home indicator in the installed app), and the inset sidebar
+// variant's margin (--inset-gap, set by the layout).
 export default function ChatPage() {
   return (
-    <div className="-m-(--content-padding) h-[calc(100svh-var(--header-height)-env(safe-area-inset-top))]">
+    <div className="-m-(--content-padding) h-[calc(100svh-var(--header-height)-env(safe-area-inset-top)-env(safe-area-inset-bottom)-var(--inset-gap,0px))]">
       <ChatSwitcher
         className="h-full"
         workbenchTabs={["memory", "schedules"]}

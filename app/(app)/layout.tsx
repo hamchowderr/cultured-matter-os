@@ -8,6 +8,7 @@ import { SiteHeader } from "@/components/layout/header";
 import { getUserSettings } from "@/actions/server";
 import { AppTours } from "@/components/tours/app-tours";
 import { ChatDock, ChatDockProvider } from "@/components/layout/chat-dock";
+import { PageScrollRestoration } from "@/components/layout/page-scroll-restoration";
 import {
   CHAT_DOCK_OPEN_COOKIE,
   CHAT_DOCK_WIDTH_COOKIE,
@@ -62,16 +63,25 @@ export default async function AppLayout({
           {/* From 1024px the page scrolls in its own area under the header, so its
               scrollbar sits beside the page, below the header line, and the docked
               assistant stays outside it, like a browser's side panel. Below that the
-              document scrolls as usual. */}
-          <SidebarInset className="min-w-0 lg:h-svh lg:overflow-hidden">
+              document scrolls as usual. The inset sidebar variant puts an 8px margin
+              around the page card; --inset-gap takes it off the height so the document
+              is exactly one screen. */}
+          <SidebarInset className="min-w-0 md:peer-data-[variant=inset]:[--inset-gap:1rem] lg:h-[calc(100svh-var(--inset-gap,0px))] lg:overflow-hidden">
             <SiteHeader />
-            <div className="bg-background flex flex-1 flex-col lg:min-h-0 lg:overflow-y-auto">
+            <div
+              data-slot="page-scroller"
+              className="bg-background flex flex-1 flex-col scroll-pt-(--content-padding) lg:min-h-0 lg:overflow-y-auto"
+            >
               <div className="@container/main p-(--content-padding) pb-[calc(var(--content-padding)+env(safe-area-inset-bottom))] xl:group-data-[theme-content-layout=centered]/layout:container xl:group-data-[theme-content-layout=centered]/layout:mx-auto">
                 {children}
               </div>
             </div>
           </SidebarInset>
           <ChatDock />
+          {/* Back/forward return to where each page was, inside the page scroller. */}
+          <React.Suspense>
+            <PageScrollRestoration selector='[data-slot="page-scroller"]' />
+          </React.Suspense>
         </AppTours>
       </ChatDockProvider>
     </SidebarProvider>
