@@ -5,9 +5,9 @@ import { ActionError } from "@/actions/define";
 import { db } from "@/db";
 import { tasks } from "@/db/schema";
 
-// The daily reply check behind /api/cron/gmail.
+// The hourly reply check behind /api/cron/gmail.
 export async function runGmailReplyCheck() {
-  // Nothing to watch: skip, so the activity log doesn't fill with empty daily checks.
+  // Nothing to watch: skip, so the activity log doesn't fill with empty hourly checks.
   const [watching] = await db
     .select({ id: tasks.id })
     .from(tasks)

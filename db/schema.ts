@@ -289,7 +289,7 @@ export const tasks = sqliteTable(
       .notNull()
       .default("medium"),
     dueDate: integer("due_date", { mode: "timestamp_ms" }),
-    // The Gmail thread of a follow-up drafted from this task; the daily reply check watches it.
+    // The Gmail thread of a follow-up drafted from this task; the hourly reply check watches it.
     emailThreadId: text("email_thread_id"),
     completedAt: integer("completed_at", { mode: "timestamp_ms" }),
     createdAt: createdAt(),

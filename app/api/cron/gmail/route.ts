@@ -2,7 +2,7 @@ import { runGmailReplyCheck } from "@/lib/gmail-cron";
 
 export const maxDuration = 300;
 
-// Called daily by Vercel Cron (see vercel.json; Hobby allows one run per day per job). Moves
+// Called hourly by Vercel Cron, at half past (see vercel.json). Moves
 // tasks waiting for a response to replied when their Gmail thread has a reply. No webhooks.
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
