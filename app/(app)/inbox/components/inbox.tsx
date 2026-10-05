@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { CameraIcon, ImagesIcon, Loader2Icon, Search } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { type Layout } from "react-resizable-panels";
 import { toast } from "sonner";
 
@@ -24,7 +23,6 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
 
 import { IphonePanel } from "../iphone-panel";
 import { type Capture, KIND_LABEL, type Project, useInboxStore } from "../use-inbox";
@@ -74,12 +72,10 @@ export function Inbox({
   defaultLayout?: Layout;
   cookieID: string;
 }) {
-  const router = useRouter();
   const isMobile = useIsMobile();
   const { selectedId, setSelectedId } = useInboxStore();
   const [tab, setTab] = React.useState<Tab>(initialTab);
   const [query, setQuery] = React.useState("");
-  const [pending, startTransition] = React.useTransition();
 
   const all = tab === "filed" ? filed : toSort;
   const items = React.useMemo(() => all.filter((c) => matches(c, query.trim())), [all, query]);
@@ -104,23 +100,20 @@ export function Inbox({
     setSelectedId(isMobile ? null : (first?.id ?? null));
   }
 
-  const refresh = () => startTransition(() => router.refresh());
-
-  // After filing from "To sort", move on to the next item still waiting.
+  // After filing from "To sort", move on to the next item still waiting. The lists themselves
+  // arrive with the save's response (the action refreshes the page).
   function onFiled(id: string) {
     if (tab === "sort") {
       const i = items.findIndex((c) => c.id === id);
       const next = items[i + 1] ?? items[i - 1];
       setSelectedId(isMobile ? null : (next?.id ?? null));
     }
-    refresh();
   }
 
   function onCaptured(capture: Capture) {
     if (tab !== "sort") changeTab("sort");
     setQuery("");
     if (!isMobile) setSelectedId(capture.id);
-    refresh();
   }
 
   return (
@@ -132,7 +125,7 @@ export function Inbox({
         onLayoutChange={(layout) => {
           document.cookie = `${cookieID}=${JSON.stringify(layout)}; path=/;`;
         }}
-        className={cn("items-stretch transition-opacity", pending && "opacity-80")}
+        className="items-stretch"
       >
         <ResizablePanel id="list-panel" minSize="25%">
           <Tabs

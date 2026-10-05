@@ -27,8 +27,7 @@ export function FollowUpDialog({
   onOpenChange,
   contact,
   taskId,
-  defaultSubject = "",
-  onQueued
+  defaultSubject = ""
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -36,7 +35,6 @@ export function FollowUpDialog({
   contact?: Recipient;
   taskId?: string;
   defaultSubject?: string;
-  onQueued?: () => void;
 }) {
   const [to, setTo] = useState<Recipient | undefined>(contact);
   const [query, setQuery] = useState("");
@@ -71,7 +69,6 @@ export function FollowUpDialog({
     if (!result.ok) return toast.error(result.error.message);
     toast.success("Sent for approval. Once you approve it, it waits in your Gmail Drafts.");
     onOpenChange(false);
-    onQueued?.();
   }
 
   return (

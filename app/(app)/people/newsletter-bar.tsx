@@ -1,8 +1,7 @@
 "use client";
 
 import { MailIcon, RefreshCwIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { syncNewsletter } from "@/actions/server";
@@ -26,9 +25,7 @@ export function NewsletterBar({
   showingOnly: boolean;
   onToggleOnly: () => void;
 }) {
-  const router = useRouter();
   const [syncing, setSyncing] = useState(false);
-  const [, startTransition] = useTransition();
 
   async function sync() {
     setSyncing(true);
@@ -54,7 +51,6 @@ export function NewsletterBar({
     } else {
       toast.success(`Newsletter synced: ${parts.join(", ")}`);
     }
-    startTransition(() => router.refresh());
   }
 
   const people = `${status.subscribed.toLocaleString()} ${status.subscribed === 1 ? "person" : "people"}`;

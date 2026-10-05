@@ -55,7 +55,6 @@ export function NoteDialog({ note, closeHref }: { note: OpenNote | null; closeHr
       toast.success("Filed to the Inbox, under To sort.", {
         action: { label: "Open Inbox", onClick: () => router.push("/inbox") }
       });
-      router.refresh();
     });
   }
 

@@ -17,8 +17,6 @@ import { decide, dedupeKey } from "@/lib/note-dedupe";
 import { freshDb } from "./test-db";
 
 vi.mock("@/lib/session", () => ({ getSession: vi.fn() }));
-// The proxy matcher test only reads proxy.ts's config; skip loading Better Auth behind it.
-vi.mock("@/lib/auth", () => ({ auth: {} }));
 
 let db: Database;
 let cleanup: () => void;
@@ -253,6 +251,32 @@ describe("Apple Notes import endpoint", () => {
       folder: "Done",
       noteModifiedAt: new Date("2024-04-01T12:00:00Z")
     });
+  });
+
+  it("saves the modified date of an unchanged note stored without one", async () => {
+    await postJson({ ...note({ modified: undefined }), key: KEY });
+    expect((await allNotes())[0].noteModifiedAt).toBeNull();
+
+    const res = await postJson({ ...note(), key: KEY });
+    expect(await res.json()).toMatchObject({ added: 0, updated: 0, unchanged: 1 });
+    const rows = await allNotes();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      body: note().body,
+      noteModifiedAt: new Date("2024-03-05T09:00:00-08:00")
+    });
+  });
+
+  it("does not rewrite an unchanged note that already has a modified date", async () => {
+    await postJson({ ...note(), key: KEY });
+    const marker = new Date("2000-01-01T00:00:00Z");
+    await db.update(t.notes).set({ updatedAt: marker });
+
+    const res = await postJson({ ...note(), key: KEY });
+    expect(await res.json()).toMatchObject({ added: 0, updated: 0, unchanged: 1 });
+    const [row] = await allNotes();
+    expect(row.updatedAt).toEqual(marker);
+    expect(row.noteModifiedAt).toEqual(new Date("2024-03-05T09:00:00-08:00"));
   });
 
   it("keeps the same note once when a batch carries it twice", async () => {

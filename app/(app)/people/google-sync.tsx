@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 
 // "Sync Gmail" once connected, "Connect Google" until Google grants Gmail and Contacts.
-export function GoogleSync({ connected, onSynced }: { connected: boolean; onSynced: () => void }) {
+export function GoogleSync({ connected }: { connected: boolean }) {
   const [syncing, setSyncing] = useState(false);
   const params = useSearchParams();
   const router = useRouter();
@@ -50,7 +50,6 @@ export function GoogleSync({ connected, onSynced }: { connected: boolean; onSync
         emailsLogged === 1 ? "email" : "emails"
       }`
     );
-    onSynced();
   }
 
   return (

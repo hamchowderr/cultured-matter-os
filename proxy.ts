@@ -1,13 +1,12 @@
+import { getSessionCookie } from "better-auth/cookies";
 import { type NextRequest, NextResponse } from "next/server";
 
-import { auth } from "@/lib/auth";
-
 // Every app page needs a session. Signed-out visitors go to /sign-in.
-// Proxy runs on the Node.js runtime in Next 16, so this is a full session check against the
-// database, not just a cookie-presence check.
-export async function proxy(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session) return NextResponse.redirect(new URL("/sign-in", request.url));
+// This is Better Auth's optimistic check: it only looks for the session cookie, so no request
+// pays for a database lookup here. The real check runs where the data is read: the (app)
+// layout, every server action (actions/define.ts toResult) and each guarded route handler.
+export function proxy(request: NextRequest) {
+  if (!getSessionCookie(request)) return NextResponse.redirect(new URL("/sign-in", request.url));
   return NextResponse.next();
 }
 

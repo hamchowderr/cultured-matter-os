@@ -15,8 +15,6 @@ import { freshDb } from "./test-db";
 // The server action's session lookup needs a Next.js request; the test decides what it returns.
 const getSession = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/session", () => ({ getSession }));
-// The proxy matcher test only reads proxy.ts's config; skip loading Better Auth behind it.
-vi.mock("@/lib/auth", () => ({ auth: {} }));
 
 // Never touch the real Blob store: the upload is injected, and the module is mocked as a guard.
 vi.mock("@vercel/blob", () => ({

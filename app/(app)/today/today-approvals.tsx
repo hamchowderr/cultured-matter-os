@@ -1,7 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { decideApproval } from "@/actions/server";
@@ -17,10 +16,8 @@ export function TodayApprovals({
   approvals: Approval[];
   className?: string;
 }) {
-  const router = useRouter();
-  const [refreshing, startTransition] = useTransition();
   const [saving, setSaving] = useState<string | null>(null);
-  // Decided items leave the list at once; the refresh then brings the server's view.
+  // Decided items leave the list at once; the action's own refresh then brings the server's view.
   const [decided, setDecided] = useState<Set<string>>(new Set());
 
   const open = approvals.filter((a) => !decided.has(a.id));
@@ -38,7 +35,6 @@ export function TodayApprovals({
       toast.success(`${decision === "approve" ? "Approved" : "Rejected"}: ${approval.summary}`);
     }
     setDecided((prev) => new Set(prev).add(approval.id));
-    startTransition(() => router.refresh());
   }
 
   return (
@@ -51,7 +47,7 @@ export function TodayApprovals({
       linkLabel="See the history"
     >
       <div
-        className={cn("grid gap-3 transition-opacity md:grid-cols-2", refreshing && "opacity-70")}
+        className="grid gap-3 md:grid-cols-2"
       >
         {open.map((a) => (
           <ApprovalCard

@@ -13,7 +13,8 @@
     "test": "vitest run",
     "ingest:radar": "tsx scripts/ingest-radar.mts",
     "ingest:grants": "tsx scripts/ingest-grants.mts",
-    "ingest:monitors": "tsx scripts/ingest-monitors.mts"
+    "ingest:monitors": "tsx scripts/ingest-monitors.mts",
+    "seed:business": "tsx scripts/seed-business-profile.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -64,7 +65,6 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.4.0",
-    "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.3",
     "drizzle-zod": "^0.8.3",
     "embla-carousel-react": "^8.6.0",
@@ -85,7 +85,6 @@
     "react": "^19.2.8",
     "react-day-picker": "^10.0.1",
     "react-dom": "^19.2.8",
-    "react-ga4": "^3.0.1",
     "react-hook-form": "^7.85.0",
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^4.12.3",

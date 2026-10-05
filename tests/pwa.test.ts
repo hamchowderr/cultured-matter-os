@@ -5,8 +5,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import manifest from "@/app/manifest";
 
-// The proxy matcher test only reads proxy.ts's config; skip loading Better Auth behind it.
-vi.mock("@/lib/auth", () => ({ auth: {} }));
 
 describe("web app manifest", () => {
   it("opens standalone on /today with 192 and 512 icons", () => {

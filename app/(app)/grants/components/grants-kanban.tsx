@@ -166,7 +166,6 @@ export default function GrantsKanban({
       return;
     }
     toast.success(`Moved to ${label(status)}`);
-    startTransition(() => router.refresh());
   }
 
   function onValueChange(next: Record<string, Grant[]>) {

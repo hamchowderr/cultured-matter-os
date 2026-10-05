@@ -132,7 +132,6 @@ export function PeopleView({
     toast.success(
       `Imported ${created} new and updated ${updated} contacts${skipped ? ` (${skipped} rows had no profile link or email)` : ""}`
     );
-    startTransition(() => router.refresh());
   }
 
   async function toggleSector(contact: Contact, sector: string, on: boolean) {
@@ -145,7 +144,6 @@ export function PeopleView({
       toast.error(result.error.message);
       return;
     }
-    startTransition(() => router.refresh());
   }
 
   async function toggleNewsletter(contact: Contact, on: boolean) {
@@ -159,7 +157,6 @@ export function PeopleView({
     toast.success(
       on ? `${contact.fullName} is on the newsletter` : `${contact.fullName} is off the newsletter`
     );
-    startTransition(() => router.refresh());
   }
 
   const filtered = !!(filters.query || filters.sector || filters.newsletter !== undefined);
@@ -189,10 +186,7 @@ export function PeopleView({
 
   const googleButton = (
     <span className="inline-flex" data-tour-step-id="people-google">
-      <GoogleSync
-        connected={googleConnected}
-        onSynced={() => startTransition(() => router.refresh())}
-      />
+      <GoogleSync connected={googleConnected} />
     </span>
   );
 
