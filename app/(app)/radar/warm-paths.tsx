@@ -54,14 +54,8 @@ function groupByContact(paths: Path[]) {
   return [...groups.values()].sort((a, b) => a.contact.fullName.localeCompare(b.contact.fullName));
 }
 
-export function WarmPaths({
-  company,
-  onChange
-}: {
-  company: { id: string; name: string };
-  // Called after any change so the list can refresh its counts.
-  onChange?: () => void;
-}) {
+// Each change refreshes the page from the server action, so the list's counts follow.
+export function WarmPaths({ company }: { company: { id: string; name: string } }) {
   const [paths, setPaths] = useState<Path[] | null>(null);
   const [brands, setBrands] = useState<Pairing[]>([]);
   const [busy, setBusy] = useState(false);
@@ -92,7 +86,6 @@ export function WarmPaths({
     }
     toast.success(done);
     await load();
-    onChange?.();
     return true;
   }
 

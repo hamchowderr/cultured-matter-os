@@ -25,14 +25,12 @@ export function AddTaskDrawer({
   open,
   onOpenChange,
   projects,
-  defaultProjectId,
-  onCreated
+  defaultProjectId
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projects: ProjectSummary[];
   defaultProjectId: string | null;
-  onCreated: () => void;
 }) {
   const [title, setTitle] = React.useState("");
   const [due, setDue] = React.useState("");
@@ -61,7 +59,6 @@ export function AddTaskDrawer({
     setDue("");
     setPriority("medium");
     onOpenChange(false);
-    onCreated();
   }
 
   return (

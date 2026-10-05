@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod/v4";
 
 import type { Database, Executor } from "@/db";
@@ -49,6 +50,7 @@ type ActionConfig<I extends z.ZodType, O extends z.ZodType, P = undefined> = {
       log: (input: z.output<I>, result: z.output<O>) => LogEntry;
       // Optional step that runs after the transaction commits (e.g. a push notification about
       // what was just written). It never undoes the write: a failure is logged and swallowed.
+      // Called from a server action, it runs after the response is sent (see toResult).
       after?: (input: z.output<I>, result: z.output<O>, db: Database) => Promise<void>;
     }
 );
@@ -60,6 +62,13 @@ export type Action<
 > = ActionConfig<I, O, P> & {
   run: (input: z.input<I>, ctx?: ActionContext) => Promise<z.output<O>>;
 };
+
+// What the writes inside one server-action call left for the boundary (toResult) to do once the
+// call returns: refresh the page she is on, and run follow-up steps after the response is sent.
+// Scripts, cron routes and tests call `.run` outside toResult, so there is no boundary and each
+// follow-up runs straight away instead.
+type Boundary = { wrote: boolean; followUps: (() => Promise<void>)[] };
+const boundary = new AsyncLocalStorage<Boundary>();
 
 async function defaultDb(): Promise<Database> {
   return (await import("@/db")).db;
@@ -91,12 +100,19 @@ export function defineAction<I extends z.ZodType, O extends z.ZodType, P = undef
         });
         return result;
       });
-      if (config.after) {
-        try {
-          await config.after(input, committed, db);
-        } catch (e) {
-          console.error(`${config.name}: follow-up step failed`, e);
-        }
+      const scope = boundary.getStore();
+      if (scope) scope.wrote = true;
+      const after = config.after;
+      if (after) {
+        const followUp = async () => {
+          try {
+            await after(input, committed, db);
+          } catch (e) {
+            console.error(`${config.name}: follow-up step failed`, e);
+          }
+        };
+        if (scope) scope.followUps.push(followUp);
+        else await followUp();
       }
       return committed;
     }
@@ -104,8 +120,7 @@ export function defineAction<I extends z.ZodType, O extends z.ZodType, P = undef
 }
 
 export type ActionResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; error: { code: string; message: string } };
+  { ok: true; data: T } | { ok: false; error: { code: string; message: string } };
 
 // Every server action in actions/server.ts passes through toResult, so this is the one place
 // that refuses anonymous calls. Imported lazily so tests and scripts that call `.run` directly
@@ -115,13 +130,34 @@ async function requireSession() {
   if (!(await getSession())) throw new ActionError("unauthorized", "Please sign in again.");
 }
 
+// After a write commits: refresh() sends the page's fresh server render back with the action's
+// own response, so the client needs no router.refresh() round trip; after() runs follow-ups
+// (push notifications) once the response is on its way. Both only work inside a server action,
+// and only writes record anything, so a page render that reads through toResult never gets here.
+// Runs at most once per call: it empties the scope before acting on it.
+async function settle(scope: Boundary) {
+  const { wrote, followUps } = scope;
+  scope.wrote = false;
+  scope.followUps = [];
+  if (wrote) (await import("next/cache")).refresh();
+  if (followUps.length) {
+    const { after } = await import("next/server");
+    for (const followUp of followUps) after(followUp);
+  }
+}
+
 // Server-action boundary: check the session, then turn thrown errors into a plain result the
 // UI can render.
 export async function toResult<T>(fn: () => Promise<T>): Promise<ActionResult<T>> {
+  const scope: Boundary = { wrote: false, followUps: [] };
   try {
     await requireSession();
-    return { ok: true, data: await fn() };
+    const data = await boundary.run(scope, fn);
+    await settle(scope);
+    return { ok: true, data };
   } catch (e) {
+    // A wrapper that wrote and then failed still changed the data on screen.
+    await settle(scope).catch((err) => console.error(err));
     if (e instanceof ActionError) return { ok: false, error: { code: e.code, message: e.message } };
     if (e instanceof z.ZodError) {
       return {

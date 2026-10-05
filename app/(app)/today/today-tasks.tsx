@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
 
@@ -30,14 +29,19 @@ export function TodayTasks({
   groups: Groups;
   labelPersonal?: boolean;
 }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
-  async function change(task: DueTask, status: DueTask["status"]) {
-    const result = await setTaskStatus({ taskId: task.id, status });
-    if (!result.ok) return toast.error(result.error.message);
-    if (status === "done") toast.success(`Done: ${task.title}`);
-    startTransition(() => router.refresh());
+  // The action refreshes the page itself (actions/define.ts toResult), so the new lists arrive
+  // with its response.
+  function change(task: DueTask, status: DueTask["status"]) {
+    startTransition(async () => {
+      const result = await setTaskStatus({ taskId: task.id, status });
+      if (!result.ok) {
+        toast.error(result.error.message);
+        return;
+      }
+      if (status === "done") toast.success(`Done: ${task.title}`);
+    });
   }
 
   return (
