@@ -1,0 +1,11 @@
+{
+  "fixtures": [
+    {
+      "_comment": "Build from my writing: every build's prompt starts with VOICE_PROMPT_LEAD (lib/voice-guide.ts). Used by tests/voice-guide.test.ts and the local browser run (USE_AIMOCK=true).",
+      "match": { "userMessage": "Write my voice guide from these samples of my writing." },
+      "response": {
+        "content": "Vocabulary: plain, warm words; \"culture\", \"impact\" and \"shift\" come up often. No jargon or corporate filler.\nSentence length: short to medium sentences, two or three to a paragraph. Questions to invite a reply.\nWarmth and tone: warm and direct, upbeat without gushing. More formal with new contacts, playful with people she knows.\nGreetings and sign-offs: opens with \"Hi [first name],\" and closes with \"Warmly, Simone\".\nDo:\n- Get to the point in the first line.\n- Name the shared goal or the impact.\n- End with one clear next step.\nDon't:\n- Don't use exclamation marks more than once.\n- Don't hedge (\"just\", \"I think maybe\").\n- Don't write long blocks of text."
+      }
+    }
+  ]
+}

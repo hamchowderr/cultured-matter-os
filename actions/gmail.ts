@@ -351,7 +351,7 @@ export const gmailDraftPayload = z.object({
 export const draftFollowUp = defineAction({
   name: "draftFollowUp",
   description:
-    "Write a follow-up email to a contact, optionally for a task. It goes to the approval queue; approving saves it in Gmail Drafts for Simone to send herself, and the task then waits for a reply.",
+    "Write a follow-up email to a contact, optionally for a task, in Simone's voice (getVoiceGuide). It goes to the approval queue; approving saves it in Gmail Drafts for Simone to send herself, and the task then waits for a reply.",
   kind: "write",
   input: z.object({
     contactId: id,

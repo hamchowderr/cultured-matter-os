@@ -319,3 +319,17 @@ export async function getBusinessProfileForEditing() {
 export async function updateBusinessProfile(input: In<typeof A.updateBusinessProfile>) {
   return toResult(() => A.updateBusinessProfile.run(input, inAction), REFRESH);
 }
+
+// Settings → Your voice: the guide the AI follows when it writes for her.
+export async function getVoiceGuide() {
+  return toResult(() => A.getVoiceGuide.run({}));
+}
+export async function gatherVoiceSamples() {
+  return toResult(() => A.gatherVoiceSamples.run({}));
+}
+export async function buildVoiceGuide(input: In<typeof A.buildVoiceGuide>) {
+  return toResult(() => A.buildVoiceGuide.run(input, inAction), REFRESH);
+}
+export async function updateVoiceGuide(input: In<typeof A.updateVoiceGuide>) {
+  return toResult(() => A.updateVoiceGuide.run(input, inAction), REFRESH);
+}

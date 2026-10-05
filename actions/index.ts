@@ -87,6 +87,12 @@ import {
   getBusinessProfileForEditing,
   updateBusinessProfile
 } from "./business";
+import {
+  buildVoiceGuide,
+  gatherVoiceSamples,
+  getVoiceGuide,
+  updateVoiceGuide
+} from "./voice";
 
 export {
   searchCompanies,
@@ -164,7 +170,11 @@ export {
   fileNoteToInbox,
   getBusinessProfile,
   getBusinessProfileForEditing,
-  updateBusinessProfile
+  updateBusinessProfile,
+  getVoiceGuide,
+  gatherVoiceSamples,
+  buildVoiceGuide,
+  updateVoiceGuide
 };
 
 // Every named action, for the phase-2 agent to wrap as tools.
@@ -232,11 +242,14 @@ export const allActions = [
   getNote,
   fileNoteToInbox,
   getBusinessProfile,
-  updateBusinessProfile
+  updateBusinessProfile,
+  getVoiceGuide
   // Not tools: calendarFeed (keyed by the feed's secret token), recordDailySummary (the cron's
   // bookkeeping), markTourSeen (the guided tours' bookkeeping), importNotes (the Apple Notes
   // Shortcut's endpoint), the push device actions (they need a browser's push subscription) and
-  // getBusinessProfileForEditing (it returns the EIN and SAM UEI; getBusinessProfile leaves them out).
+  // getBusinessProfileForEditing (it returns the EIN and SAM UEI; getBusinessProfile leaves them out),
+  // and the voice guide's Settings actions: gatherVoiceSamples (it reads her sent mail in full),
+  // buildVoiceGuide (it spends AI budget) and updateVoiceGuide (she edits her own voice).
 ] as const;
 
 export { ActionError, type Action, type ActionResult } from "./define";

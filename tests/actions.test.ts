@@ -96,7 +96,8 @@ describe("registry", () => {
         "getNote",
         "fileNoteToInbox",
         "getBusinessProfile",
-        "updateBusinessProfile"
+        "updateBusinessProfile",
+        "getVoiceGuide"
       ].sort()
     );
     for (const a of A.allActions) {
