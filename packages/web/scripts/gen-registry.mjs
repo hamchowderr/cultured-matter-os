@@ -116,6 +116,8 @@ function classify(relFiles) {
       if (ownKeys.has(key)) continue; // import within this same item
       if (key.startsWith('components/ai-elements/')) noteElement(posix.basename(key));
       else if (key.startsWith('components/ui/')) ui.add(posix.basename(key));
+      // A shadcn hook (hooks/use-mobile) is a shadcn registry item of the same name.
+      else if (key.startsWith('hooks/')) ui.add(posix.basename(key));
       else if (key === 'lib/utils') {
         /* cn() — shadcn init provides this; not a registry dep */
       } else if (key.startsWith('lib/')) lib.add('chat-engine');
@@ -304,6 +306,8 @@ const SERVER_FILES = [
   ['../server/src/mastra/routes/resource.ts', 'src/mastra/routes/resource.ts'],
   // Pure formatting helpers the thread routes need. No imports of its own.
   ['../server/src/mastra/lib/thread-utils.ts', 'src/mastra/lib/thread-utils.ts'],
+  // The turn's time zone: its request-context key and the Intl check. No imports.
+  ['../server/src/mastra/lib/time-zone.ts', 'src/mastra/lib/time-zone.ts'],
 ];
 items.push({
   name: 'chat-server',
@@ -456,6 +460,7 @@ function validate(allItems) {
       if (shippedKeys.has(key)) continue;
       if (key === 'lib/utils') continue; // shadcn init provides cn()
       if (key.startsWith('components/ui/')) continue; // registryDependency
+      if (key.startsWith('hooks/')) continue; // shadcn hook, a registryDependency
       if (key.startsWith('components/ai-elements/')) continue; // registryDependency
       errors.push(`${rel} imports "${spec}" -> ${key}, which no registry item ships`);
     }

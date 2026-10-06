@@ -282,6 +282,11 @@
           "path": "../server/src/mastra/lib/thread-utils.ts",
           "type": "registry:file",
           "target": "src/mastra/lib/thread-utils.ts"
+        },
+        {
+          "path": "../server/src/mastra/lib/time-zone.ts",
+          "type": "registry:file",
+          "target": "src/mastra/lib/time-zone.ts"
         }
       ]
     },
@@ -336,7 +341,9 @@
       "registryDependencies": [
         "dialog",
         "dropdown-menu",
+        "sheet",
         "tabs",
+        "use-mobile",
         "@mastra-chat-kit/agent",
         "@mastra-chat-kit/code-block",
         "@mastra-chat-kit/context",
