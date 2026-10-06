@@ -1,2 +1,4 @@
-# The chat agent server (agent/) deploys separately, on Coolify.
-agent
+# The chat agent server (agent/) deploys separately, on Coolify. Anchored to the root: a
+# bare `agent` also matched app/api/agent/ (the agent's action endpoints) and left it out
+# of every Vercel deploy.
+/agent
