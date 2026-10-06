@@ -10,7 +10,8 @@ import { liveScorers } from '../lib/live-scorers';
 import { createDefaultMemory } from '../lib/memory';
 import { defaultInputProcessors, defaultOutputProcessors } from '../lib/processors';
 import { toolScopeProcessor } from '../lib/tool-scope';
-import { TurnContextProcessor } from '../lib/turn-context';
+import { businessContextSection, voiceGuideSection } from '../lib/business-context';
+import { TurnContextProcessor, turnContextSections } from '../lib/turn-context';
 import { getChatWorkspace } from '../lib/workspace';
 import { getAppActionTools } from '../tools/app-actions';
 import { listSchedules, startSchedule, stopSchedule } from '../tools/schedule';
@@ -271,6 +272,12 @@ const CULTURED_MATTER_PERSONA = `You are the assistant inside Cultured Matter OS
  */
 const FIRECRAWL_BROWSER_INSTRUCTIONS =
   '- When a page needs a real browser — clicking through, filling in a form, content that only appears after interaction — use the browser tools: browser_goto to open the page, browser_snapshot to read it and get element refs (@e1, @e2, …), then act with those refs (browser_click, browser_type, …) and snapshot again to check the result. Opening a site and every action on a page ask the user first, so to just read a page prefer firecrawl_scrape. The browser closes when your turn ends.';
+
+// Cultured Matter: Simone's business context and voice guide go in front of the model on
+// every turn (lib/business-context.ts). They go BEFORE today's date: they change rarely,
+// the date every minute, so the stable text comes first (cmos-djf can then cache it).
+// Subagents read the same list.
+turnContextSections.unshift(businessContextSection, voiceGuideSection);
 
 /** The chat agent's own tools for a set of features (the workspace adds its own). */
 export function chatTools(f: ChatFeatures) {

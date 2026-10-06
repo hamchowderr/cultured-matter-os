@@ -40,7 +40,8 @@ export async function loadBusinessProfile(db: Executor): Promise<BusinessProfile
   return { ...fields, updatedAt: row.updatedAt };
 }
 
-// The summary the chat agent puts in its instructions, read straight from the database.
+// The summary the chat agent gets on every turn, as a system message after its instructions
+// (agent/…/lib/business-context.ts), read straight from the database.
 export async function loadBusinessContext(db: Executor) {
   return businessContext(await loadBusinessProfile(db));
 }

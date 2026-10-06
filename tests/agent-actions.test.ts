@@ -202,7 +202,10 @@ describe("running an agent action", () => {
     }
     const res = await run("getVoiceGuide", {});
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, data: { guide: "", updatedAt: null } });
+    expect(await res.json()).toEqual({
+      ok: true,
+      data: { guide: "", context: "", updatedAt: null }
+    });
   });
 });
 

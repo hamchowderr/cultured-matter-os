@@ -43,6 +43,11 @@ beforeAll(async () => {
     if (url.endsWith('/api/agent/actions')) return Response.json({ actions: ACTIONS });
     const name = decodeURIComponent(url.split('/').pop() ?? '');
     const body = JSON.parse(String(init?.body ?? '{}'));
+    // The per-turn business context reads these two on its own (lib/business-context.ts);
+    // the tests here are about the tools the model calls.
+    if (name === 'getBusinessProfile' || name === 'getVoiceGuide') {
+      return Response.json({ ok: true, data: { context: '' } });
+    }
     runs.push({ name, body });
     if (name === 'searchGrants') {
       return Response.json({

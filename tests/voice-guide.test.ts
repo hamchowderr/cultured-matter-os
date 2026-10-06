@@ -234,7 +234,11 @@ describe("voice guide text", () => {
 
 describe("voice guide actions", () => {
   it("reads an empty guide before anything is saved", async () => {
-    expect(await A.getVoiceGuide.run({}, ctx())).toEqual({ guide: "", updatedAt: null });
+    expect(await A.getVoiceGuide.run({}, ctx())).toEqual({
+      guide: "",
+      context: "",
+      updatedAt: null
+    });
     expect(await A.getVoiceGuideForEditing.run({}, ctx())).toEqual({
       guide: "",
       sources: [],
@@ -330,8 +334,10 @@ describe("voice guide actions", () => {
 
     const read = await A.getVoiceGuide.run({}, ctx());
     expect(read.guide).toBe(r.guide);
-    // The agent gets the guide and the date only: no sample labels (her email subjects).
-    expect(Object.keys(read).sort()).toEqual(["guide", "updatedAt"]);
+    // The agent gets the guide, its capped form and the date only: no sample labels (her
+    // email subjects).
+    expect(Object.keys(read).sort()).toEqual(["context", "guide", "updatedAt"]);
+    expect(read.context).toBe(voiceGuide(r.guide));
     expect(JSON.stringify(read)).not.toContain("Soliome intro");
     expect(await loadVoiceGuideContext(db)).toBe(voiceGuide(r.guide));
 
