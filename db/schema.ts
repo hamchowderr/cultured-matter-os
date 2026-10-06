@@ -504,6 +504,25 @@ export const businessProfile = sqliteTable(
   (t) => [check("business_profile_single_row", sql`${t.id} = 'main'`)]
 );
 
+// ---------------------------------------------------------------- Voice guide
+
+// How Simone writes, in one row (Settings → Your voice): the guide the AI follows whenever it
+// drafts text for her, and which of her writing it was built from (lib/voice-guide.ts).
+export const voiceGuide = sqliteTable(
+  "voice_guide",
+  {
+    id: text("id").primaryKey().default("main"),
+    guide: text("guide").notNull().default(""),
+    // The samples the last "Build from my writing" used: where each came from and its label.
+    sources: text("sources", { mode: "json" })
+      .$type<{ source: "gmail" | "website" | "business" | "notes"; label: string }[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    updatedAt: updatedAt()
+  },
+  (t) => [check("voice_guide_single_row", sql`${t.id} = 'main'`)]
+);
+
 // ---------------------------------------------------------------- Log
 
 export const activityLog = sqliteTable(

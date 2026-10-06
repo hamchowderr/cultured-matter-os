@@ -1,8 +1,14 @@
-import { ArrowRightIcon, Building2Icon } from "lucide-react";
+import { ArrowRightIcon, Building2Icon, FeatherIcon } from "lucide-react";
 import { headers } from "next/headers";
 import Link from "next/link";
 
-import { getBusinessProfile, getUserSettings, pushStatus, setupStatus } from "@/actions/server";
+import {
+  getBusinessProfile,
+  getUserSettings,
+  getVoiceGuide,
+  pushStatus,
+  setupStatus
+} from "@/actions/server";
 import { CalendarFeedCard } from "@/components/settings/calendar-feed-card";
 import { DailyEmailCard } from "@/components/settings/daily-email-card";
 import { NotificationsCard } from "@/components/settings/notifications-card";
@@ -72,15 +78,40 @@ function businessCard(business: Awaited<ReturnType<typeof getBusinessProfile>>):
   return { description: about, state: "connected", stateLabel: "Up to date" };
 }
 
+// The Your voice card: whether she has a guide yet.
+function voiceCard(voice: Awaited<ReturnType<typeof getVoiceGuide>>): {
+  description: string;
+  state: ConnectionState;
+  stateLabel: string;
+} {
+  const about = "How you write. The AI follows it when it drafts for you.";
+  if (!voice.ok) {
+    return {
+      description: `Couldn’t load your voice guide: ${voice.error.message}`,
+      state: "error",
+      stateLabel: "Couldn’t load"
+    };
+  }
+  if (!voice.data.guide) {
+    return {
+      description: `${about} Build it from your own writing.`,
+      state: "not_connected",
+      stateLabel: "Not set up"
+    };
+  }
+  return { description: about, state: "connected", stateLabel: "Ready" };
+}
+
 export default async function Page() {
   // Session first: it marks the page as dynamic before any action runs.
   const user = (await getSession())?.user;
-  const [status, settings, push, origin, business] = await Promise.all([
+  const [status, settings, push, origin, business, voice] = await Promise.all([
     setupStatus({}),
     getUserSettings(),
     pushStatus(),
     requestOrigin(),
-    getBusinessProfile()
+    getBusinessProfile(),
+    getVoiceGuide()
   ]);
 
   function action(step: Step, done: boolean) {
@@ -125,6 +156,12 @@ export default async function Page() {
             title="Business profile"
             {...businessCard(business)}
             action={<LinkAction href="/settings/business" label="Open" />}
+          />
+          <ConnectionCard
+            icon={FeatherIcon}
+            title="Your voice"
+            {...voiceCard(voice)}
+            action={<LinkAction href="/settings/voice" label="Open" />}
           />
         </div>
       </section>

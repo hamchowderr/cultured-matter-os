@@ -147,7 +147,9 @@ describe("running an agent action", () => {
     const action = agentActions.find((a) => a.name === "searchContacts")!;
     const runSpy = vi
       .spyOn(action, "run")
-      .mockRejectedValue(new z.ZodError([{ code: "custom", message: "bad output", path: ["total"], input: null }]));
+      .mockRejectedValue(
+        new z.ZodError([{ code: "custom", message: "bad output", path: ["total"], input: null }])
+      );
     const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     const res = await run("searchContacts", { query: "x" });
     expect(res.status).toBe(500);
@@ -159,6 +161,23 @@ describe("running an agent action", () => {
   it("does not run unknown or excluded actions", async () => {
     expect((await run("nope", {})).status).toBe(404);
     expect((await run("decideApproval", { id: "x", decision: "approved" })).status).toBe(404);
+  });
+
+  it("offers her voice guide as a read, but not the Settings-only voice actions", async () => {
+    const offered = describeAgentActions();
+    expect(offered.find((a) => a.name === "getVoiceGuide")?.kind).toBe("read");
+    for (const hidden of [
+      "getVoiceGuideForEditing",
+      "gatherVoiceSamples",
+      "buildVoiceGuide",
+      "updateVoiceGuide"
+    ]) {
+      expect(offered.map((a) => a.name)).not.toContain(hidden);
+      expect((await run(hidden, {})).status).toBe(404);
+    }
+    const res = await run("getVoiceGuide", {});
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, data: { guide: "", updatedAt: null } });
   });
 });
 
