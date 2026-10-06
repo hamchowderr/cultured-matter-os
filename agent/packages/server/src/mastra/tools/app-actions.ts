@@ -128,6 +128,37 @@ export function loadAppActions(): Promise<AppAction[]> {
   return loading;
 }
 
+/**
+ * Run one app action directly (not as a model tool), e.g. the reads behind the per-turn
+ * business context (lib/business-context.ts). Returns the action's data; throws when the
+ * app is not configured, can't be reached in time, or refuses.
+ */
+export async function runAppAction(
+  name: string,
+  input: Record<string, unknown> = {},
+  { timeoutMs = 3_000 }: { timeoutMs?: number } = {},
+): Promise<unknown> {
+  const current = config;
+  if (!current) throw new Error('the app is not configured');
+  const f = current.fetch ?? fetch;
+  const res = await f(
+    `${current.appUrl.replace(/\/$/, '')}/api/agent/actions/${encodeURIComponent(name)}`,
+    {
+      method: 'POST',
+      headers: headers(current.token),
+      body: JSON.stringify(input),
+      signal: AbortSignal.timeout(timeoutMs),
+    },
+  );
+  const body = (await res.json().catch(() => null)) as
+    | { ok: true; data: unknown }
+    | { ok: false; error: { code: string; message: string } }
+    | null;
+  if (!body) throw new Error(`${name} failed: ${res.status}`);
+  if (!body.ok) throw new Error(`${name}: ${body.error.message}`);
+  return body.data;
+}
+
 /** The chat agent's app tools, loading them if boot couldn't. */
 export async function getAppActionTools() {
   const actions = await loadAppActions();

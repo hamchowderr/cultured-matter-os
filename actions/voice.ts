@@ -54,13 +54,15 @@ const storedSchema = z.object({
 export const getVoiceGuide = defineAction({
   name: "getVoiceGuide",
   description:
-    "Simone's voice guide: how she writes (vocabulary, sentence length, warmth, greetings and sign-offs, do's and don'ts), as she keeps it in Settings → Your voice, and when it was last updated. Empty when she hasn't made one yet.",
+    "Simone's voice guide: how she writes (vocabulary, sentence length, warmth, greetings and sign-offs, do's and don'ts), as she keeps it in Settings → Your voice, and when it was last updated. Empty when she hasn't made one yet. `context` is the same guide capped for the agent's per-turn context.",
   kind: "read",
   input: z.object({}),
-  output: z.object({ guide: z.string(), updatedAt: z.date().nullable() }),
+  output: z.object({ guide: z.string(), context: z.string(), updatedAt: z.date().nullable() }),
   async handler(_input, db) {
     const { guide, updatedAt } = await loadVoiceGuide(db);
-    return { guide, updatedAt };
+    // `context`: what the agent server puts in front of the model on every turn, capped
+    // here (voiceGuide, VOICE_GUIDE_MAX) so the app owns the limit.
+    return { guide, context: voiceGuide(guide), updatedAt };
   }
 });
 

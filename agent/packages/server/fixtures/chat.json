@@ -1196,6 +1196,25 @@
       }
     },
     {
+      "_comment": "Cultured Matter: Simone's business context reaches the model every turn (lib/business-context.ts). Matches only when the business section is in the system prompt; tests/integration/business-context.test.ts and the real browser run.",
+      "match": {
+        "userMessage": "What's my mission?",
+        "systemMessage": "About Simone's business"
+      },
+      "response": {
+        "content": "Your mission is in your business profile, and I have it in front of me on every message."
+      }
+    },
+    {
+      "_comment": "The same question when the app could not be reached: no business section, so the agent says so instead of guessing.",
+      "match": {
+        "userMessage": "What's my mission?"
+      },
+      "response": {
+        "content": "I can't see your business profile right now."
+      }
+    },
+    {
       "_comment": "Catch-all — MUST be last. `match` omits userMessage so it matches any request the specific fixtures above don't, so the reference chat always responds deterministically instead of 404 'No fixture matched'. The controller sends extra tools + a working-memory system prompt; this keeps the demo working for arbitrary input. Dedicated controller tool/approval fixtures are tracked in beads 6d2.",
       "match": {},
       "response": {
