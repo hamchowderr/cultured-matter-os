@@ -17,7 +17,10 @@ import { type ActionContext, loggableError } from "@/actions/define";
 // - getUserSettings, resetCalendarLink: the private calendar feed link.
 // - markNotificationsRead, setWorkScope, pushStatus, setPushPreferences: screen and device
 //   settings, not business data.
+// - deleteMindMap: Simone asked for the assistant to read and build mind maps, not to delete
+//   them; she deletes a map herself from the Map screen.
 const EXCLUDED = new Set([
+  "deleteMindMap",
   "requestApproval",
   "decideApproval",
   "draftFollowUp",

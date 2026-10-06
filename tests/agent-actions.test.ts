@@ -6,6 +6,7 @@ import { z } from "zod/v4";
 
 import {
   agentActions,
+  agentWriteActionNames,
   describeAgentActions,
   handleListAgentActions,
   handleRunAgentAction
@@ -161,6 +162,30 @@ describe("running an agent action", () => {
   it("does not run unknown or excluded actions", async () => {
     expect((await run("nope", {})).status).toBe(404);
     expect((await run("decideApproval", { id: "x", decision: "approved" })).status).toBe(404);
+  });
+
+  it("offers the mind-map reads and create/update writes, but never deleteMindMap", async () => {
+    const offered = new Map(describeAgentActions().map((a) => [a.name, a.kind]));
+    for (const read of ["getBusinessMap", "listMindMaps", "getMindMap"]) {
+      expect(offered.get(read)).toBe("read");
+    }
+    // Writes: the agent server leaves these gated, so each one stops at the approval card.
+    for (const write of ["createMindMap", "updateMindMap"]) {
+      expect(offered.get(write)).toBe("write");
+    }
+    expect(agentWriteActionNames()).toEqual(
+      expect.arrayContaining(["createMindMap", "updateMindMap"])
+    );
+    expect(offered.has("deleteMindMap")).toBe(false);
+    expect(agentWriteActionNames()).not.toContain("deleteMindMap");
+    expect((await run("deleteMindMap", { mindMapId: "x" })).status).toBe(404);
+
+    // The offered ones run end to end through the endpoint.
+    const created = await run("createMindMap", { title: "From the assistant" });
+    expect(created.status).toBe(200);
+    const { data: map } = await created.json();
+    const got = await run("getMindMap", { mindMapId: map.id });
+    expect((await got.json()).data.map.title).toBe("From the assistant");
   });
 
   it("offers her voice guide as a read, but not the Settings-only voice actions", async () => {
