@@ -151,7 +151,8 @@ function clip(s: string, max: number) {
   return (word > 0 ? cut.slice(0, word) : cut).replace(/[,;:]$/, "") + "…";
 }
 
-// A short plain-text summary the chat agent puts in its instructions on every message: name,
+// A short plain-text summary the chat agent gets on every message, as a system message after its
+// instructions (agent/…/lib/business-context.ts, through getBusinessProfile's `context`): name,
 // what Cultured Matter does, mission, sectors and the top fit criteria. Always under
 // BUSINESS_CONTEXT_MAX characters; anything that doesn't fit is left out, never cut mid-word.
 export function businessContext(profile: Partial<ProfileFields>): string {

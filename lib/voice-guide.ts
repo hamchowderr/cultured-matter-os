@@ -66,7 +66,8 @@ export function clipText(s: string, max: number) {
 }
 
 // The guide as the chat agent reads it: always at most VOICE_GUIDE_MAX characters, "" when she
-// has none yet. The Mastra input processor puts this in front of the agent on every message.
+// has none yet. getVoiceGuide returns it as `context`, and the agent's turn-context processor puts
+// it in a system message after the instructions on every message (agent/…/lib/business-context.ts).
 export function voiceGuide(guide: string | null | undefined): string {
   const t = collapse(guide ?? "");
   return t ? clipText(t, VOICE_GUIDE_MAX) : "";

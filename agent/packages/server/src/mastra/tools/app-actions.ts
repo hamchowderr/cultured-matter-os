@@ -34,6 +34,16 @@ export type AppActionsConfig = {
   fetch?: Fetch;
 };
 
+/** Called after an app action the model ran succeeded (e.g. to drop a cached read). */
+type AfterActionListener = (name: string) => void;
+const afterActionListeners = new Set<AfterActionListener>();
+
+/** Be told when an app action run by the model succeeds. Returns an unsubscribe. */
+export function onAppActionDone(listener: AfterActionListener): () => void {
+  afterActionListeners.add(listener);
+  return () => afterActionListeners.delete(listener);
+}
+
 /** Writes that remove something ask every time, even after an "Always allow". */
 const ALWAYS_ASK = new Set(['deleteProject']);
 
@@ -80,6 +90,7 @@ export function buildAppActionTools(actions: AppAction[], config: AppActionsConf
           // The model reads the app's own message ("No such project", "Invalid input") and
           // can tell the user plainly.
           if (!body.ok) return { error: body.error };
+          for (const listener of afterActionListeners) listener(action.name);
           return body.data;
         },
       }),

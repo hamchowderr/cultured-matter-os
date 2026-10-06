@@ -1196,6 +1196,26 @@
       }
     },
     {
+      "_comment": "Cultured Matter: the assistant changes her mission (updateBusinessProfile, approved); the next step must see the new one (lib/business-context.ts drops the cached profile after the write). tests/integration/business-context.test.ts.",
+      "match": {
+        "userMessage": "Update my mission: grown, not mined.",
+        "hasToolResult": false
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_cm_mission",
+            "name": "updateBusinessProfile",
+            "arguments": { "mission": "Help brands switch to materials grown, not mined." }
+          }
+        ]
+      }
+    },
+    {
+      "match": { "toolCallId": "toolu_cm_mission" },
+      "response": { "content": "Done, your mission is updated." }
+    },
+    {
       "_comment": "Cultured Matter: Simone's business context reaches the model every turn (lib/business-context.ts). Matches only when the business section is in the system prompt; tests/integration/business-context.test.ts and the real browser run.",
       "match": {
         "userMessage": "What's my mission?",

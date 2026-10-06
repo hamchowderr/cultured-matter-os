@@ -1,26 +1,46 @@
 import { InMemoryStore } from '@mastra/core/storage';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { createChatAgentController } from '../../src/mastra/lib/agent-controller';
+import {
+  AUTO_ALLOWED_TOOLS,
+  createChatAgentController,
+} from '../../src/mastra/lib/agent-controller';
 import { clearBusinessContextCache } from '../../src/mastra/lib/business-context';
-import { configureAppActions } from '../../src/mastra/tools/app-actions';
+import {
+  type AppAction,
+  configureAppActions,
+  loadAppActions,
+  readActionNames,
+} from '../../src/mastra/tools/app-actions';
 
 /**
  * Simone's business context and voice guide on every turn (lib/business-context.ts),
  * through the real AgentController on AIMock. The app is a fake that answers the two read
  * actions the way the real one does (getBusinessProfile's `context` never carries the EIN;
- * the redacted profile beside it is ignored by the agent anyway).
+ * the redacted profile beside it is ignored by the agent anyway), and offers the one write
+ * that changes them, updateBusinessProfile.
  */
 
 const EIN = '12-3456789';
+const FIRST_MISSION = 'Bring climate innovation to beauty and fashion brands.';
 const app = {
   up: true,
-  mission: 'Bring climate innovation to beauty and fashion brands.',
+  mission: FIRST_MISSION,
   guide: 'Warm, direct, short sentences. Signs off with "Best, Simone".',
   calls: [] as string[],
 };
 
-beforeAll(() => {
-  const fetch = (async (url: string) => {
+const ACTIONS: AppAction[] = [
+  {
+    name: 'updateBusinessProfile',
+    description: 'Change fields of the business profile.',
+    kind: 'write',
+    inputSchema: { type: 'object', properties: { mission: { type: 'string' } } },
+  },
+];
+
+beforeAll(async () => {
+  const fetch = (async (url: string, init?: RequestInit) => {
+    if (url.endsWith('/api/agent/actions')) return Response.json({ actions: ACTIONS });
     const name = decodeURIComponent(url.split('/').pop() ?? '');
     app.calls.push(name);
     if (!app.up) throw new TypeError('fetch failed');
@@ -42,9 +62,15 @@ beforeAll(() => {
         data: { guide: app.guide, context: app.guide, updatedAt: null },
       });
     }
-    return Response.json({ actions: [] });
+    if (name === 'updateBusinessProfile') {
+      const body = JSON.parse(String(init?.body ?? '{}')) as { mission?: string };
+      if (body.mission) app.mission = body.mission;
+      return Response.json({ ok: true, data: { changed: ['mission'] } });
+    }
+    return Response.json({ ok: false, error: { code: 'not_found', message: 'No such action' } });
   }) as typeof globalThis.fetch;
   configureAppActions({ appUrl: 'http://app.test', token: 'x'.repeat(32), fetch });
+  await loadAppActions();
 });
 afterAll(() => configureAppActions(null));
 afterEach(() => {
@@ -52,6 +78,7 @@ afterEach(() => {
   vi.restoreAllMocks();
   clearBusinessContextCache();
   app.up = true;
+  app.mission = FIRST_MISSION;
   app.calls.length = 0;
 });
 
@@ -67,15 +94,19 @@ function captureProviderRequests() {
   return sent;
 }
 
-/** The chat agent's system prompt among the captured requests (the title call has none of it). */
-function chatSystem(sent: string[]): string {
-  const systems = sent.map((body) => {
-    const { system } = JSON.parse(body) as { system?: string | { text: string }[] };
-    return typeof system === 'string' ? system : (system ?? []).map((b) => b.text).join('\n');
-  });
-  return systems.filter((s) => s.includes('Current date and time')).at(-1) ?? '';
+/** The chat agent's system prompts among the captured requests (the title call has none). */
+function chatSystems(sent: string[]): string[] {
+  return sent
+    .map((body) => {
+      const { system } = JSON.parse(body) as { system?: string | { text: string }[] };
+      return typeof system === 'string' ? system : (system ?? []).map((b) => b.text).join('\n');
+    })
+    .filter((s) => s.includes('Current date and time'));
 }
+const chatSystem = (sent: string[]) => chatSystems(sent).at(-1) ?? '';
+const profileCalls = () => app.calls.filter((c) => c === 'getBusinessProfile').length;
 
+/** One turn on a real session; write approvals are approved, as Simone would. */
 async function turn(resourceId: string, content = "What's my mission?") {
   const controller = createChatAgentController({
     storage: new InMemoryStore(),
@@ -84,10 +115,12 @@ async function turn(resourceId: string, content = "What's my mission?") {
   });
   await controller.init();
   const session = await controller.createSession({ resourceId });
+  for (const tool of [...AUTO_ALLOWED_TOOLS, ...readActionNames()]) session.grantTool(tool);
   // biome-ignore lint/suspicious/noExplicitAny: AgentControllerEvent union is wide
   const events: any[] = [];
   const unsubscribe = session.subscribe((e) => {
     events.push(e);
+    if (e.type === 'tool_approval_required') session.respondToToolApproval({ decision: 'approve' });
   });
   try {
     await session.thread.create();
@@ -100,20 +133,21 @@ async function turn(resourceId: string, content = "What's my mission?") {
 }
 
 describe("Simone's business context and voice (AIMock)", () => {
-  it('puts both sections in the request, after the instructions and the date', async () => {
+  it('puts both sections in the request: after the instructions, before the date', async () => {
     const sent = captureProviderRequests();
     const events = await turn('u-bc-both');
 
     expect(events).toContain('I have it in front of me');
     const system = chatSystem(sent);
     const instructions = system.indexOf('Never fabricate tool results');
-    const date = system.indexOf('Current date and time');
     const business = system.indexOf("About Simone's business");
     const voice = system.indexOf("Simone's voice guide");
+    const date = system.indexOf('Current date and time');
     expect(instructions).toBeGreaterThan(-1);
-    expect(date).toBeGreaterThan(instructions);
-    expect(business).toBeGreaterThan(date);
+    // Stable text first, the per-minute date last.
+    expect(business).toBeGreaterThan(instructions);
     expect(voice).toBeGreaterThan(business);
+    expect(date).toBeGreaterThan(voice);
     expect(system).toContain(app.mission);
     expect(system).toContain(app.guide);
   });
@@ -130,30 +164,72 @@ describe("Simone's business context and voice (AIMock)", () => {
     vi.setSystemTime(new Date('2026-10-06T18:00:00Z'));
     const sent = captureProviderRequests();
     await turn('u-bc-edit-1');
-    expect(chatSystem(sent)).toContain(app.mission);
-    const callsAfterFirst = app.calls.filter((c) => c === 'getBusinessProfile').length;
-    expect(callsAfterFirst).toBe(1);
+    expect(chatSystem(sent)).toContain(FIRST_MISSION);
+    expect(profileCalls()).toBe(1);
 
     // She edits her mission in Settings.
-    const before = app.mission;
     app.mission = 'Help brands switch to materials grown, not mined.';
 
     // Within the minute: still the cached text, and no new call to the app.
     vi.setSystemTime(new Date('2026-10-06T18:00:30Z'));
     sent.length = 0;
     await turn('u-bc-edit-2');
-    expect(chatSystem(sent)).toContain(before);
-    expect(app.calls.filter((c) => c === 'getBusinessProfile').length).toBe(1);
+    expect(chatSystem(sent)).toContain(FIRST_MISSION);
+    expect(profileCalls()).toBe(1);
 
     // After it: the new mission.
     vi.setSystemTime(new Date('2026-10-06T18:01:05Z'));
     sent.length = 0;
     await turn('u-bc-edit-3');
     expect(chatSystem(sent)).toContain(app.mission);
-    expect(chatSystem(sent)).not.toContain(before);
+    expect(chatSystem(sent)).not.toContain(FIRST_MISSION);
   });
 
-  it('still answers when the app is down, with no business or voice section', async () => {
+  it("the assistant's own approved write shows on the very next step", async () => {
+    const sent = captureProviderRequests();
+    const events = await turn('u-bc-write', 'Update my mission: grown, not mined.');
+
+    expect(events).toContain('Done, your mission is updated.');
+    const systems = chatSystems(sent);
+    // The step that called the tool saw the old mission; the step after the approved write
+    // (well within the cache's minute) sees the new one.
+    expect(systems[0]).toContain(FIRST_MISSION);
+    expect(systems.at(-1)).toContain('Help brands switch to materials grown, not mined.');
+    expect(systems.at(-1)).not.toContain(FIRST_MISSION);
+  });
+
+  it('keeps the last good text when a refresh fails, and waits before asking again', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-06T18:00:00Z'));
+    const sent = captureProviderRequests();
+    await turn('u-bc-swr-1');
+    expect(profileCalls()).toBe(1);
+
+    // The cache has expired and the app is down: the last good text, not nothing.
+    app.up = false;
+    vi.setSystemTime(new Date('2026-10-06T18:01:05Z'));
+    sent.length = 0;
+    await turn('u-bc-swr-2');
+    expect(chatSystem(sent)).toContain(FIRST_MISSION);
+    expect(profileCalls()).toBe(2);
+
+    // Within 15 s of that failure the app is not asked again (no timeout on every step).
+    vi.setSystemTime(new Date('2026-10-06T18:01:15Z'));
+    await turn('u-bc-swr-3');
+    expect(profileCalls()).toBe(2);
+
+    // After it, it is: and once the app is back, fresh text.
+    app.up = true;
+    app.mission = 'Help brands switch to materials grown, not mined.';
+    vi.setSystemTime(new Date('2026-10-06T18:01:25Z'));
+    sent.length = 0;
+    await turn('u-bc-swr-4');
+    expect(profileCalls()).toBe(3);
+    expect(chatSystem(sent)).toContain(app.mission);
+  });
+
+  it('still answers when the app is down from the start, with no business or voice section', async () => {
     app.up = false;
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const sent = captureProviderRequests();
