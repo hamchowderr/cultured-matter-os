@@ -1,0 +1,62 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# playwright (e2e)
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# next.js
+/.next/
+/out/
+
+# generated shadcn registry output (rebuilt by `pnpm build:registry`)
+/public/r/
+
+# staging dir assembled by `pnpm deploy:registry` (registry-site/ + public/r)
+/.registry-deploy/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+# …except the template. This negation is load-bearing: `.env*` is the stock
+# Next.js scaffold rule and it silently swallowed every attempt to ship an env
+# example here, which is why this package had none while packages/server did.
+!.env.local.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+.vercel
+
+# demo rehearsal screenshots (scripts/demo-rehearsal.mjs)
+/demo-rehearsal/

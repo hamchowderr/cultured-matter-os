@@ -107,7 +107,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
       ) : (
         <ListTransition>
           <div className="flex items-start xl:gap-4">
-            <aside className="sticky top-18 hidden w-64 shrink-0 xl:block">
+            <aside className="sticky top-4 hidden w-64 shrink-0 xl:block">
               <FolderList
                 folders={result.data.folders}
                 all={result.data.all}

@@ -26,13 +26,12 @@ import {
   SheetTitle
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { isoDayIn } from "@/lib/activity";
 import { priorities } from "@/lib/task-priority";
 import { fromDateInput, type ProjectSummary, type ProjectTask } from "./types";
 
-const toDateInput = (d: Date | null) =>
-  d
-    ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-    : "";
+// The due day as the date input shows it: the calendar day in Simone's zone.
+const toDateInput = (d: Date | null) => (d ? isoDayIn(d) : "");
 
 export function TaskSheet({
   task,

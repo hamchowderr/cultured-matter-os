@@ -84,7 +84,7 @@ export function GrantsCalendar({
       events={events}
       onEventSelect={select}
       toolbar={
-        <ul className="hidden items-center gap-1.5 lg:flex" aria-label="Legend">
+        <ul className="hidden items-center gap-1.5 @4xl/main:flex" aria-label="Legend">
           {legend.map((l) => (
             <li
               key={l.label}

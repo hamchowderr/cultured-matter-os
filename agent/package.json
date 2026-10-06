@@ -1,0 +1,35 @@
+{
+  "name": "mastra-chat-kit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "One canonical AI chat layer — Vercel AI Elements + AI SDK v6 + Mastra — that exercises every AI Element and prop, driven by the Mastra Agent Controller, and ships as a shadcn registry.",
+  "packageManager": "pnpm@10.14.0",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "dev:server": "pnpm --filter @mastra-chat-kit/server dev",
+    "dev:web": "pnpm --filter @mastra-chat-kit/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:e2e": "pnpm --filter @mastra-chat-kit/web test:e2e",
+    "check:dockerignore": "node scripts/check-dockerignore.mjs",
+    "demo:reset": "node scripts/demo-reset.mjs",
+    "demo:rehearse": "node packages/web/scripts/demo-rehearsal.mjs",
+    "verify:image": "node scripts/verify-container-image.mjs",
+    "lint": "biome check .",
+    "lint:fix": "biome check --fix .",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "19.2.17",
+      "@types/react-dom": "19.2.3"
+    },
+    "patchedDependencies": {
+      "@mastra/core@1.69.0": "patches/@mastra__core@1.69.0.patch"
+    }
+  }
+}

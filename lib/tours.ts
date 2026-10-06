@@ -56,7 +56,7 @@ export const TOURS: TourDef[] = [
             target: "tour-nav",
             title: "Your pages",
             content:
-              "This menu has all your pages: Today, Inbox, Projects, People, Radar, Grants and Archive."
+              "This menu has all your pages: Today, Chat, Inbox, Projects, People, Radar, Grants and Archive."
           },
           {
             target: "tour-menu-button",
@@ -71,6 +71,11 @@ export const TOURS: TourDef[] = [
         "tour-bell",
         "What's new",
         "The bell shows news: replies to your emails, decisions waiting for you, grants closing soon, new Radar finds and notes to sort."
+      ),
+      at(
+        "tour-chat",
+        "Ask the assistant",
+        "Tap here on any page to ask about your grants, Radar, people or tasks. It asks you before it changes anything."
       ),
       at("tour-start", "Help on every page", "Tap here on any page for a short tour of that page."),
       at(

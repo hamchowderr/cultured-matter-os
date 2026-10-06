@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* agent/ is the chat agent server (its own package); none of its files are app UI. */
+@source not "../agent";
 
 @custom-variant dark (&:is(.dark *));
 

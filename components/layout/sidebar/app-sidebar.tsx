@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useIsTablet } from "@/hooks/use-mobile";
 import Link from "next/link";
@@ -36,8 +36,15 @@ export function AppSidebar({
     if (isMobile) setOpenMobile(false);
   }, [pathname]);
 
+  // Collapse on a tablet-width window, and open again when the window grows past it. Only
+  // a change of size does this: on a desktop load the remembered state (the sidebar_state
+  // cookie the layout reads) stands, so a collapsed sidebar doesn't spring open.
+  // useIsTablet reads false until it has measured, so a tablet load is a false -> true
+  // change and collapses too.
+  const wasTablet = useRef<boolean | null>(null);
   useEffect(() => {
-    setOpen(!isTablet);
+    if (wasTablet.current !== null && wasTablet.current !== isTablet) setOpen(!isTablet);
+    wasTablet.current = isTablet;
   }, [isTablet]);
 
   return (

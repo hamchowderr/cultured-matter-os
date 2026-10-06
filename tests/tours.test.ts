@@ -33,6 +33,7 @@ describe("resolveSteps", () => {
         "tour-menu-button",
         "tour-search",
         "tour-bell",
+        "tour-chat",
         "tour-start",
         "tour-account"
       )
@@ -41,10 +42,13 @@ describe("resolveSteps", () => {
       "tour-nav",
       "tour-search",
       "tour-bell",
+      "tour-chat",
       "tour-start",
       "tour-account"
     ]);
-    expect(steps[0].content).toContain("Today, Inbox, Projects, People, Radar, Grants and Archive");
+    expect(steps[0].content).toContain(
+      "Today, Chat, Inbox, Projects, People, Radar, Grants and Archive"
+    );
   });
 
   it("points at the menu button on a phone and skips the hidden account menu", () => {

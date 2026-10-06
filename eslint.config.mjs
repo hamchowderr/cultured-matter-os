@@ -17,5 +17,5 @@ export default defineConfig([
       "react-hooks/use-memo": "warn"
     }
   },
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", ".claude/**", ".agents/**"])
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", ".claude/**", ".agents/**", "agent/**"])
 ]);

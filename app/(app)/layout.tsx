@@ -7,6 +7,16 @@ import { AppSidebar } from "@/components/layout/sidebar/app-sidebar";
 import { SiteHeader } from "@/components/layout/header";
 import { getUserSettings } from "@/actions/server";
 import { AppTours } from "@/components/tours/app-tours";
+import { ChatDock, ChatDockProvider } from "@/components/layout/chat-dock";
+import { PageScrollRestoration } from "@/components/layout/page-scroll-restoration";
+import {
+  CHAT_DOCK_OPEN_COOKIE,
+  CHAT_DOCK_WIDTH_COOKIE,
+  parseDockOpen,
+  parseDockWidth
+} from "@/lib/chat-dock";
+import { agentWriteActionNames } from "@/lib/agent-actions";
+import { isChatEnabled } from "@/lib/chat-enabled";
 import { getSession } from "@/lib/session";
 import { parseSeen } from "@/lib/tours";
 
@@ -44,17 +54,41 @@ export default async function AppLayout({
         } as React.CSSProperties
       }
     >
-      <AppTours initialSeen={toursSeen}>
-        <AppSidebar user={{ name, email, image }} />
-        <SidebarInset>
-          <SiteHeader />
-          <div className="bg-background flex flex-1 flex-col">
-            <div className="@container/main p-(--content-padding) pb-[calc(var(--content-padding)+env(safe-area-inset-bottom))] xl:group-data-[theme-content-layout=centered]/layout:container xl:group-data-[theme-content-layout=centered]/layout:mx-auto">
-              {children}
+      {/* The assistant docked beside every page; its open/closed state and width come from
+          cookies so it loads the way it was left. Without an agent server configured
+          (MASTRA_SERVER_URL) the chat is hidden everywhere (lib/chat-enabled.ts). */}
+      <ChatDockProvider
+        enabled={isChatEnabled()}
+        defaultOpen={parseDockOpen(cookieStore.get(CHAT_DOCK_OPEN_COOKIE)?.value)}
+        defaultWidth={parseDockWidth(cookieStore.get(CHAT_DOCK_WIDTH_COOKIE)?.value)}
+        writeActions={agentWriteActionNames()}
+      >
+        <AppTours initialSeen={toursSeen}>
+          <AppSidebar user={{ name, email, image }} />
+          {/* From 1024px the page scrolls in its own area under the header, so its
+              scrollbar sits beside the page, below the header line, and the docked
+              assistant stays outside it, like a browser's side panel. Below that the
+              document scrolls as usual. The inset sidebar variant puts an 8px margin
+              around the page card; --inset-gap takes it off the height so the document
+              is exactly one screen. */}
+          <SidebarInset className="min-w-0 md:peer-data-[variant=inset]:[--inset-gap:1rem] lg:h-[calc(100svh-var(--inset-gap,0px))] lg:overflow-hidden">
+            <SiteHeader />
+            <div
+              data-slot="page-scroller"
+              className="bg-background flex flex-1 flex-col scroll-pt-(--content-padding) lg:min-h-0 lg:overflow-y-auto"
+            >
+              <div className="@container/main p-(--content-padding) pb-[calc(var(--content-padding)+env(safe-area-inset-bottom))] xl:group-data-[theme-content-layout=centered]/layout:container xl:group-data-[theme-content-layout=centered]/layout:mx-auto">
+                {children}
+              </div>
             </div>
-          </div>
-        </SidebarInset>
-      </AppTours>
+          </SidebarInset>
+          <ChatDock />
+          {/* Back/forward return to where each page was, inside the page scroller. */}
+          <React.Suspense>
+            <PageScrollRestoration selector='[data-slot="page-scroller"]' />
+          </React.Suspense>
+        </AppTours>
+      </ChatDockProvider>
     </SidebarProvider>
   );
 }
