@@ -97,7 +97,13 @@ describe("registry", () => {
         "fileNoteToInbox",
         "getBusinessProfile",
         "updateBusinessProfile",
-        "getVoiceGuide"
+        "getVoiceGuide",
+        "getBusinessMap",
+        "listMindMaps",
+        "getMindMap",
+        "createMindMap",
+        "updateMindMap",
+        "deleteMindMap"
       ].sort()
     );
     for (const a of A.allActions) {

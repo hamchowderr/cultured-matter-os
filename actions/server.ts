@@ -337,3 +337,31 @@ export async function buildVoiceGuide(input: In<typeof A.buildVoiceGuide>) {
 export async function updateVoiceGuide(input: In<typeof A.updateVoiceGuide>) {
   return toResult(() => A.updateVoiceGuide.run(input, inAction), REFRESH);
 }
+
+// Map: the live business map and the saved mind maps.
+export async function getBusinessMap() {
+  return toResult(() => A.getBusinessMap.run({}));
+}
+export async function listMindMaps(input: In<typeof A.listMindMaps>) {
+  return toResult(() => A.listMindMaps.run(input));
+}
+export async function getMindMap(input: In<typeof A.getMindMap>) {
+  return toResult(() => A.getMindMap.run(input));
+}
+// The caller opens the new map straight away (one render), like createProject.
+export async function createMindMap(input: In<typeof A.createMindMap>) {
+  return toResult(() => A.createMindMap.run(input, inAction));
+}
+export async function updateMindMap(input: In<typeof A.updateMindMap>) {
+  return toResult(() => A.updateMindMap.run(input, inAction), REFRESH);
+}
+// The editor's "Link record" search: any project, task, person, company, grant or idea by name.
+export async function findLinkableRecords(input: { query: string }) {
+  return toResult(async () => {
+    const { findLinkableRecords: find } = await import("./maps");
+    return find(String(input?.query ?? "").slice(0, 100));
+  });
+}
+export async function deleteMindMap(input: In<typeof A.deleteMindMap>) {
+  return toResult(() => A.deleteMindMap.run(input, inAction), REFRESH);
+}

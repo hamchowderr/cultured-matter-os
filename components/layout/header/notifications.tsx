@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
+import { guardLink } from "@/lib/unsaved-changes";
 import { usePathname } from "next/navigation";
 import {
   BellIcon,
@@ -164,7 +165,11 @@ const Notifications = () => {
                   asChild
                   className="group mx-1 flex cursor-pointer items-start gap-9 rounded-md px-3 py-3"
                 >
-                  <Link href={item.href} onClick={() => !item.read && markRead([item.id])}>
+                  <Link
+                    href={item.href}
+                    onClick={() => !item.read && markRead([item.id])}
+                    onNavigate={guardLink(item.href)}
+                  >
                     <div className="flex flex-1 items-start gap-2">
                       <div className="flex-none">
                         <Avatar className="size-8">

@@ -9,7 +9,8 @@ export const ENTITY_TYPES = [
   { value: "task", label: "Task" },
   { value: "capture", label: "Inbox" },
   { value: "approval", label: "Approval" },
-  { value: "note", label: "Note" }
+  { value: "note", label: "Note" },
+  { value: "mind_map", label: "Mind map" }
 ] as const;
 
 export function entityLabel(type: string) {
@@ -57,6 +58,8 @@ export function activityHref(row: Linkable): string | null {
     case "note":
       // Imports log the batch, not one note.
       return "/archive/notes";
+    case "mind_map":
+      return e && row.entityId ? `/map/saved/${row.entityId}` : null;
     default:
       return null;
   }

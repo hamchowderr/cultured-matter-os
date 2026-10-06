@@ -3,6 +3,8 @@
 @source not "../agent";
 
 @custom-variant dark (&:is(.dark *));
+/* Finger-sized controls: a coarse pointer (tablets) or a phone-width screen. */
+@custom-variant touch (@media (pointer: coarse) or (max-width: 767px));
 
 @import "./themes.css";
 @import "tw-animate-css";
