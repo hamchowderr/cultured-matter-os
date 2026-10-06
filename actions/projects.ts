@@ -7,7 +7,7 @@ import { isPersonal, WORK_SCOPES } from "@/lib/personal";
 import { scopeWhere } from "@/lib/personal-sql";
 import { HOME_TIME_ZONE, startOfDayIn } from "@/lib/time";
 import { ActionError, defineAction } from "./define";
-import { id, projectSchema, taskPriority, taskSchema } from "./schemas";
+import { dueDate, id, projectSchema, taskPriority, taskSchema } from "./schemas";
 
 const projectStatus = z.enum(["active", "paused", "done"]);
 const name = z.string().trim().min(1).max(200);
@@ -265,7 +265,7 @@ export const updateTask = defineAction({
     title: name.optional(),
     priority: taskPriority.optional(),
     notes: z.string().trim().max(5000).nullable().optional(),
-    dueDate: z.coerce.date().nullable().optional(),
+    dueDate: dueDate.nullable().optional(),
     projectId: id.nullable().optional()
   }),
   output: taskSchema,

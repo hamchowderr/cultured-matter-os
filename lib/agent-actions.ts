@@ -61,6 +61,18 @@ export function describeAgentActions(): AgentActionInfo[] {
       io: "input",
       unrepresentable: "any",
       override: ({ zodSchema, jsonSchema }) => {
+        // A task's due date: a calendar day, YYYY-MM-DD (actions/schemas.ts).
+        const meta = z.globalRegistry.get(zodSchema) as { calendarDate?: boolean } | undefined;
+        if (meta?.calendarDate) {
+          const target = jsonSchema as Record<string, unknown>;
+          for (const key of Object.keys(target)) delete target[key];
+          Object.assign(target, {
+            type: "string",
+            format: "date",
+            description: "A calendar date, YYYY-MM-DD."
+          });
+          return;
+        }
         if (zodSchema._zod.def.type === "date") {
           jsonSchema.type = "string";
           jsonSchema.format = "date-time";

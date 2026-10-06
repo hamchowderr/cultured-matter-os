@@ -1,4 +1,5 @@
 import type { dueTasks, getProject, listProjects, listTasks } from "@/actions/server";
+import { isIsoDay } from "@/lib/activity";
 
 type Data<F extends (...args: never[]) => Promise<{ ok: boolean }>> = Extract<
   Awaited<ReturnType<F>>,
@@ -14,10 +15,10 @@ export type DueTask = Data<typeof dueTasks>["overdue"][number];
 export type DueTasks = Data<typeof dueTasks>;
 export type TaskStatus = TaskRow["status"];
 
-// "2026-09-30" from a date input → that day at local noon.
-export function fromDateInput(value: string): Date | null {
-  const m = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  return m ? new Date(+m[1], +m[2] - 1, +m[3], 12) : null;
+// "2026-09-30" from a date input, sent as is: the server stores that calendar day in
+// Simone's zone (actions/schemas.ts dueDate), whatever zone the browser is in.
+export function fromDateInput(value: string): string | null {
+  return isIsoDay(value) ? value : null;
 }
 
 // The task as the sheet expects it. Inside a project, a task whose home is elsewhere is "linked".

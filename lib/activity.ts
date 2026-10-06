@@ -76,6 +76,12 @@ export function startOfIsoDay(day: string, timeZone = HOME_TIME_ZONE): Date {
   return startOfDayIn(timeZone, new Date(`${day}T12:00:00Z`));
 }
 
+// Noon on a YYYY-MM-DD day in the home time zone: how a task's due date is stored. It is
+// the same calendar day in the home zone and in UTC, so a server in either reads it right.
+export function noonOfIsoDay(day: string, timeZone = HOME_TIME_ZONE): Date {
+  return new Date(startOfIsoDay(day, timeZone).getTime() + 12 * 3_600_000);
+}
+
 // Midnight at the end of that day: the exclusive upper bound of a range that includes it.
 export function endOfIsoDay(day: string, timeZone = HOME_TIME_ZONE): Date {
   const next = new Date(Date.parse(`${day}T12:00:00Z`) + 86_400_000);

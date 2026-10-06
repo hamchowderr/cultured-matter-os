@@ -6,7 +6,7 @@ import type { Executor } from "@/db";
 import { googleSession } from "@/lib/google";
 import { ActionError, defineAction } from "./define";
 import { GMAIL_DRAFT, saveGmailDraft } from "./gmail";
-import { approvalSchema, captureSchema, id, taskPriority, taskSchema } from "./schemas";
+import { approvalSchema, captureSchema, dueDate, id, taskPriority, taskSchema } from "./schemas";
 
 const taskStatus = z.enum(["todo", "in_progress", "waiting", "replied", "done"]);
 
@@ -17,7 +17,7 @@ const newTask = z.object({
   notes: z.string().trim().max(5000).optional(),
   status: taskStatus.default("todo"),
   priority: taskPriority.default("medium"),
-  dueDate: z.coerce.date().optional()
+  dueDate: dueDate.optional()
 });
 
 async function assertExists(

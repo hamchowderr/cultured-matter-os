@@ -67,7 +67,7 @@ describe("agent action list", () => {
     expect(createTask.inputSchema.required).toEqual(["title"]);
     expect(createTask.inputSchema.properties.dueDate).toMatchObject({
       type: "string",
-      format: "date-time"
+      format: "date"
     });
   });
 
