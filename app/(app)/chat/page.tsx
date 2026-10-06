@@ -13,7 +13,8 @@ export async function generateMetadata() {
 // The full mastra-chat-kit chat: conversations, the chat and the workbench. It drives the
 // same session and threads as the chat panel in the header. It fills the space under the
 // header; the agent has no files, terminal or browser, so the workbench keeps only Memory
-// and Schedules, and the model picker and web search are off.
+// and Schedules, and the model picker is off. Web search is on: it runs through Firecrawl,
+// which needs no sandbox or browser.
 //
 // Exactly one screen, so the page never scrolls: the height leaves out the header (with
 // the notch inset above it), the home-bar inset the layout pads below the page (so the
@@ -29,7 +30,6 @@ export default function ChatPage() {
         suggestions={CHAT_SUGGESTIONS}
         greeting={{ title: "What can I help with?", description: "Ask about your grants, Radar, people or tasks." }}
         models={false}
-        webSearch={false}
       />
     </div>
   );
