@@ -16,6 +16,7 @@ import {
   parseDockWidth
 } from "@/lib/chat-dock";
 import { agentWriteActionNames } from "@/lib/agent-actions";
+import { isChatEnabled } from "@/lib/chat-enabled";
 import { getSession } from "@/lib/session";
 import { parseSeen } from "@/lib/tours";
 
@@ -54,8 +55,10 @@ export default async function AppLayout({
       }
     >
       {/* The assistant docked beside every page; its open/closed state and width come from
-          cookies so it loads the way it was left. */}
+          cookies so it loads the way it was left. Without an agent server configured
+          (MASTRA_SERVER_URL) the chat is hidden everywhere (lib/chat-enabled.ts). */}
       <ChatDockProvider
+        enabled={isChatEnabled()}
         defaultOpen={parseDockOpen(cookieStore.get(CHAT_DOCK_OPEN_COOKIE)?.value)}
         defaultWidth={parseDockWidth(cookieStore.get(CHAT_DOCK_WIDTH_COOKIE)?.value)}
         writeActions={agentWriteActionNames()}

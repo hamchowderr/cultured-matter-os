@@ -1,12 +1,18 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { CHAT_DISABLED_MESSAGE, isChatEnabled, isChatProxyPath } from "@/lib/chat-enabled";
+
 // Every app page needs a session. Signed-out visitors go to /sign-in.
 // This is Better Auth's optimistic check: it only looks for the session cookie, so no request
 // pays for a database lookup here. The real check runs where the data is read: the (app)
 // layout, every server action (actions/define.ts toResult) and each guarded route handler.
 export function proxy(request: NextRequest) {
   if (!getSessionCookie(request)) return NextResponse.redirect(new URL("/sign-in", request.url));
+  // No agent server configured: the chat's proxy routes say so instead of trying localhost.
+  if (isChatProxyPath(request.nextUrl.pathname) && !isChatEnabled()) {
+    return NextResponse.json({ error: CHAT_DISABLED_MESSAGE }, { status: 503 });
+  }
   return NextResponse.next();
 }
 

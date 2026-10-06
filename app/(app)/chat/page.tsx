@@ -1,5 +1,8 @@
+import { notFound } from "next/navigation";
+
 import { FullChat } from "@/components/layout/full-chat";
 import { agentWriteActionNames } from "@/lib/agent-actions";
+import { isChatEnabled } from "@/lib/chat-enabled";
 import { CHAT_SUGGESTIONS } from "@/lib/chat-suggestions";
 import { generateMeta } from "@/lib/utils";
 
@@ -21,6 +24,8 @@ export async function generateMetadata() {
 // composer sits above the home indicator in the installed app), and the inset sidebar
 // variant's margin (--inset-gap, set by the layout).
 export default function ChatPage() {
+  // No agent server configured: there is no chat to show (lib/chat-enabled.ts).
+  if (!isChatEnabled()) notFound();
   return (
     <div className="-m-(--content-padding) h-[calc(100svh-var(--header-height)-env(safe-area-inset-top)-env(safe-area-inset-bottom)-var(--inset-gap,0px))]">
       <FullChat

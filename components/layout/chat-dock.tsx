@@ -37,6 +37,8 @@ import {
 const DESKTOP = "(min-width: 1024px)";
 
 type ChatDockState = {
+  // False when the server has no agent configured (lib/chat-enabled.ts): no button, no dock.
+  enabled: boolean;
   open: boolean;
   setOpen: (open: boolean) => void;
   sheetOpen: boolean;
@@ -53,6 +55,14 @@ type ChatDockState = {
 };
 const ChatDockContext = React.createContext<ChatDockState | null>(null);
 
+/**
+ * Whether the assistant is available on this server. False outside the provider, so
+ * nothing offers a chat that has no agent behind it.
+ */
+export function useChatEnabled(): boolean {
+  return React.useContext(ChatDockContext)?.enabled ?? false;
+}
+
 function useChatDock() {
   const ctx = React.useContext(ChatDockContext);
   if (!ctx) throw new Error("useChatDock must be used inside ChatDockProvider");
@@ -64,11 +74,14 @@ function setCookie(name: string, value: string) {
 }
 
 export function ChatDockProvider({
+  enabled,
   defaultOpen,
   defaultWidth,
   writeActions,
   children
 }: {
+  /** Whether the server has an agent configured (lib/chat-enabled.ts, read in the layout). */
+  enabled: boolean;
   defaultOpen: boolean;
   defaultWidth: number;
   /** The app's write actions (lib/agent-actions): when one ends, the page refreshes. */
@@ -106,16 +119,28 @@ export function ChatDockProvider({
   }, []);
 
   const value = React.useMemo<ChatDockState>(
-    () => ({ open, setOpen, sheetOpen, setSheetOpen, width, setWidth, desktop, buttonRef, onToolEnd }),
-    [open, setOpen, sheetOpen, width, setWidth, desktop, onToolEnd]
+    () => ({
+      enabled,
+      open,
+      setOpen,
+      sheetOpen,
+      setSheetOpen,
+      width,
+      setWidth,
+      desktop,
+      buttonRef,
+      onToolEnd
+    }),
+    [enabled, open, setOpen, sheetOpen, width, setWidth, desktop, onToolEnd]
   );
   return <ChatDockContext.Provider value={value}>{children}</ChatDockContext.Provider>;
 }
 
 // The header button: docks or undocks the panel on a desktop, opens the sheet on a phone.
 export function ChatButton() {
-  const { open, setOpen, desktop, setSheetOpen, buttonRef } = useChatDock();
-  if (usePathname() === "/chat") return null;
+  const { enabled, open, setOpen, desktop, setSheetOpen, buttonRef } = useChatDock();
+  const onChat = usePathname() === "/chat";
+  if (!enabled || onChat) return null;
   return (
     <Button
       ref={buttonRef}
@@ -277,7 +302,7 @@ function ResizeEdge() {
 }
 
 export function ChatDock() {
-  const { open, setOpen, sheetOpen, setSheetOpen, width, desktop, buttonRef, onToolEnd } =
+  const { enabled, open, setOpen, sheetOpen, setSheetOpen, width, desktop, buttonRef, onToolEnd } =
     useChatDock();
   const onChat = usePathname() === "/chat";
   const shown = open && !onChat;
@@ -289,6 +314,9 @@ export function ChatDock() {
     requestAnimationFrame(() => buttonRef.current?.focus());
   }, [setOpen, buttonRef]);
   const closeSheet = React.useCallback(() => setSheetOpen(false), [setSheetOpen]);
+
+  // No agent on this server: no dock at all (lib/chat-enabled.ts).
+  if (!enabled) return null;
 
   return (
     <>

@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -28,6 +29,7 @@ import {
 import Link from "next/link";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { usePathname } from "next/navigation";
+import { useChatEnabled } from "@/components/layout/chat-dock";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,13 +70,26 @@ export const navItems: NavGroup[] = [
   }
 ];
 
+// The pages to offer: Chat only when the server has an agent (lib/chat-enabled.ts).
+export function useNavItems(): NavGroup[] {
+  const chatEnabled = useChatEnabled();
+  return React.useMemo(
+    () =>
+      chatEnabled
+        ? navItems
+        : navItems.map((g) => ({ ...g, items: g.items.filter((i) => i.href !== "/chat") })),
+    [chatEnabled]
+  );
+}
+
 export function NavMain() {
   const pathname = usePathname();
+  const items = useNavItems();
   const { isMobile } = useSidebar();
 
   return (
     <>
-      {navItems.map((nav) => (
+      {items.map((nav) => (
         <SidebarGroup key={nav.title} data-tour-step-id="tour-nav">
           <SidebarGroupLabel>{nav.title}</SidebarGroupLabel>
           <SidebarGroupContent className="flex flex-col gap-2">
