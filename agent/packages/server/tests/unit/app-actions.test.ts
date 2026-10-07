@@ -32,6 +32,12 @@ const ACTIONS: AppAction[] = [
     kind: 'write',
     inputSchema: { type: 'object', properties: { projectId: { type: 'string' } } },
   },
+  {
+    name: 'draftGrantApplication',
+    description: 'Draft a grant application.',
+    kind: 'write',
+    inputSchema: { type: 'object', properties: { grantId: { type: 'string' } } },
+  },
 ];
 
 /** A stand-in for the app: records each call and answers like the real endpoints. */
@@ -55,7 +61,12 @@ afterEach(() => configureAppActions(null));
 describe('Cultured Matter app action tools', () => {
   it('builds one tool per action, with the app description and JSON Schema', () => {
     const tools = buildAppActionTools(ACTIONS, { appUrl: 'http://app', token: TOKEN });
-    expect(Object.keys(tools)).toEqual(['searchGrants', 'createTask', 'deleteProject']);
+    expect(Object.keys(tools)).toEqual([
+      'searchGrants',
+      'createTask',
+      'deleteProject',
+      'draftGrantApplication',
+    ]);
     expect(tools.createTask.description).toBe('Create a task.');
   });
 
@@ -93,12 +104,14 @@ describe('Cultured Matter app action tools', () => {
     const app = fakeApp();
     configureAppActions({ appUrl: 'http://app', token: TOKEN, fetch: app.fetch });
     const tools = await getAppActionTools();
-    expect(Object.keys(tools)).toHaveLength(3);
+    expect(Object.keys(tools)).toHaveLength(4);
     expect(readActionNames()).toEqual(['searchGrants']);
     expect(resolveToolCategory('searchGrants')).toBe('read');
     expect(resolveToolCategory('createTask')).toBe('edit');
     // A removal asks every time: "Always allow" approves only that one call.
     expect(resolveToolCategory('deleteProject')).toBeNull();
+    // A paid redraft (Firecrawl credits and an AI call) asks every time too.
+    expect(resolveToolCategory('draftGrantApplication')).toBeNull();
   });
 
   it('has no app tools when the app is not configured or not reachable', async () => {

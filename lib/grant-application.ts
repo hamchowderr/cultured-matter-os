@@ -250,10 +250,11 @@ const SYSTEM = `You help Simone, founder of a small business, draft grant applic
 
 1. Find every question or prompt the applicant must answer in writing: narrative questions, short-answer fields (for example "Project name", "Amount requested") and section prompts. Leave out checklists, check boxes, signatures, budget tables, file attachments and instructions that ask for nothing.
 2. Keep each question's wording as the funder wrote it, in the funder's order. Copy any limit as written ("200 words", "1 page") into limit, and set maxWords or maxChars when the limit is a word or character count.
-3. Draft one answer per question, in her voice (follow the voice guide), using only facts from her profile and records. Where a fact is missing, write a short placeholder in square brackets, such as [Add: total project cost], instead of inventing it. Stay inside every limit.
-4. If the material holds no application questions (for example it is a sign-in page or a general overview), return questionsFound false, no questions, and a one-sentence reason.
+3. Draft one answer per question, in her voice (follow the voice guide), using only facts from her profile and records. Where a fact is missing, write a short placeholder in square brackets, such as [Add: total project cost], instead of inventing it.
+4. Keep every answer within its stated limit, and short: at most about 250 words even when the limit allows more. For a long-form section measured in pages ("5 pages", "Section 4: 6 pages"), write an outline she can expand instead of the full text: a one-line opening, then 3 to 6 short bullet points, each a heading with one sentence.
+5. If the material holds no application questions (for example it is a sign-in page or a general overview), return questionsFound false, no questions, and a one-sentence reason.
 
-Plain text answers, no markdown headings. Never claim anything was submitted.`;
+Plain text answers, no markdown headings (a plain "- " list is fine for an outline). Never claim anything was submitted.`;
 
 export const DRAFT_SYSTEM = SYSTEM;
 
@@ -314,18 +315,38 @@ export const draftOutputSchema = z.object({
 });
 export type DraftOutput = z.infer<typeof draftOutputSchema>;
 
+const normaliseQuestion = (q: string) =>
+  q
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+
+/**
+ * A question's id: a hash of its normalised text (FNV-1a, 32-bit), so the same question keeps
+ * the same id across drafts and edits never land on a different question. Pure JS, since the
+ * page imports this module too.
+ */
+export function questionId(question: string) {
+  let h = 0x811c9dc5;
+  for (const ch of normaliseQuestion(question)) {
+    h ^= ch.codePointAt(0)!;
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return `q_${h.toString(36)}`;
+}
+
 // The model's questions as stored: blanks dropped, duplicates merged, counts sane, ids stable.
 export function toQuestions(out: DraftOutput): GrantQuestion[] {
   const seen = new Set<string>();
   const questions: GrantQuestion[] = [];
   for (const q of out.questions) {
     const question = q.question.trim().slice(0, 2_000);
-    const key = question.toLowerCase().replace(/\s+/g, " ");
-    if (!question || seen.has(key)) continue;
-    seen.add(key);
+    const id = questionId(question);
+    if (!normaliseQuestion(question) || seen.has(id)) continue;
+    seen.add(id);
     const positive = (n: number | null) => (n != null && n > 0 ? n : null);
     questions.push({
-      id: `q${questions.length + 1}`,
+      id,
       question,
       limit: q.limit?.trim().slice(0, 200) || null,
       maxWords: positive(q.maxWords),

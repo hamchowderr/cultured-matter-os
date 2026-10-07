@@ -1,11 +1,4 @@
-import {
-  ArrowLeftIcon,
-  BuildingIcon,
-  CalendarDaysIcon,
-  CoinsIcon,
-  ExternalLinkIcon
-} from "lucide-react";
-import Link from "next/link";
+import { BuildingIcon, CalendarDaysIcon, CoinsIcon, ExternalLinkIcon } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { getGrantApplication } from "@/actions/server";
@@ -14,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { daysUntil, formatAmount, formatDeadline } from "@/lib/format";
 import { generateMeta } from "@/lib/utils";
 import { ApplicationEditor } from "./application-editor";
+import { BackToGrants } from "./back-link";
 
 export async function generateMetadata() {
   return generateMeta({
@@ -40,12 +34,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   return (
     <div className="mx-auto w-full max-w-3xl min-w-0 space-y-6">
       <div className="space-y-3">
-        <Button variant="ghost" className="-ml-2 h-11 md:h-9" asChild>
-          <Link href="/grants">
-            <ArrowLeftIcon />
-            Grants
-          </Link>
-        </Button>
+        <BackToGrants />
         <h1 className="text-2xl leading-snug font-semibold tracking-tight break-words md:text-3xl">
           {grant.title}
         </h1>

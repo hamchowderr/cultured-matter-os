@@ -63,6 +63,14 @@ type DraftEvent =
   | { type: "done"; status: string }
   | { type: "error"; message: string };
 
+// A draft waiting for her to confirm it may replace the answers she has.
+type PendingDraft = { source: "listing" | "pasted" | "upload"; body: BodyInit | null };
+const REDRAFT_FROM: Record<PendingDraft["source"], string> = {
+  listing: "The funder’s page is read again and every answer is rewritten.",
+  pasted: "Your answers are rewritten from the questions you pasted.",
+  upload: "Your answers are rewritten from the file you uploaded."
+};
+
 const STATUS_LABEL: Record<GrantApplication["status"], string> = {
   needs_questions: "Needs the questions",
   drafted: "Draft",
@@ -175,7 +183,7 @@ function ProvideQuestions({
         <input
           ref={fileRef}
           type="file"
-          accept=".pdf,.doc,.docx,application/pdf"
+          accept=".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
           className="sr-only"
           aria-label="Application PDF"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
@@ -186,8 +194,7 @@ function ProvideQuestions({
             variant="outline"
             className={TAP}
             onClick={() => fileRef.current?.click()}
-            disabled={busy}
-          >
+            disabled={busy}>
             <FileTextIcon />
             {file ? "Choose another file" : "Choose file"}
           </Button>
@@ -204,8 +211,7 @@ function ProvideQuestions({
           type="button"
           className={cn(TAP, "w-full sm:w-auto")}
           disabled={!file || tooBig || busy}
-          onClick={() => file && onUpload(file)}
-        >
+          onClick={() => file && onUpload(file)}>
           <SparklesIcon />
           Draft from this file
         </Button>
@@ -229,8 +235,7 @@ function ProvideQuestions({
           type="button"
           className={cn(TAP, "w-full sm:w-auto")}
           disabled={!text.trim() || busy}
-          onClick={() => onPaste(text)}
-        >
+          onClick={() => onPaste(text)}>
           <SparklesIcon />
           Draft from these questions
         </Button>
@@ -252,8 +257,7 @@ function LimitCount({ q, answer }: { q: GrantQuestion; answer: string }) {
       className={cn(
         "text-xs tabular-nums",
         over ? "text-destructive font-medium" : "text-muted-foreground"
-      )}
-    >
+      )}>
       {text}
       {over ? " (over the limit)" : ""}
     </span>
@@ -275,7 +279,7 @@ export function ApplicationEditor({
   const [steps, setSteps] = useState<DraftStep[] | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [saving, startSave] = useTransition();
-  const [confirmRedraft, setConfirmRedraft] = useState(false);
+  const [pending, setPending] = useState<PendingDraft | null>(null);
   const [leaveTo, setLeaveTo] = useState<string | null>(null);
   const [showFallback, setShowFallback] = useState(false);
 
@@ -303,11 +307,18 @@ export function ApplicationEditor({
       setSteps(null);
     }
   };
-  const paste = (text: string) => draft(JSON.stringify({ questions: text }));
+  // Any draft that would replace answers she already has waits for her to confirm; her
+  // unsaved edits stay on the page until she does (and stay if she cancels or the draft fails).
+  const requestDraft = (next: PendingDraft) => {
+    if (questions.length) setPending(next);
+    else void draft(next.body);
+  };
+  const paste = (text: string) =>
+    requestDraft({ source: "pasted", body: JSON.stringify({ questions: text }) });
   const upload = (file: File) => {
     const form = new FormData();
     form.set("file", file);
-    return draft(form);
+    requestDraft({ source: "upload", body: form });
   };
 
   const save = () =>
@@ -369,7 +380,12 @@ export function ApplicationEditor({
       </div>
 
       {application.note && (
-        <Alert className={needsQuestions ? "border-orange-400 bg-orange-50 text-orange-900 dark:bg-orange-900/40 dark:text-orange-50" : undefined}>
+        <Alert
+          className={
+            needsQuestions
+              ? "border-orange-400 bg-orange-50 text-orange-900 dark:bg-orange-900/40 dark:text-orange-50"
+              : undefined
+          }>
           <TriangleAlertIcon />
           <AlertTitle>The questions couldn’t be read</AlertTitle>
           <AlertDescription>{application.note}</AlertDescription>
@@ -392,12 +408,11 @@ export function ApplicationEditor({
         </Card>
       ) : (
         <>
-          <div className="bg-background/95 sticky top-[var(--header-height,3.5rem)] z-10 -mx-1 flex flex-wrap gap-2 px-1 py-2 backdrop-blur">
+          <div className="bg-background/95 sticky top-[calc(var(--header-height,3.5rem)+env(safe-area-inset-top))] z-10 -mx-1 flex flex-wrap gap-2 px-1 py-2 backdrop-blur">
             <Button
               className={cn(TAP, "flex-1 sm:flex-none")}
               onClick={save}
-              disabled={!dirty || saving}
-            >
+              disabled={!dirty || saving}>
               {saving ? <Spinner /> : <CheckIcon />}
               {dirty ? `Save ${changed.length === 1 ? "change" : "changes"}` : "Saved"}
             </Button>
@@ -412,8 +427,7 @@ export function ApplicationEditor({
                   ),
                   "All answers copied."
                 )
-              }
-            >
+              }>
               <CopyIcon />
               Copy all
             </Button>
@@ -451,8 +465,7 @@ export function ApplicationEditor({
                           variant="ghost"
                           className={TAP}
                           onClick={() => copyText(answer, `Answer ${i + 1} copied.`)}
-                          aria-label={`Copy answer ${i + 1}`}
-                        >
+                          aria-label={`Copy answer ${i + 1}`}>
                           <CopyIcon />
                           Copy
                         </Button>
@@ -475,8 +488,7 @@ export function ApplicationEditor({
                         href={s.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex min-h-11 items-center underline underline-offset-2 md:min-h-0"
-                      >
+                        className="inline-flex min-h-11 items-center underline underline-offset-2 md:min-h-0">
                         {s.title}
                       </a>
                     ) : (
@@ -490,7 +502,10 @@ export function ApplicationEditor({
 
           <div className="flex flex-col gap-2 border-t pt-4 sm:flex-row">
             {hasListing && (
-              <Button variant="outline" className={TAP} onClick={() => setConfirmRedraft(true)}>
+              <Button
+                variant="outline"
+                className={TAP}
+                onClick={() => requestDraft({ source: "listing", body: null })}>
                 <RefreshCwIcon />
                 Draft again
               </Button>
@@ -499,8 +514,7 @@ export function ApplicationEditor({
               variant="ghost"
               className={TAP}
               onClick={() => setShowFallback((v) => !v)}
-              aria-expanded={showFallback}
-            >
+              aria-expanded={showFallback}>
               <ClipboardListIcon />
               Wrong questions? Upload or paste them
             </Button>
@@ -515,13 +529,14 @@ export function ApplicationEditor({
         </>
       )}
 
-      <AlertDialog open={confirmRedraft} onOpenChange={setConfirmRedraft}>
+      <AlertDialog open={pending != null} onOpenChange={(o) => !o && setPending(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Draft the application again?</AlertDialogTitle>
             <AlertDialogDescription>
-              The funder’s page is read again and every answer is rewritten. Your current answers,
-              including your edits, are replaced.
+              {pending ? REDRAFT_FROM[pending.source] : ""} Your current answers
+              {dirty ? ", including the changes you haven’t saved," : ", including your edits,"} are
+              replaced.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -529,10 +544,10 @@ export function ApplicationEditor({
             <AlertDialogAction
               className={TAP}
               onClick={() => {
-                setConfirmRedraft(false);
-                void draft(null);
-              }}
-            >
+                const next = pending;
+                setPending(null);
+                if (next) void draft(next.body);
+              }}>
               Draft again
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -556,8 +571,7 @@ export function ApplicationEditor({
                 setAnswers({});
                 setLeaveTo(null);
                 if (href) setTimeout(() => router.push(href), 0);
-              }}
-            >
+              }}>
               Leave
             </AlertDialogAction>
           </AlertDialogFooter>

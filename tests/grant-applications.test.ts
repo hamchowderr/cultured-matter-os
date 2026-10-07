@@ -17,10 +17,11 @@ import {
   looksLoginWalled,
   overLimit,
   pickDocumentLinks,
+  questionId,
   toQuestions
 } from "@/lib/grant-application";
-import { draftStream, type DraftEvent } from "@/lib/grant-draft-stream";
-import { PDF_MAX_PAGES } from "@/lib/grant-draft";
+import { allowedUpload, draftStream, type DraftEvent } from "@/lib/grant-draft-stream";
+import { DOCUMENT_OPTIONS, PAGE_OPTIONS, PDF_MAX_PAGES, TOO_LONG } from "@/lib/grant-draft";
 import { startFirecrawlMock } from "../scripts/firecrawl-dev-mock.mjs";
 import { useAimockProvider } from "./aimock-provider";
 import { freshDb } from "./test-db";
@@ -216,7 +217,10 @@ describe("drafting from the grant's listing", () => {
     expect(after.application!.questions[3].answer).toBe(before.application!.questions[3].answer);
 
     await expect(
-      A.updateGrantApplication.run({ grantId: sb1Id, answers: [{ id: "q99", answer: "x" }] }, ctx())
+      A.updateGrantApplication.run(
+        { grantId: sb1Id, answers: [{ id: "q_nope", answer: "x" }] },
+        ctx()
+      )
     ).rejects.toThrow(ActionError);
   });
 });
@@ -271,7 +275,7 @@ describe("the fallback when the questions can't be read", () => {
     const res = draftStream(
       new Request("http://app/api", { method: "POST", body: form }),
       noUrlId,
-      { db } as never
+      { ctx: { db } }
     );
     const events = (await res.text())
       .trim()
@@ -294,6 +298,50 @@ describe("the fallback when the questions can't be read", () => {
     const saved = await A.getGrantApplication.run({ grantId: noUrlId }, ctx());
     expect(saved.application!.questions).toHaveLength(9);
     expect(saved.application!.sources[0]).toMatchObject({ kind: "upload", read: true });
+  });
+
+  it("finishes and saves a paid draft even when she closes the page mid-draft", async () => {
+    const [src] = await db.select().from(t.sources);
+    const [g] = await db
+      .insert(t.grants)
+      .values({
+        sourceId: src.id,
+        externalId: "gone",
+        title: "Gone",
+        raw: {},
+        firstSeenAt: new Date()
+      })
+      .returning();
+    let work: Promise<void> | undefined;
+    const res = draftStream(
+      new Request("http://app/api", {
+        method: "POST",
+        body: JSON.stringify({ questions: "1. How will you use the funds? (1,000 characters)" })
+      }),
+      g.id,
+      { ctx: { db }, keepAlive: (w) => (work = w) }
+    );
+    // The browser goes away before any event is read.
+    await res.body!.cancel();
+    await work;
+    const saved = await A.getGrantApplication.run({ grantId: g.id }, ctx());
+    expect(saved.application).toMatchObject({ status: "drafted" });
+    expect(llm.getRequests()).toHaveLength(1);
+  });
+
+  it("refuses an upload unless both its type and its extension are allowed", () => {
+    expect(allowedUpload({ name: "Application.PDF", type: "application/pdf" })).toBe(true);
+    expect(
+      allowedUpload({
+        name: "form.docx",
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      })
+    ).toBe(true);
+    expect(allowedUpload({ name: "form.doc", type: "application/msword" })).toBe(true);
+    expect(allowedUpload({ name: "form.pdf", type: "text/html" })).toBe(false);
+    expect(allowedUpload({ name: "form.exe", type: "application/pdf" })).toBe(false);
+    expect(allowedUpload({ name: "form.docx", type: "application/pdf" })).toBe(false);
+    expect(allowedUpload({ name: "form", type: "application/pdf" })).toBe(false);
   });
 
   it("keeps her answers when a later read hits a sign-in", async () => {
@@ -344,6 +392,80 @@ describe("the fallback when the questions can't be read", () => {
     } finally {
       process.env.FIRECRAWL_API_URL = firecrawl.url;
     }
+  });
+});
+
+describe("limits on time and length", () => {
+  it("never lets the SDK wait on a slow document past the route's time", () => {
+    expect(PAGE_OPTIONS).toMatchObject({ autoResume: false });
+    expect(DOCUMENT_OPTIONS).toMatchObject({ autoResume: false });
+  });
+
+  it("fails a slow PDF on its own and drafts from the rest", async () => {
+    firecrawl.slow.add(SOLICITATION);
+    try {
+      const [src] = await db.select().from(t.sources);
+      const [g] = await db
+        .insert(t.grants)
+        .values({
+          sourceId: src.id,
+          externalId: "slow",
+          title: "Slow PDF",
+          url: SB1_URL,
+          raw: {},
+          firstSeenAt: new Date()
+        })
+        .returning();
+      const started = Date.now();
+      const result = await A.draftGrantApplication.run({ grantId: g.id }, ctx());
+      // No resume: the 408 (Retry-After 30 s) fails that one document at once.
+      expect(Date.now() - started).toBeLessThan(10_000);
+      expect(firecrawl.requests.filter((r) => r.url === SOLICITATION)).toHaveLength(1);
+      expect(result.application.status).toBe("drafted");
+      expect(result.application.sources).toEqual([
+        expect.objectContaining({ kind: "page", read: true }),
+        expect.objectContaining({ url: SOLICITATION, read: false }),
+        expect.objectContaining({ url: TEMPLATE, read: true })
+      ]);
+      expect(promptOf()).not.toContain("OPC SB 1 Grant Program Solicitation: Track 1");
+      expect(promptOf()).toContain("The maximum word count for the Summary is 200 words");
+    } finally {
+      firecrawl.slow.clear();
+    }
+  });
+
+  it("says plainly when a long application runs past the output cap, and saves nothing", async () => {
+    const [src] = await db.select().from(t.sources);
+    const [g] = await db
+      .insert(t.grants)
+      .values({
+        sourceId: src.id,
+        externalId: "long",
+        title: "Long form",
+        raw: {},
+        firstSeenAt: new Date()
+      })
+      .returning();
+    const questions = Array.from(
+      { length: 30 },
+      (_, i) => `Section ${i + 1}: ${i === 29 ? "Evaluation plan" : "Narrative"} (10 pages)`
+    ).join("\n");
+    const run = A.draftGrantApplication.run({ grantId: g.id, questions }, ctx());
+    await expect(run).rejects.toBeInstanceOf(ActionError);
+    await expect(run).rejects.toMatchObject({ code: "invalid", message: TOO_LONG });
+    expect(llm.getRequests()).toHaveLength(1);
+    expect(promptOf()).toMatch(/write an outline she can expand/);
+    expect((await A.getGrantApplication.run({ grantId: g.id }, ctx())).application).toBeNull();
+  });
+
+  it("keeps each question's id across drafts", async () => {
+    const before = await A.getGrantApplication.run({ grantId: sb1Id }, ctx());
+    const again = await A.draftGrantApplication.run({ grantId: sb1Id }, ctx());
+    expect(again.application.questions.map((q) => q.id)).toEqual(
+      before.application!.questions.map((q) => q.id)
+    );
+    expect(questionId("  Project NAME? ")).toBe(questionId("project name"));
+    expect(questionId("Project name")).not.toBe(questionId("Project summary"));
   });
 });
 
@@ -402,7 +524,14 @@ describe("copying and limits", () => {
       ]
     });
     expect(qs).toEqual([
-      { id: "q1", question: "Summary", limit: null, maxWords: null, maxChars: null, answer: "a" }
+      {
+        id: questionId("Summary"),
+        question: "Summary",
+        limit: null,
+        maxWords: null,
+        maxChars: null,
+        answer: "a"
+      }
     ]);
   });
 });

@@ -18,11 +18,19 @@ export type DraftEvent =
   | { type: "done"; status: string }
   | { type: "error"; message: string };
 
-const UPLOAD_TYPES = new Set([
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/msword"
-]);
+// The files she can upload, by extension, each with the one MIME type it must arrive as. Both
+// must match: a renamed file or a mislabelled one is refused. Firecrawl's document parser reads
+// .pdf, .docx and the older .doc (docs.firecrawl.dev/features/document-parsing).
+export const UPLOAD_TYPES: Record<string, string> = {
+  ".pdf": "application/pdf",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".doc": "application/msword"
+};
+
+export function allowedUpload(file: { name: string; type: string }) {
+  const ext = /\.[a-z0-9]+$/i.exec(file.name)?.[0].toLowerCase();
+  return !!ext && UPLOAD_TYPES[ext] === file.type.toLowerCase();
+}
 
 const jsonBody = z.object({ questions: z.string().trim().max(PASTED_MAX).optional() });
 
@@ -40,7 +48,7 @@ async function parseRequest(request: Request): Promise<Parsed> {
     if (file.size > UPLOAD_MAX_BYTES) {
       throw new ActionError("invalid", "That file is over 4 MB. Paste the questions instead.");
     }
-    if (!UPLOAD_TYPES.has(file.type) && !/\.(pdf|docx?)$/i.test(file.name)) {
+    if (!allowedUpload(file)) {
       throw new ActionError("invalid", "Upload a PDF or Word file.");
     }
     return { kind: "upload", file };
@@ -52,64 +60,97 @@ async function parseRequest(request: Request): Promise<Parsed> {
     : { kind: "listing" };
 }
 
+export type DraftStreamOptions = {
+  ctx?: Omit<ActionContext, "onStep">;
+  // Keeps the work alive after the response ends (the route passes after(), Vercel's
+  // waitUntil), so a draft she has paid for still finishes and saves if she closes the page.
+  keepAlive?: (work: Promise<void>) => void;
+};
+
 export function draftStream(
   request: Request,
   grantId: string,
-  ctx: Omit<ActionContext, "onStep"> = {}
+  { ctx = {}, keepAlive }: DraftStreamOptions = {}
 ): Response {
   const encoder = new TextEncoder();
+  let controller!: ReadableStreamDefaultController<Uint8Array>;
+  // Set when she goes away (the browser cancels the stream) or the stream is closed. From then
+  // on events are dropped instead of throwing, so the draft itself is never cut short.
+  let closed = false;
   const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      const send = (e: DraftEvent) => controller.enqueue(encoder.encode(`${JSON.stringify(e)}\n`));
-      const onStep = (step: string) => send({ type: "step", step: step as DraftStep });
-      try {
-        const parsed = await parseRequest(request);
-        let questions: {
-          questions?: string;
-          questionsFrom?: "pasted" | "upload";
-          questionsTitle?: string;
-        } = {};
-        if (parsed.kind === "pasted")
-          questions = { questions: parsed.questions, questionsFrom: "pasted" };
-        if (parsed.kind === "upload") {
-          const client = firecrawlClient();
-          if (!client) {
-            throw new ActionError(
-              "unavailable",
-              "Reading PDFs isn’t set up yet. Paste the questions instead."
-            );
-          }
-          const text = await readUpload(
-            {
-              data: new Uint8Array(await parsed.file.arrayBuffer()),
-              filename: parsed.file.name || "application.pdf",
-              contentType: parsed.file.type || "application/pdf"
-            },
-            client,
-            onStep
-          );
-          questions = {
-            questions: capSource(text, PASTED_MAX),
-            questionsFrom: "upload",
-            questionsTitle: (parsed.file.name || "Your uploaded PDF").slice(0, 300)
-          };
-        }
-        const result = await draftGrantApplication.run(
-          { grantId, ...questions },
-          { ...ctx, onStep }
-        );
-        send({ type: "done", status: result.application.status });
-      } catch (e) {
-        if (!(e instanceof ActionError)) console.error("grant draft failed", loggableError(e));
-        send({
-          type: "error",
-          message: e instanceof ActionError ? e.message : "Something went wrong. Try again."
-        });
-      } finally {
-        controller.close();
-      }
+    start(c) {
+      controller = c;
+    },
+    cancel() {
+      closed = true;
     }
   });
+  const send = (e: DraftEvent) => {
+    if (closed) return;
+    try {
+      controller.enqueue(encoder.encode(`${JSON.stringify(e)}\n`));
+    } catch {
+      closed = true;
+    }
+  };
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    try {
+      controller.close();
+    } catch {
+      // Already closed or errored by the runtime: nothing left to tell her.
+    }
+  };
+  const onStep = (step: string) => send({ type: "step", step: step as DraftStep });
+
+  const work = (async () => {
+    try {
+      const parsed = await parseRequest(request);
+      let questions: {
+        questions?: string;
+        questionsFrom?: "pasted" | "upload";
+        questionsTitle?: string;
+      } = {};
+      if (parsed.kind === "pasted")
+        questions = { questions: parsed.questions, questionsFrom: "pasted" };
+      if (parsed.kind === "upload") {
+        const client = firecrawlClient();
+        if (!client) {
+          throw new ActionError(
+            "unavailable",
+            "Reading PDFs isn’t set up yet. Paste the questions instead."
+          );
+        }
+        const text = await readUpload(
+          {
+            data: new Uint8Array(await parsed.file.arrayBuffer()),
+            filename: parsed.file.name || "application.pdf",
+            contentType: parsed.file.type || "application/pdf"
+          },
+          client,
+          onStep
+        );
+        questions = {
+          questions: capSource(text, PASTED_MAX),
+          questionsFrom: "upload",
+          questionsTitle: (parsed.file.name || "Your uploaded PDF").slice(0, 300)
+        };
+      }
+      const result = await draftGrantApplication.run({ grantId, ...questions }, { ...ctx, onStep });
+      send({ type: "done", status: result.application.status });
+    } catch (e) {
+      if (!(e instanceof ActionError)) console.error("grant draft failed", loggableError(e));
+      send({
+        type: "error",
+        message: e instanceof ActionError ? e.message : "Something went wrong. Try again."
+      });
+    } finally {
+      close();
+    }
+  })();
+  keepAlive?.(work);
+
   return new Response(stream, {
     headers: {
       "Content-Type": "application/x-ndjson; charset=utf-8",

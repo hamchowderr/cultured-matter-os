@@ -3,7 +3,7 @@ import Firecrawl, {
   type ParseOptions,
   type ScrapeOptions
 } from "@mendable/firecrawl-js";
-import { generateText, Output } from "ai";
+import { generateText, NoObjectGeneratedError, Output } from "ai";
 
 import { ActionError } from "@/actions/define";
 import type { ProfileFields } from "@/lib/business-profile";
@@ -33,26 +33,34 @@ import {
 //
 // Firecrawl: the app's own client (as the Radar monitors use, ingest/monitors/firecrawl.ts),
 // FIRECRAWL_API_KEY from Infisical. FIRECRAWL_API_URL, which the SDK reads itself, points
-// tests and the local dev loop at a mock (scripts/firecrawl-dev-mock.mjs). A page is 1 credit;
-// a PDF is 1 credit a page, capped at PDF_MAX_PAGES per document, so one draft is at most
-// 1 + 2 × 15 = 31 credits.
+// tests and the local dev loop at a mock (scripts/firecrawl-dev-mock.mjs). A web page is 1 credit
+// and a PDF 1 credit a page, capped at PDF_MAX_PAGES per document. With the listing itself a
+// PDF plus two linked PDFs, one draft is at most 3 × 15 = 45 credits.
 //
 // The model: the voice guide's (lib/voice-ai.ts), a plain gateway id that AIMock replaces in
 // tests and the dev loop. Input is capped (lib/grant-application.ts: about 14,000 tokens at
-// most) and output at DRAFT_MAX_OUTPUT_TOKENS: Claude Haiku 4.5 at $1 in and $5 out per million
-// tokens makes one draft about 4 cents at most.
+// most). Output is capped at DRAFT_MAX_OUTPUT_TOKENS: a real form has up to about 10 written
+// questions, and with long-form sections drafted as outlines that fits in about 5,000 tokens,
+// so 8,000 leaves room without cutting a draft off. Claude Haiku 4.5 at $1 in and $5 out per
+// million tokens makes one draft about 5.5 cents at most (1.4 in, 4 out).
 export const DRAFT_MODEL = "anthropic/claude-haiku-4.5";
-export const DRAFT_MAX_OUTPUT_TOKENS = 4_000;
+export const DRAFT_MAX_OUTPUT_TOKENS = 8_000;
 export const PDF_MAX_PAGES = 15;
 // The largest PDF she can upload (a Vercel function takes a 4.5 MB body).
 export const UPLOAD_MAX_BYTES = 4 * 1024 * 1024;
 
+// autoResume: false on every scrape: the SDK would otherwise wait up to 20 minutes for a big
+// PDF that outlives the request, past the route's 300 s. With it off, a slow page or document
+// fails at its timeout (plus 5 s), so the page and both documents (read in parallel) finish
+// within about 160 s, leaving the model call its time.
 const PAGE_TIMEOUT_MS = 60_000;
 const DOCUMENT_TIMEOUT_MS = 90_000;
 // Reuse Firecrawl's cached copy of a page up to a day old.
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
-export type Scrape = (url: string, options: ScrapeOptions) => Promise<Document>;
+// Scrape options plus the SDK-only autoResume (its ScrapeCallOptions, which it doesn't export).
+export type ScrapeCallOptions = ScrapeOptions & { autoResume?: boolean };
+export type Scrape = (url: string, options: ScrapeCallOptions) => Promise<Document>;
 export type ParseUpload = (
   file: { data: Uint8Array; filename: string; contentType: string },
   options: ParseOptions
@@ -62,18 +70,20 @@ export type OnStep = (step: DraftStep) => void;
 
 const PDF_PARSER = { type: "pdf" as const, mode: "auto" as const, maxPages: PDF_MAX_PAGES };
 
-export const PAGE_OPTIONS: ScrapeOptions = {
+export const PAGE_OPTIONS: ScrapeCallOptions = {
   formats: ["markdown", "links"],
   onlyMainContent: true,
   parsers: [PDF_PARSER],
   maxAge: MAX_AGE_MS,
-  timeout: PAGE_TIMEOUT_MS
+  timeout: PAGE_TIMEOUT_MS,
+  autoResume: false
 };
-export const DOCUMENT_OPTIONS: ScrapeOptions = {
+export const DOCUMENT_OPTIONS: ScrapeCallOptions = {
   formats: ["markdown"],
   parsers: [PDF_PARSER],
   maxAge: MAX_AGE_MS,
-  timeout: DOCUMENT_TIMEOUT_MS
+  timeout: DOCUMENT_TIMEOUT_MS,
+  autoResume: false
 };
 export const UPLOAD_OPTIONS: ParseOptions = { formats: ["markdown"], parsers: [PDF_PARSER] };
 
@@ -91,6 +101,11 @@ export function firecrawlClient(apiKey = process.env.FIRECRAWL_API_KEY): Firecra
       )
   };
 }
+
+// The draft ran past the output cap: too many questions, or too much asked per answer, for
+// one pass. Saying "try again" would only cut off again.
+export const TOO_LONG =
+  "This application has more to write than one draft can hold, so the answers were cut off and nothing was saved. Paste the questions a section at a time (for example the first five), and draft each part.";
 
 const READ_FAILED =
   "Reading the funder’s page didn’t work just now. Try again in a minute, or paste the questions.";
@@ -232,7 +247,8 @@ export async function draftAnswers(
   const { system, prompt } = buildDraftPrompt(ctx);
   let output;
   try {
-    ({ output } = await generateText({
+    let finishReason: string;
+    ({ output, finishReason } = await generateText({
       model: DRAFT_MODEL,
       system,
       prompt,
@@ -241,7 +257,14 @@ export async function draftAnswers(
       temperature: 0.4,
       maxRetries: 1
     }));
+    if (finishReason === "length") throw new ActionError("invalid", TOO_LONG);
   } catch (e) {
+    if (e instanceof ActionError) throw e;
+    // Cut off at the output cap: the JSON is incomplete. Retrying would cut off again.
+    if (NoObjectGeneratedError.isInstance(e) && e.finishReason === "length") {
+      console.error("draftAnswers: output hit the length cap");
+      throw new ActionError("invalid", TOO_LONG);
+    }
     // The name and status only: the prompt carries her profile.
     const err = e as { name?: string; statusCode?: number };
     console.error(`draftAnswers: ${err?.name ?? "Error"} (status ${err?.statusCode ?? "n/a"})`);

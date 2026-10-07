@@ -39,10 +39,15 @@ const readBody = (req) =>
     req.on("error", reject);
   });
 
-/** Starts the mock. `requests` records each call: { path, url, options, filename }. */
+/**
+ * Starts the mock. `requests` records each call: { path, url, options, filename }. A URL added
+ * to `slow` answers as Firecrawl does when a big PDF outlives the request: a 408 whose details
+ * say the job is still processing, with a Retry-After.
+ */
 export async function startFirecrawlMock({ port = 0, host = "127.0.0.1" } = {}) {
   const byUrl = loadFixtures();
   const requests = [];
+  const slow = new Set();
   const server = createServer(async (req, res) => {
     const body = await readBody(req);
     const send = (status, json) => {
@@ -55,6 +60,14 @@ export async function startFirecrawlMock({ port = 0, host = "127.0.0.1" } = {}) 
     if (req.method === "POST" && req.url === "/v2/scrape") {
       const { url, ...options } = JSON.parse(body.toString("utf8"));
       requests.push({ path: "/v2/scrape", url, options });
+      if (slow.has(url)) {
+        res.setHeader("Retry-After", "30");
+        return send(408, {
+          success: false,
+          error: "Scrape timed out; the document is still processing.",
+          details: { state: "processing_continues" }
+        });
+      }
       const doc = byUrl.get(url);
       if (!doc) {
         return send(200, {
@@ -86,6 +99,7 @@ export async function startFirecrawlMock({ port = 0, host = "127.0.0.1" } = {}) 
   return {
     url: `http://${host}:${bound}`,
     requests,
+    slow,
     close: () => new Promise((resolve) => server.close(() => resolve()))
   };
 }
