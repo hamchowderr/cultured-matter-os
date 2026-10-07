@@ -24,6 +24,7 @@ import {
   getChatSession,
   WORKSPACE_ROOT,
 } from './lib/agent-controller';
+import { approvalPreview } from './lib/approval-preview';
 import { createServerAuth } from './lib/auth';
 import { doltConfigured, ensureDatabase } from './lib/dolt';
 import { getImage } from './lib/image-store';
@@ -117,6 +118,9 @@ const chatServerDeps: ChatServerDeps = {
     'openai/gpt-4o-mini',
     'openai/gpt-4.1-nano',
   ]),
+  // Cultured Matter: approval cards show what a WordPress write would change (the Fluent
+  // plugins' and the page tool's dry runs, a contact as it is now; lib/approval-preview.ts).
+  approvalPreview,
 };
 
 const auth = createServerAuth(env.MASTRA_JWT_SECRET, CHAT_RESOURCE_ID);

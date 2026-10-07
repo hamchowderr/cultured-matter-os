@@ -443,11 +443,15 @@ export async function loadFluentTools(client: MCPClient): Promise<ToolsInput> {
         try {
           const result = structuredResult(
             await getContact.execute(
-              args.contact_id ? { contact_id: args.contact_id, include: [] } : { email: args.email, include: [] },
+              args.contact_id
+                ? { contact_id: args.contact_id, include: [] }
+                : { email: args.email, include: [] },
               {},
             ),
           );
-          const contact = (findKey(result, 'email') !== undefined && (result as { data?: unknown })?.data) || result;
+          const contact =
+            (findKey(result, 'email') !== undefined && (result as { data?: unknown })?.data) ||
+            result;
           return { exists: true, contact: stripTokens(contact) };
         } catch {
           // Not found (or unreadable): she is adding someone new.

@@ -333,7 +333,11 @@ export function updatePageTool(description: string, server: ServerTool) {
         path: dry.path ?? null,
         status: dry.status ?? null,
         title: dry.title ?? null,
-        changes: (dry.changes ?? []).map((c) => ({ path: c.path, before: c.before, after: c.after })),
+        changes: (dry.changes ?? []).map((c) => ({
+          path: c.path,
+          before: c.before,
+          after: c.after,
+        })),
       };
     },
   });
