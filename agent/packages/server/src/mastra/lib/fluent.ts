@@ -23,7 +23,7 @@ import { env } from '../../lib/env';
  * switched off; it is switched on in each plugin's settings (or Fluent Toolkit's MCP page).
  *
  * Setting WORDPRESS_URL, WORDPRESS_MCP_USER and WORDPRESS_MCP_APP_PASSWORD turns this on.
- * The AgentController carries the tools (`tools` on the controller, next to Firecrawl's), so
+ * The chat agent carries the tools (its `tools`, next to the app actions; agents/chat.ts), so
  * a WordPress outage only costs the chat these tools for a while (DISCOVERY_BACKOFF_MS).
  *
  * The servers list about 55 tools. Only the ones named below are offered, by name, so a
@@ -396,7 +396,7 @@ export async function getFluentTools(now: () => number = Date.now): Promise<Tool
   return pending;
 }
 
-/** Close the live client's connections (the controller's shutdown hook calls it). */
+/** Close the live client's connections (tests; a server restart just drops them). */
 export async function disconnectFluent(): Promise<void> {
   const open = client;
   client = null;
