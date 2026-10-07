@@ -1215,6 +1215,29 @@
       "response": { "content": "I added Grace Hopper to your CRM." }
     },
     {
+      "_comment": "An outward-facing Fluent write: a campaign draft's category is null, so an earlier \"Always allow edit\" does not cover it and it still shows a card (tests/integration/fluent.test.ts).",
+      "match": {
+        "userMessage": "Draft a campaign announcing the Climate Seed Fund",
+        "hasToolResult": false
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_cm_campaign",
+            "name": "fluent-crm-upsert-campaign",
+            "arguments": {
+              "title": "Climate Seed Fund",
+              "email_subject": "The Climate Seed Fund is open"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": { "toolCallId": "toolu_cm_campaign" },
+      "response": { "content": "The campaign draft is ready for you to review." }
+    },
+    {
       "_comment": "A guarded Fluent WRITE: create-booking asks once; after approval the tool runs the plugin's dry run and the confirmed call itself.",
       "match": {
         "userMessage": "Book Ada for a call on 20 October at 10am",

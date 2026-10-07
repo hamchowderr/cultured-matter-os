@@ -108,13 +108,20 @@ export const FLUENT_WRITE_TOOLS = [
 ] as const;
 
 /**
- * Writes that email or text people outside (the attendee and host of a booking). Their
- * category is `null`, so an "Always allow" on one approves just that call and each booking
- * change still asks.
+ * Writes whose category is `null`, so an "Always allow edit" never covers them and each
+ * call still asks:
+ * - the booking writes email or text people outside (the attendee and host);
+ * - a campaign draft carries the email that goes out once it is sent;
+ * - a form's fields, styling and email notifications change what the public sees, and
+ *   who gets emailed when someone submits it.
  */
 const ALWAYS_ASK = new Set<string>([
   'fluent-booking-create-booking',
   'fluent-booking-manage-booking',
+  'fluent-crm-upsert-campaign',
+  'fluentform-upsert-email-notification',
+  'fluentform-update-form-fields',
+  'fluentform-update-form-styling',
 ]);
 
 /**

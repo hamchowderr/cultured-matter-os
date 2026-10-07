@@ -55,10 +55,23 @@ function spyOnOfferedTools() {
   return { offered, restore: () => spy.mockRestore() };
 }
 
-/** Send one message on a fresh thread. Answers any approval card with `decision`. */
-async function turn(content: string, decision: 'approve' | 'decline' = 'approve') {
-  const session: Session = await controller.createSession({ resourceId: 'u-fluent' });
+/** A session with the grants the live one gets. */
+async function newSession(resourceId = 'u-fluent'): Promise<Session> {
+  const session = await controller.createSession({ resourceId });
   for (const tool of grants) session.grantTool(tool);
+  return session;
+}
+
+/**
+ * Send one message on a fresh thread (of `existing`, or a new session). Answers any
+ * approval card with `decision`.
+ */
+async function turn(
+  content: string,
+  decision: 'approve' | 'decline' | 'always_allow_category' = 'approve',
+  existing?: Session,
+) {
+  const session = existing ?? (await newSession());
   // biome-ignore lint/suspicious/noExplicitAny: AgentControllerEvent union is wide; we assert on .type
   const events: any[] = [];
   const approvals: string[] = [];
@@ -127,6 +140,26 @@ describe('Fluent tools — AgentController (AIMock + mocked WordPress MCP)', () 
       },
     ]);
     expect(blob).toContain('I added Grace Hopper to your CRM.');
+  });
+
+  it('"Always allow edit" never covers an outward-facing write (a campaign draft)', async () => {
+    // Its own user: an "Always allow" lasts for the user's session, not just this thread.
+    const session = await newSession('u-fluent-always');
+    // Always allow edits, from upsert-contact's card.
+    const first = await turn('Add Grace Hopper to my CRM', 'always_allow_category', session);
+    expect(first.approvals).toEqual(['fluent-crm-upsert-contact']);
+    // The grant took: the same edit now runs with no card.
+    const again = await turn('Add Grace Hopper to my CRM', 'approve', session);
+    expect(again.approvals).toEqual([]);
+    // A campaign draft still asks.
+    const before = wp.calls.length;
+    const campaign = await turn(
+      'Draft a campaign announcing the Climate Seed Fund',
+      'decline',
+      session,
+    );
+    expect(campaign.approvals).toEqual(['fluent-crm-upsert-campaign']);
+    expect(wp.calls.length).toBe(before);
   });
 
   it('a declined write never reaches WordPress', async () => {

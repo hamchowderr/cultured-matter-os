@@ -183,12 +183,29 @@ describe('Fluent tools from the three MCP servers', () => {
 });
 
 describe('Fluent approvals, Plan mode and forked runs', () => {
-  it('reads are `read`, writes `edit`, booking writes ask every time', () => {
+  it('reads are `read`, plain writes `edit`, and the outward-facing writes ask every time', () => {
     for (const name of FLUENT_READ_TOOLS) expect(resolveToolCategory(name)).toBe('read');
-    expect(resolveToolCategory('fluent-crm-upsert-contact')).toBe('edit');
-    expect(resolveToolCategory('fluentform-update-form-fields')).toBe('edit');
-    expect(resolveToolCategory('fluent-booking-create-booking')).toBeNull();
-    expect(resolveToolCategory('fluent-booking-manage-booking')).toBeNull();
+    for (const name of [
+      'fluent-crm-upsert-contact',
+      'fluent-crm-add-contact-note',
+      'fluent-crm-manage-tag',
+      'fluent-crm-manage-list',
+    ]) {
+      expect(resolveToolCategory(name)).toBe('edit');
+    }
+    // `null`: an "Always allow edit" never covers them.
+    for (const name of [
+      'fluent-booking-create-booking',
+      'fluent-booking-manage-booking',
+      'fluent-crm-upsert-campaign',
+      'fluentform-upsert-email-notification',
+      'fluentform-update-form-fields',
+      'fluentform-update-form-styling',
+    ]) {
+      expect(resolveToolCategory(name)).toBeNull();
+    }
+    // Every write is one or the other.
+    for (const name of FLUENT_WRITE_TOOLS) expect(resolveToolCategory(name)).not.toBe('read');
     expect(fluentToolCategory('fluent-crm-delete-contact')).toBeUndefined();
   });
 
