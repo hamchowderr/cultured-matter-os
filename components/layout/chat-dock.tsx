@@ -199,10 +199,13 @@ const GREETING = {
 const AssistantPanel = React.memo(function AssistantPanel({
   onClose,
   onToolEnd,
+  onNavigate,
   className
 }: {
   onClose: () => void;
   onToolEnd: (tool: ToolEnd) => void;
+  /** A link in a reply opened one of the app's pages (the phone sheet closes; the dock stays). */
+  onNavigate?: () => void;
   className?: string;
 }) {
   // Suggestions for the page she is on: it stays mounted across pages, so they follow her.
@@ -216,6 +219,7 @@ const AssistantPanel = React.memo(function AssistantPanel({
       suggestions={suggestions}
       actions={actions}
       onToolEnd={onToolEnd}
+      onNavigate={onNavigate}
       className={cn(COMPOSER_LOOK, className ?? "min-h-0 flex-1")}
     />
   );
@@ -389,7 +393,7 @@ export function ChatDock() {
                 Ask about your work. Changes wait for your approval.
               </SheetDescription>
             </SheetHeader>
-            <AssistantPanel onClose={closeSheet} onToolEnd={onToolEnd} />
+            <AssistantPanel onClose={closeSheet} onToolEnd={onToolEnd} onNavigate={closeSheet} />
           </SheetContent>
         </Sheet>
       )}
