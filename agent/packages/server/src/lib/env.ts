@@ -144,6 +144,13 @@ const envSchema = z
       .string()
       .min(32, 'AGENT_SERVICE_TOKEN must be at least 32 chars')
       .optional(),
+    // Simone's WordPress, whose FluentCRM, Fluent Forms and Fluent Booking MCP servers give
+    // the agent its CRM, form and booking tools (src/mastra/lib/fluent.ts). The user is the
+    // agent's own WordPress user and the password one of its application passwords. Any of
+    // the three unset = no Fluent tools.
+    WORDPRESS_URL: z.string().url().optional(),
+    WORDPRESS_MCP_USER: z.string().optional(),
+    WORDPRESS_MCP_APP_PASSWORD: z.string().optional(),
 
     // Shared HMAC secret for JWT auth (@mastra/auth). When set, the server
     // gates all /api/* routes, the chat-kit contract routes AND Studio behind a
