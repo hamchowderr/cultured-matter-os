@@ -10,7 +10,7 @@ import { threadHasReply, type GmailMessage } from "@/actions/gmail";
 import type { Database } from "@/db";
 import * as t from "@/db/schema";
 import { GOOGLE_SCOPES } from "@/lib/google-scopes";
-import { parseAddressList, rawMessage } from "@/lib/google";
+import { googleTiming, parseAddressList, rawMessage } from "@/lib/google";
 import { freshDb } from "./test-db";
 
 let db: Database;
@@ -31,6 +31,8 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 beforeAll(async () => {
+  // Gmail calls are paced under the quota (lib/google.ts); no real waiting in tests.
+  googleTiming.sleep = async () => {};
   ({ db, cleanup } = await freshDb());
   await db.insert(t.users).values({ id: "u1", name: "Simone", email: ME });
   await db.insert(t.accounts).values({
@@ -216,7 +218,15 @@ describe("syncGoogle (Gmail and Google Contacts)", () => {
     });
 
     const first = await A.syncGoogle.run({}, ctx());
-    expect(first).toEqual({ created: 3, matched: 1, emailsLogged: 5 });
+    expect(first).toEqual({
+      created: 3,
+      matched: 1,
+      emailsLogged: 5,
+      read: 5,
+      total: 5,
+      done: true,
+      slowedDown: false
+    });
 
     const list = calls.filter((c) => c.url.pathname.endsWith("/users/me/messages"));
     expect(list.map((c) => c.url.searchParams.get("pageToken"))).toEqual([null, "p2"]);
@@ -258,7 +268,7 @@ describe("syncGoogle (Gmail and Google Contacts)", () => {
 
     // Running again adds nothing.
     const again = await A.syncGoogle.run({}, ctx());
-    expect(again).toEqual({ created: 0, matched: 4, emailsLogged: 0 });
+    expect(again).toMatchObject({ created: 0, matched: 4, emailsLogged: 0, done: true });
     expect(await db.select().from(t.contacts)).toHaveLength(4);
     expect(await db.select().from(t.contactEmails)).toHaveLength(5);
   });
@@ -278,10 +288,7 @@ describe("syncGoogle (Gmail and Google Contacts)", () => {
       ],
       ["pilot", "out", "c3", "https://mail.google.com/mail/u/simone%40simonepaz.com/#all/m-out-1"]
     ]);
-    const log = await db
-      .select()
-      .from(t.activityLog)
-      .where(eq(t.activityLog.action, "syncGoogle"));
+    const log = await db.select().from(t.activityLog).where(eq(t.activityLog.action, "syncGoogle"));
     expect(log[0].summary).toBe("Synced Gmail: 3 new people, 5 emails logged");
   });
 });

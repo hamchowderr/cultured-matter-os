@@ -110,6 +110,7 @@ const STATUS: Record<string, number> = {
   conflict: 409,
   unauthorized: 403,
   google_not_connected: 409,
+  rate_limited: 429,
   unavailable: 502
 };
 

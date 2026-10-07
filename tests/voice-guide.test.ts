@@ -32,6 +32,7 @@ import {
 } from "@/actions/voice";
 import type { Database } from "@/db";
 import * as t from "@/db/schema";
+import { googleTiming } from "@/lib/google";
 import { GOOGLE_SCOPES } from "@/lib/google-scopes";
 import {
   buildVoicePrompt,
@@ -136,6 +137,8 @@ const SITE_HTML = `<!doctype html><html><head><title>Cultured Matter</title><sty
 <footer>© 2026 Cultured Matter</footer><script>console.log("x")</script></body></html>`;
 
 beforeAll(async () => {
+  // Gmail retries (backoff) and pacing (lib/google.ts) run without real waiting here.
+  googleTiming.sleep = async () => {};
   ({ db, cleanup } = await freshDb());
   await db.insert(t.users).values({ id: "u1", name: "Simone", email: ME });
   await db.insert(t.accounts).values({

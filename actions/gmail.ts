@@ -3,7 +3,7 @@ import { createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
 import type { Executor } from "@/db";
-import { approvals, contactEmails, contacts, tasks } from "@/db/schema";
+import { approvals, contactEmails, contacts, gmailSync, tasks } from "@/db/schema";
 import { domainFromEmail } from "@/ingest/radar/types";
 import {
   gmail,
@@ -82,48 +82,114 @@ type LoggedMessage = {
 
 type Snapshot = { people: Person[]; messages: LoggedMessage[] };
 
-export async function fetchGmailSnapshot(session: GoogleSession, days: number) {
-  const [connections, otherContacts, messages] = await Promise.all([
-    pageAll<GooglePerson, "connections">(
-      (pageToken) =>
-        peopleApi(session, "/people/me/connections", {
-          personFields: "names,emailAddresses,organizations",
-          pageSize: 1000,
-          pageToken
-        }),
-      "connections",
-      MAX_CONTACTS
-    ),
-    // People she has emailed that Gmail saved on its own; only used for their names.
-    pageAll<GooglePerson, "otherContacts">(
-      (pageToken) =>
-        peopleApi(session, "/otherContacts", {
-          readMask: "names,emailAddresses",
-          pageSize: 1000,
-          pageToken
-        }),
-      "otherContacts",
-      MAX_CONTACTS
-    ),
-    fetchRecentMessages(session, days)
-  ]);
-  return toSnapshot(session, connections, otherContacts, messages);
+// Messages read per call of syncGoogle. Paced under Gmail's per-user quota (20 units a read,
+// lib/google.ts), a batch takes about 25 seconds, so each call stays well inside a request.
+export const SYNC_BATCH = 100;
+// A listing older than this is thrown away and listed again: mail has moved on.
+const LISTING_MAX_AGE_MS = 6 * 3_600_000;
+const SYNC_ID = "gmail";
+
+function fetchConnections(session: GoogleSession) {
+  return pageAll<GooglePerson, "connections">(
+    (pageToken) =>
+      peopleApi(session, "/people/me/connections", {
+        personFields: "names,emailAddresses,organizations",
+        pageSize: 1000,
+        pageToken
+      }),
+    "connections",
+    MAX_CONTACTS
+  );
 }
 
-async function fetchRecentMessages(session: GoogleSession, days: number) {
-  const ids = await pageAll<{ id: string }, "messages">(
+// People she has emailed that Gmail saved on its own; only used for their names.
+function fetchOtherContacts(session: GoogleSession) {
+  return pageAll<GooglePerson, "otherContacts">(
+    (pageToken) =>
+      peopleApi(session, "/otherContacts", {
+        readMask: "names,emailAddresses",
+        pageSize: 1000,
+        pageToken
+      }),
+    "otherContacts",
+    MAX_CONTACTS
+  );
+}
+
+// Her recent message ids, newest first (messages.list: 5 units a page of 100).
+function listRecentMessages(session: GoogleSession, days: number) {
+  return pageAll<{ id: string }, "messages">(
     (pageToken) =>
       gmail(session, "/messages", {
         query: { q: `newer_than:${days}d -in:drafts -in:chats`, maxResults: 100, pageToken }
       }),
     "messages",
     MAX_MESSAGES
-  );
-  return mapLimit(ids, 8, (m) =>
-    gmail<GmailMessage>(session, `/messages/${encodeURIComponent(m.id)}`, {
-      query: { format: "metadata", metadataHeaders: HEADERS }
-    })
-  );
+  ).then((ids) => ids.map((m) => m.id));
+}
+
+// Reads messages' headers (format=metadata, the From/To/Cc/Subject headers only). `done` are
+// the ids dealt with: read, or deleted since they were listed. When Gmail keeps asking us to
+// slow down after every retry, the reading stops there and `stopped` is set; the ids not done
+// are read next time.
+export async function readMessages(session: GoogleSession, ids: string[]) {
+  let stopped = false;
+  const done = new Set<string>();
+  const read = await mapLimit(ids, 4, async (id) => {
+    if (stopped) return null;
+    try {
+      const m = await gmailOptional<GmailMessage>(session, `/messages/${encodeURIComponent(id)}`, {
+        format: "metadata",
+        metadataHeaders: HEADERS
+      });
+      done.add(id);
+      return m;
+    } catch (e) {
+      if (e instanceof ActionError && e.code === "rate_limited") {
+        stopped = true;
+        return null;
+      }
+      throw e;
+    }
+  });
+  return { messages: read.filter((m): m is GmailMessage => !!m), done, stopped };
+}
+
+type SyncState = typeof gmailSync.$inferSelect;
+
+// One step of a sync: on the first, list her recent messages and read her Google contacts;
+// then read the next batch of messages. `remaining` are the ids still to read after it.
+export async function fetchSyncBatch(
+  db: Executor,
+  session: GoogleSession,
+  days: number,
+  now = Date.now()
+) {
+  const [state] = await db.select().from(gmailSync).where(eq(gmailSync.id, SYNC_ID));
+  const resume =
+    state &&
+    state.pending.length > 0 &&
+    state.days === days &&
+    now - state.listedAt.getTime() < LISTING_MAX_AGE_MS;
+  const [listing, connections, otherContacts] = await Promise.all([
+    resume ? Promise.resolve(null) : listRecentMessages(session, days),
+    // Her contacts are imported with the first batch only.
+    resume ? Promise.resolve([] as GooglePerson[]) : fetchConnections(session),
+    fetchOtherContacts(session)
+  ]);
+  const pending = listing ?? (state as SyncState).pending;
+  const total = listing ? listing.length : (state as SyncState).total;
+  const listedAt = listing ? new Date(now) : (state as SyncState).listedAt;
+
+  const batch = pending.slice(0, SYNC_BATCH);
+  const { messages, done, stopped } = await readMessages(session, batch);
+  const remaining = pending.filter((id) => !done.has(id));
+  return {
+    snapshot: toSnapshot(session, connections, otherContacts, messages),
+    progress: { days, remaining, total, listedAt, read: done.size },
+    // Gmail stopped this batch short; the rest waits in `remaining` for the next call.
+    slowedDown: !!stopped
+  };
 }
 
 function personFrom(email: string, name: string | null): Person {
@@ -227,14 +293,24 @@ async function contactsByEmail(db: Executor) {
 export const syncGoogle = defineAction({
   name: "syncGoogle",
   description:
-    "Import Google contacts and people she emailed with recently in Gmail into People (matched by email, never duplicated), and log recent emails with each contact. One-way: nothing is changed in Gmail or Google Contacts.",
+    "Import Google contacts and people she emailed with recently in Gmail into People (matched by email, never duplicated), and log recent emails with each contact. One-way: nothing is changed in Gmail or Google Contacts. Works in batches: each call reads the next batch of messages and saves it; call again while `done` is false.",
   kind: "write",
   input: z.object({ days: z.number().int().min(1).max(365).default(60) }),
-  output: z.object({ created: z.number(), matched: z.number(), emailsLogged: z.number() }),
+  output: z.object({
+    created: z.number(),
+    matched: z.number(),
+    emailsLogged: z.number(),
+    // Messages read so far in this sync, out of `total` listed.
+    read: z.number(),
+    total: z.number(),
+    done: z.boolean(),
+    // Gmail asked us to slow down and this batch stopped short; the next call continues.
+    slowedDown: z.boolean()
+  }),
   async prepare(input, db) {
-    return fetchGmailSnapshot(await googleSession(db), input.days);
+    return fetchSyncBatch(db, await googleSession(db), input.days);
   },
-  async handler(_input, db, snapshot) {
+  async handler(_input, db, { snapshot, progress, slowedDown }) {
     const known = await contactsByEmail(db);
     const fresh = snapshot.people.filter((p) => !known.has(p.email));
     const matched = snapshot.people.filter((p) => known.has(p.email));
@@ -289,11 +365,30 @@ export const syncGoogle = defineAction({
         .returning({ id: contactEmails.id });
       emailsLogged += inserted.length;
     }
-    return { created: fresh.length, matched: matched.length, emailsLogged };
+    // Where this sync stands, so the next call (or a later one) continues from here.
+    const state = {
+      days: progress.days,
+      pending: progress.remaining,
+      total: progress.total,
+      listedAt: progress.listedAt
+    };
+    await db
+      .insert(gmailSync)
+      .values({ id: SYNC_ID, ...state })
+      .onConflictDoUpdate({ target: gmailSync.id, set: state });
+    return {
+      created: fresh.length,
+      matched: matched.length,
+      emailsLogged,
+      read: progress.total - progress.remaining.length,
+      total: progress.total,
+      done: progress.remaining.length === 0,
+      slowedDown
+    };
   },
   log: (_input, r) => ({
     entityType: "contact",
-    summary: `Synced Gmail: ${r.created} new ${r.created === 1 ? "person" : "people"}, ${r.emailsLogged} emails logged`,
+    summary: `Synced Gmail${r.done ? "" : ` (${r.read} of ${r.total} emails read so far)`}: ${r.created} new ${r.created === 1 ? "person" : "people"}, ${r.emailsLogged} emails logged`,
     data: r
   })
 });
@@ -502,7 +597,12 @@ export const checkGmailReplies = defineAction({
     const rows = await db
       .select({ title: tasks.title, projectId: tasks.projectId })
       .from(tasks)
-      .where(inArray(tasks.id, r.replied.map((t) => t.id)));
+      .where(
+        inArray(
+          tasks.id,
+          r.replied.map((t) => t.id)
+        )
+      );
     const { sendPush, replyPush } = await import("@/lib/push");
     await sendPush(db, "replies", replyPush(rows));
   }
