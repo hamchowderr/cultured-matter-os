@@ -191,6 +191,7 @@ describe('Fluent tools — AgentController (AIMock + mocked WordPress MCP)', () 
     expect(gate.args).toEqual({
       id: 32,
       page: '/',
+      live: true,
       changes: [
         {
           path: '10.0.0',

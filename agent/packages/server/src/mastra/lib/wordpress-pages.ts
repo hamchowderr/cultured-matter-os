@@ -11,8 +11,9 @@ import { createTool } from '@mastra/core/tools';
  *
  * update-page is offered in a different shape from the server's, so its approval card shows
  * what the page says now and what it will say: each change carries `before` and `after`, and
- * the call names the page's address. Once Simone approves, the tool asks WordPress for a dry
- * run of exactly that change and saves it only if WordPress reports the same page, the same
+ * the call names the page's address and whether it is published (`live`). Once Simone
+ * approves, the tool asks WordPress for a dry run of exactly that change and saves it only if
+ * WordPress reports the same page, address and published state, the same
  * `before` and the same `after` the card showed. If the page changed in the meantime, or
  * WordPress would store the text differently, nothing is saved and the agent gets the real
  * before/after to show her again.
@@ -59,7 +60,12 @@ export const UPDATE_PAGE_INPUT = {
     page: {
       type: 'string',
       description:
-        'The page\'s address on the site, from get-page\'s "path" ("/" is the home page).',
+        'The page\'s address on the site, from get-page\'s "path" ("/" is the home page). For a page with no address yet (path null), "none".',
+    },
+    live: {
+      type: 'boolean',
+      description:
+        'Whether the page is published (get-page\'s status "publish"), so the change shows on the site straight away. False for a draft, which is not on the site.',
     },
     title: {
       type: 'object',
@@ -85,13 +91,14 @@ export const UPDATE_PAGE_INPUT = {
       },
     },
   },
-  required: ['id', 'page'],
+  required: ['id', 'page', 'live'],
   additionalProperties: false,
 } as const;
 
 export type UpdatePageInput = {
   id: number;
   page: string;
+  live: boolean;
   title?: { before: string; after: string };
   changes?: { path: string; before: Content; after: Content }[];
 };
@@ -100,7 +107,8 @@ export type UpdatePageInput = {
 type UpdatePageResult = {
   id: number;
   status?: string;
-  path?: string;
+  /** Where the page is (or will be once published); null when it has no slug yet. */
+  path?: string | null;
   title?: { before: string; after: string };
   changes?: { path: string; before: Content; after: Content }[];
   saved?: boolean;
@@ -193,8 +201,21 @@ export function resolveAgainstPage(
 ): { resolved: Resolved; problems: string[] } {
   const problems: string[] = [];
   const resolved: Resolved = { changes: [] };
-  if (dry.path !== undefined && !same(dry.path, input.page)) {
-    problems.push(`Page ${input.id} is at "${dry.path}", not "${input.page}".`);
+  // The card names the page by address and says whether the change goes live.
+  const address = dry.path === null ? 'none' : dry.path;
+  if (address !== undefined && !same(address, input.page)) {
+    problems.push(
+      dry.path === null
+        ? `Page ${input.id} has no address yet.`
+        : `Page ${input.id} is at "${dry.path}", not "${input.page}".`,
+    );
+  }
+  if (dry.status !== undefined && (dry.status === 'publish') !== input.live) {
+    problems.push(
+      dry.status === 'publish'
+        ? `Page ${input.id} is published: the change would show on the site straight away.`
+        : `Page ${input.id} is not published (status ${dry.status}): the change would not show on the site.`,
+    );
   }
   if (input.title) {
     const title = onPageText(input.title.before, input.title.after, dry.title?.before ?? '');
@@ -265,7 +286,7 @@ function serverRequest(id: number, resolved: Resolved) {
 export function updatePageTool(description: string, server: ServerTool) {
   return createTool({
     id: 'cultured-matter-update-page',
-    description: `${description}\n\nIn this chat, give each change's "before" (copied exactly from get-page) and "after", and the page's address from get-page as "page", so the approval card shows the change. Pass "title" only to change the title. Once the user approves, the change is checked against the page and saved; if the page no longer matches "before", nothing is saved and you get what it says now.`,
+    description: `${description}\n\nIn this chat, give each change's "before" (copied exactly from get-page) and "after", the page's address from get-page as "page", and whether the page is published as "live", so the approval card shows the change and whether it goes live. Pass "title" only to change the title. Once the user approves, the change is checked against the page and saved; if the page no longer matches "before", nothing is saved and you get what it says now.`,
     inputSchema: UPDATE_PAGE_INPUT as unknown as Record<string, unknown>,
     execute: async (raw, context) => {
       const input = raw as UpdatePageInput;

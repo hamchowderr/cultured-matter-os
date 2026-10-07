@@ -221,6 +221,7 @@ describe('WordPress tools from the four MCP servers', () => {
       {
         id: 32,
         page: '/',
+        live: true,
         changes: [
           {
             path: '10.0.0',
@@ -247,6 +248,7 @@ describe('WordPress tools from the four MCP servers', () => {
       {
         id: 32,
         page: '/',
+        live: true,
         changes: [{ path: '10.0.0', before: { text: 'Old heading' }, after: { text: 'New' } }],
       },
       {},
