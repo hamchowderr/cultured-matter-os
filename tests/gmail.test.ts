@@ -284,9 +284,14 @@ describe("syncGoogle (Gmail and Google Contacts)", () => {
         "Re: pilot",
         "in",
         "c3",
-        "https://mail.google.com/mail/u/simone%40simonepaz.com/#all/m-in-3"
+        "https://mail.google.com/mail/?authuser=simone%40simonepaz.com#all/m-in-3"
       ],
-      ["pilot", "out", "c3", "https://mail.google.com/mail/u/simone%40simonepaz.com/#all/m-out-1"]
+      [
+        "pilot",
+        "out",
+        "c3",
+        "https://mail.google.com/mail/?authuser=simone%40simonepaz.com#all/m-out-1"
+      ]
     ]);
     const log = await db.select().from(t.activityLog).where(eq(t.activityLog.action, "syncGoogle"));
     expect(log[0].summary).toBe("Synced Gmail: 3 new people, 5 emails logged");
@@ -352,7 +357,7 @@ describe("Draft follow-up", () => {
       result: {
         draftId: "r-draft-1",
         webLink:
-          "https://mail.google.com/mail/u/simone%40simonepaz.com/#drafts?compose=msg-draft-1",
+          "https://mail.google.com/mail/?authuser=simone%40simonepaz.com#drafts?compose=msg-draft-1",
         threadId: "thread-lena",
         taskId
       }

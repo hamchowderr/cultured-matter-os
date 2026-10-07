@@ -413,7 +413,9 @@ export function rawMessage(m: {
 }
 
 // Links that open Gmail on her mailbox, whichever Google account is first in the browser.
+// `?authuser=<address>` picks the account; an address in the `/u/` path can fail with
+// "account temporarily unavailable" (6446).
 export const gmailMessageLink = (mailbox: string, messageId: string) =>
-  `https://mail.google.com/mail/u/${encodeURIComponent(mailbox)}/#all/${messageId}`;
+  `https://mail.google.com/mail/?authuser=${encodeURIComponent(mailbox)}#all/${messageId}`;
 export const gmailDraftLink = (mailbox: string, messageId: string) =>
-  `https://mail.google.com/mail/u/${encodeURIComponent(mailbox)}/#drafts?compose=${messageId}`;
+  `https://mail.google.com/mail/?authuser=${encodeURIComponent(mailbox)}#drafts?compose=${messageId}`;
