@@ -32,10 +32,11 @@ import { dataSubagent } from '../agents/data';
 import { researchSubagentFor } from '../agents/research';
 import { reviewerSubagent } from '../agents/reviewer';
 import { writerSubagent } from '../agents/writer';
-import { readActionNames } from '../tools/app-actions';
 import type { ScreencastBrowser } from '../routes/types';
+import { readActionNames } from '../tools/app-actions';
 import { type ChatFeatures, features as defaultFeatures } from './features';
 import { DISCOVERY_BACKOFF_MS, disconnectFirecrawl, getFirecrawlTools } from './firecrawl';
+import { FLUENT_READ_TOOLS } from './fluent';
 import { createDefaultMemory, getSharedStore } from './memory';
 import { AUTO_ALLOWED_TOOLS, PLAN_MODE_TOOLS, resolveToolCategory } from './tool-categories';
 import { withTurnContext } from './turn-context';
@@ -341,8 +342,9 @@ export async function getChatSession(resourceId: string = CHAT_RESOURCE_ID): Pro
   for (const tool of AUTO_ALLOWED_TOOLS) {
     session.grantTool(tool);
   }
-  // Cultured Matter: app actions that only read run without a card; writes stay gated.
-  for (const tool of readActionNames()) {
+  // Cultured Matter: app actions and Fluent tools (lib/fluent.ts) that only read run
+  // without a card; writes stay gated.
+  for (const tool of [...readActionNames(), ...FLUENT_READ_TOOLS]) {
     session.grantTool(tool);
   }
   return session;

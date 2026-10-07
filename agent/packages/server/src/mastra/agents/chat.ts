@@ -4,13 +4,14 @@ import { TaskSignalProvider } from '@mastra/core/signals';
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { env } from '../../lib/env';
+import { businessContextSection, voiceGuideSection } from '../lib/business-context';
 import { type ChatFeatures, features as defaultFeatures } from '../lib/features';
+import { getFluentTools } from '../lib/fluent';
 import { putImage } from '../lib/image-store';
 import { liveScorers } from '../lib/live-scorers';
 import { createDefaultMemory } from '../lib/memory';
 import { defaultInputProcessors, defaultOutputProcessors } from '../lib/processors';
 import { toolScopeProcessor } from '../lib/tool-scope';
-import { businessContextSection, voiceGuideSection } from '../lib/business-context';
 import { TurnContextProcessor, turnContextSections } from '../lib/turn-context';
 import { getChatWorkspace } from '../lib/workspace';
 import { getAppActionTools } from '../tools/app-actions';
@@ -382,8 +383,13 @@ export function createChatAgent(f: ChatFeatures = defaultFeatures): Agent {
         ? getChatWorkspace()
         : undefined,
     // Cultured Matter: the app's named actions join the kit's tools. They are loaded from
-    // the app at boot (tools/app-actions.ts), so the list is read per request.
-    tools: async () => ({ ...chatTools(f), ...(await getAppActionTools()) }),
+    // the app at boot (tools/app-actions.ts), so the list is read per request. So are the
+    // FluentCRM, Fluent Forms and Fluent Booking tools from her WordPress (lib/fluent.ts).
+    tools: async () => ({
+      ...chatTools(f),
+      ...(await getAppActionTools()),
+      ...(await getFluentTools()),
+    }),
     // Default execution options applied to EVERY run: enable
     // Anthropic extended thinking so the model emits real `reasoning` parts (→ the
     // <Reasoning> element). Thinking requires temperature 1. Ignored by non-Anthropic

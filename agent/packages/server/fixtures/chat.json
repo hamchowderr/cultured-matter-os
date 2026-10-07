@@ -1170,6 +1170,82 @@
     },
 
     {
+      "_comment": "CULTURED MATTER Fluent tools (lib/fluent.ts), served by scripts/fluent-mock.ts. A READ: fluent-crm-list-contacts is granted for the session, so it runs with no approval card. The answer fixture only matches when the tool result carries the mocked contact. tests/integration/fluent.test.ts.",
+      "match": { "userMessage": "Who is in my CRM?", "hasToolResult": false },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_cm_contacts",
+            "name": "fluent-crm-list-contacts",
+            "arguments": { "per_page": 20 }
+          }
+        ]
+      }
+    },
+    {
+      "match": { "toolCallId": "toolu_cm_contacts", "toolResultContains": "Lovelace" },
+      "response": { "content": "Your CRM has one contact: Ada Lovelace (subscribed)." }
+    },
+    {
+      "_comment": "A Fluent WRITE: fluent-crm-upsert-contact stops at the approval card and reaches WordPress only when approved. Decline fixture first (first match wins).",
+      "match": { "userMessage": "Add Grace Hopper to my CRM", "hasToolResult": false },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_cm_upsert",
+            "name": "fluent-crm-upsert-contact",
+            "arguments": {
+              "email": "grace@hopper.example",
+              "first_name": "Grace",
+              "last_name": "Hopper"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "toolCallId": "toolu_cm_upsert",
+        "toolResultContains": "not approved by the user"
+      },
+      "response": { "content": "Okay, I didn't add Grace." }
+    },
+    {
+      "match": { "toolCallId": "toolu_cm_upsert" },
+      "response": { "content": "I added Grace Hopper to your CRM." }
+    },
+    {
+      "_comment": "A guarded Fluent WRITE: create-booking asks once; after approval the tool runs the plugin's dry run and the confirmed call itself.",
+      "match": {
+        "userMessage": "Book Ada for a call on 20 October at 10am",
+        "hasToolResult": false
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_cm_booking",
+            "name": "fluent-booking-create-booking",
+            "arguments": {
+              "event_id": 1,
+              "start_time": "2026-10-20 10:00:00",
+              "name": "Ada Lovelace",
+              "email": "ada@lovelace.example"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": { "toolCallId": "toolu_cm_booking", "toolResultContains": "booking_id" },
+      "response": { "content": "Booked: Ada Lovelace on 20 October at 10:00." }
+    },
+    {
+      "_comment": "A plain turn while her WordPress is down: the chat still answers (tests/integration/fluent-down.test.ts).",
+      "match": { "userMessage": "Say hello to Simone." },
+      "response": { "content": "Hello, Simone!" }
+    },
+
+    {
       "_comment": "An image attachment from the composer's attach button reaches the model (tests/integration/attachments.test.ts reads AIMock's journal to prove the image block was sent).",
       "match": { "userMessage": "What is in this picture?" },
       "response": { "content": "A small red square." }
