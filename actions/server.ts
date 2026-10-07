@@ -52,6 +52,14 @@ export async function searchGrants(input: In<typeof A.searchGrants>) {
 export async function setGrantStatus(input: In<typeof A.setGrantStatus>) {
   return toResult(() => A.setGrantStatus.run(input, inAction), REFRESH);
 }
+// The grant's page: its drafted application. Drafting itself runs through the streaming route
+// (app/api/grants/[id]/draft), which shows progress.
+export async function getGrantApplication(input: In<typeof A.getGrantApplication>) {
+  return toResult(() => A.getGrantApplication.run(input));
+}
+export async function updateGrantApplication(input: In<typeof A.updateGrantApplication>) {
+  return toResult(() => A.updateGrantApplication.run(input, inAction), REFRESH);
+}
 export async function tasksDueBetween(input: In<typeof A.tasksDueBetween>) {
   return toResult(() => A.tasksDueBetween.run(input));
 }

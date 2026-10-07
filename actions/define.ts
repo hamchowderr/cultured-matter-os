@@ -10,6 +10,9 @@ export type ActionContext = {
   // step runs once the response is sent; cron routes, scripts and tests leave it out and the
   // step is awaited before .run returns.
   defer?: (task: () => Promise<void>) => void;
+  // Progress from a long write's prepare step (the grant page's draft progress); most callers
+  // leave it out.
+  onStep?: (step: string) => void;
 };
 
 type LogEntry = {
@@ -62,7 +65,7 @@ type ActionConfig<I extends z.ZodType, O extends z.ZodType, P = undefined> = {
       kind: "write";
       // Optional step that runs before the transaction opens: network calls (Gmail, People API,
       // token refresh) must not hold the database lock. Its result is passed to the handler.
-      prepare?: (input: z.output<I>, db: Database) => Promise<P>;
+      prepare?: (input: z.output<I>, db: Database, ctx: ActionContext) => Promise<P>;
       handler: (input: z.output<I>, db: Executor, prepared: P) => Promise<z.input<O>>;
       // Every write lands in activity_log, in the same transaction.
       log: (input: z.output<I>, result: z.output<O>) => LogEntry;
@@ -98,7 +101,7 @@ export function defineAction<I extends z.ZodType, O extends z.ZodType, P = undef
         return config.output.parse(await config.handler(input, db));
       }
 
-      const prepared = (config.prepare ? await config.prepare(input, db) : undefined) as P;
+      const prepared = (config.prepare ? await config.prepare(input, db, ctx ?? {}) : undefined) as P;
       const committed = await db.transaction(async (tx) => {
         const result = config.output.parse(await config.handler(input, tx, prepared));
         const entry = config.log(input, result);
