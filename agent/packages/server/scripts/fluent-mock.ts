@@ -1,6 +1,7 @@
 /**
- * Simone's three Fluent MCP servers (FluentCRM, Fluent Forms, Fluent Booking), mocked with
- * AIMock's MCPMock, for the tests and for a local run that never touches her WordPress.
+ * Simone's three Fluent MCP servers (FluentCRM, Fluent Forms, Fluent Booking) and her site's
+ * page server, mocked with AIMock's MCPMock, for the tests and for a local run that never
+ * touches her WordPress.
  *
  * Each advertises the tool list the real server returns (fixtures/fluent-mcp-tools.json,
  * from scripts/capture-fluent-tools.ts) at the same path under /wp-json, and answers the
@@ -29,6 +30,7 @@ const ROUTES = {
   'fluent-crm/mcp': 'crm',
   'fluentform/mcp': 'forms',
   'fluent-booking/mcp': 'booking',
+  'cultured-matter/mcp': 'pages',
 } as const;
 
 /** The tools each real server lists, by server key (without output schemas). */
@@ -52,6 +54,22 @@ export const MOCK_CONTACT = {
   last_name: 'Lovelace',
   status: 'subscribed',
 };
+
+/**
+ * The home page the mocked page server holds: one heading block at path 10.0.0, as
+ * get-page lists it. Each mock starts from a fresh copy.
+ */
+export const MOCK_HOME = {
+  id: 32,
+  title: 'Home',
+  slug: 'home',
+  status: 'publish',
+  path: '/',
+  is_front_page: true,
+  blocks: [{ path: '10.0.0', block: 'core/heading', kind: 'text', text: 'Work with us.' }],
+};
+
+type MockPage = typeof MOCK_HOME;
 
 /** A plugin's success envelope (MCPHelper::success). */
 const ok = (data: unknown) =>
@@ -78,6 +96,7 @@ export type FluentMock = {
 export async function startFluentMock(port = 0): Promise<FluentMock> {
   const calls: FluentMock['calls'] = [];
   const tokens = new Set<string>();
+  const home: MockPage = structuredClone(MOCK_HOME);
   const lists = fluentToolLists();
   const mocks = new Map<string, MCPMock>();
   for (const [route, server] of Object.entries(ROUTES)) {
@@ -87,7 +106,7 @@ export async function startFluentMock(port = 0): Promise<FluentMock> {
       mock.onToolCall(def.name, (raw) => {
         const args = (raw ?? {}) as Record<string, unknown>;
         calls.push({ name: def.name, args });
-        return answer(def.name, args, tokens);
+        return answer(def.name, args, tokens, home);
       });
     }
     mocks.set(`/wp-json/${route}`, mock);
@@ -133,7 +152,15 @@ export async function startFluentMock(port = 0): Promise<FluentMock> {
 }
 
 /** What a mocked tool returns. Errors are thrown, which MCPMock sends as an error result. */
-function answer(name: string, args: Record<string, unknown>, tokens: Set<string>): string {
+function answer(
+  name: string,
+  args: Record<string, unknown>,
+  tokens: Set<string>,
+  home: MockPage,
+): string {
+  // Her site's page tools (cultured-matter-headless): update-page answers a dry run and a
+  // save with the same before/after shape, `saved` telling them apart.
+  if (name.startsWith('cultured-matter-')) return pageAnswer(name, args, home);
   // The guarded writes (Fluent Forms, Fluent Booking): preview first, then act on the token.
   if ('confirm_token' in args || args.dry_run === true) {
     if (args.dry_run === true) {
@@ -154,6 +181,48 @@ function answer(name: string, args: Record<string, unknown>, tokens: Set<string>
       return ok({ booking_id: 31, status: 'scheduled', start_time: args.start_time });
     default:
       return ok({});
+  }
+}
+
+/** What a mocked page tool returns (the JSON the real server puts in structuredContent). */
+function pageAnswer(name: string, args: Record<string, unknown>, home: MockPage): string {
+  const { blocks, ...summary } = home;
+  switch (name) {
+    case 'cultured-matter-list-pages':
+      return JSON.stringify({ pages: [summary] });
+    case 'cultured-matter-get-page':
+      return JSON.stringify(home);
+    case 'cultured-matter-create-page':
+      return JSON.stringify({
+        ...summary,
+        id: 40,
+        title: args.title,
+        status: 'draft',
+        path: '/new-page',
+      });
+    case 'cultured-matter-update-page': {
+      const requested = (args.changes ?? []) as { path: string; text?: string }[];
+      const changes = requested.map((change) => {
+        const block = blocks.find((b) => b.path === change.path);
+        if (!block) throw new Error(`Path ${change.path}: no such block.`);
+        return { path: change.path, before: { ...block }, after: { ...block, ...change } };
+      });
+      const saved = args.dry_run !== true;
+      if (saved) {
+        for (const change of changes)
+          Object.assign(blocks.find((b) => b.path === change.path) ?? {}, change.after);
+      }
+      return JSON.stringify({
+        id: home.id,
+        status: home.status,
+        path: home.path,
+        changes,
+        saved,
+        ...(saved ? { latest_revision_id: 99 } : {}),
+      });
+    }
+    default:
+      return '{}';
   }
 }
 
