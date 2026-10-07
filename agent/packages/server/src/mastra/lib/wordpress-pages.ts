@@ -284,7 +284,7 @@ function serverRequest(id: number, resolved: Resolved) {
  * `dry_run`.
  */
 export function updatePageTool(description: string, server: ServerTool) {
-  return createTool({
+  const tool = createTool({
     id: 'cultured-matter-update-page',
     description: `${description}\n\nIn this chat, give each change's "before" (copied exactly from get-page) and "after", the page's address from get-page as "page", and whether the page is published as "live", so the approval card shows the change and whether it goes live. Pass "title" only to change the title. Once the user approves, the change is checked against the page and saved; if the page no longer matches "before", nothing is saved and you get what it says now.`,
     inputSchema: UPDATE_PAGE_INPUT as unknown as Record<string, unknown>,
@@ -315,6 +315,26 @@ export function updatePageTool(description: string, server: ServerTool) {
       const stored = storedDifferently(resolved, dry);
       if (stored.length) return refuse(stored, dry);
       return server.execute(request, context);
+    },
+  });
+  // The dry run of exactly what the card asks for, before the card is shown: the page as it
+  // is (address, published or not) and each block's text before and after.
+  return Object.assign(tool, {
+    preview: async (raw: unknown) => {
+      const input = raw as UpdatePageInput;
+      const card: Resolved = {
+        ...(input.title ? { title: input.title.after } : {}),
+        changes: (input.changes ?? []).map((c) => ({ path: c.path, after: c.after })),
+      };
+      const dry = structured(
+        await server.execute({ ...serverRequest(input.id, card), dry_run: true }, {}),
+      );
+      return {
+        path: dry.path ?? null,
+        status: dry.status ?? null,
+        title: dry.title ?? null,
+        changes: (dry.changes ?? []).map((c) => ({ path: c.path, before: c.before, after: c.after })),
+      };
     },
   });
 }

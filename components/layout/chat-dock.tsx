@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import * as React from "react";
 
 import { ChatPanel } from "@/components/chat-panel/chat-panel";
+import { approvalViews } from "@/components/chat/approval-views";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -220,6 +221,7 @@ const AssistantPanel = React.memo(function AssistantPanel({
       actions={actions}
       onToolEnd={onToolEnd}
       onNavigate={onNavigate}
+      approvalViews={approvalViews}
       className={cn(COMPOSER_LOOK, className ?? "min-h-0 flex-1")}
     />
   );

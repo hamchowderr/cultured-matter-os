@@ -261,6 +261,56 @@ describe('WordPress tools from the four MCP servers', () => {
     expect(wp.calls.slice(before).map((c) => c.args.dry_run)).toEqual([true]);
   });
 
+  it("previews for the approval card: the plugin's dry run, without its confirm token", async () => {
+    const tools = await offered();
+    const before = wp.calls.length;
+    const preview = await tools['fluent-booking-create-booking'].preview({
+      event_id: 1,
+      start_time: '2026-10-20 10:00:00',
+      name: 'Ada Lovelace',
+      email: 'ada@lovelace.example',
+    });
+    await tools.disconnect();
+    // The mock's dry run previews the call itself; no token reaches the card.
+    expect(preview).toMatchObject({ tool: 'fluent-booking-create-booking' });
+    expect(JSON.stringify(preview)).not.toContain('token-');
+    // Only a dry run: nothing was booked.
+    expect(wp.calls.slice(before).map((c) => c.args.dry_run)).toEqual([true]);
+  });
+
+  it('previews a page update as the page and its blocks before and after, saving nothing', async () => {
+    const tools = await offered();
+    const before = wp.calls.length;
+    const preview = await tools['cultured-matter-update-page'].preview({
+      id: 32,
+      page: '/',
+      live: true,
+      changes: [{ path: '10.0.0', before: { text: 'x' }, after: { text: 'Work with us today.' } }],
+    });
+    await tools.disconnect();
+    expect(preview).toMatchObject({
+      path: '/',
+      status: 'publish',
+      changes: [{ path: '10.0.0', after: { text: 'Work with us today.' } }],
+    });
+    expect(wp.calls.slice(before).every((c) => c.args.dry_run === true)).toBe(true);
+  });
+
+  it('previews upsert-contact as the contact as it is now, or none yet', async () => {
+    const tools = await offered();
+    const known = await tools['fluent-crm-upsert-contact'].preview({
+      email: 'ada@lovelace.example',
+      first_name: 'Augusta',
+    });
+    const fresh = await tools['fluent-crm-upsert-contact'].preview({ email: 'new@x.example' });
+    await tools.disconnect();
+    expect(known).toMatchObject({
+      exists: true,
+      contact: { first_name: 'Ada', last_name: 'Lovelace' },
+    });
+    expect(fresh).toEqual({ exists: false });
+  });
+
   it('with no WordPress settings there are no Fluent tools', async () => {
     expect(await getFluentTools()).toEqual({});
   });
