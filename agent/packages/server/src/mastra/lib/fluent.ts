@@ -4,20 +4,23 @@ import type { ToolCategory } from '@mastra/core/agent-controller';
 import { createTool } from '@mastra/core/tools';
 import { MCPClient } from '@mastra/mcp';
 import { env } from '../../lib/env';
+import { PAGE_READ_TOOLS, PAGE_WRITE_TOOLS, updatePageTool } from './wordpress-pages';
 
 /**
- * # Simone's FluentCRM, Fluent Forms and Fluent Booking (Cultured Matter)
+ * # Simone's FluentCRM, Fluent Forms, Fluent Booking and website pages (Cultured Matter)
  *
  * Her WordPress site runs the Fluent plugins, and each one ships its own MCP server through
  * the WordPress MCP Adapter bundled in Fluent Toolkit:
  *
  * - FluentCRM at `/wp-json/fluent-crm/mcp` (contacts, notes, tags, lists, campaigns);
  * - Fluent Forms at `/wp-json/fluentform/mcp` (forms, entries, styling, notifications);
- * - Fluent Booking at `/wp-json/fluent-booking/mcp` (bookings, slots, event types).
+ * - Fluent Booking at `/wp-json/fluent-booking/mcp` (bookings, slots, event types);
+ * - her site's own page tools at `/wp-json/cultured-matter/mcp` (lib/wordpress-pages.ts).
  *
- * All three speak Streamable HTTP and sign in with a WordPress application password
+ * All four speak Streamable HTTP and sign in with a WordPress application password
  * (HTTP Basic). The password belongs to a WordPress user made for the agent (`cm-agent`, a
- * subscriber) that holds only the Fluent permissions these tools need, so WordPress itself
+ * subscriber) that holds only the Fluent permissions and page capabilities (edit, never delete)
+ * these tools need, so WordPress itself
  * refuses anything outside them (deleting contacts or entries, sending email from FluentCRM
  * settings, other people's admin screens). Fluent Forms and Fluent Booking ship their MCP
  * switched off; it is switched on in each plugin's settings (or Fluent Toolkit's MCP page).
@@ -26,11 +29,12 @@ import { env } from '../../lib/env';
  * The chat agent carries the tools (its `tools`, next to the app actions; agents/chat.ts), so
  * a WordPress outage only costs the chat these tools for a while (DISCOVERY_BACKOFF_MS).
  *
- * The servers list about 55 tools. Only the ones named below are offered, by name, so a
+ * The servers list about 60 tools. Only the ones named below are offered, by name, so a
  * plugin update that adds a tool adds nothing here until it is put on a list on purpose:
  *
- * - FLUENT_READ_TOOLS look things up and run with no approval card, in Plan mode too.
- * - FLUENT_WRITE_TOOLS change her data and stop at the approval card every time.
+ * - FLUENT_READ_TOOLS and PAGE_READ_TOOLS look things up and run with no approval card, in
+ *   Plan mode too.
+ * - FLUENT_WRITE_TOOLS and PAGE_WRITE_TOOLS change her data and stop at the approval card.
  * - Everything else is left out: tools that send email (send-email-to-contact,
  *   send-test-email), delete (delete-contact, delete-contact-note, delete-submission),
  *   act on many records at once (bulk-upsert-contacts, apply-segments-to-contacts,
@@ -49,6 +53,8 @@ export const FLUENT_SERVERS = {
   crm: 'fluent-crm/mcp',
   forms: 'fluentform/mcp',
   booking: 'fluent-booking/mcp',
+  // The site's own page tools (the cultured-matter-headless plugin), on the same adapter.
+  pages: 'cultured-matter/mcp',
 } as const;
 
 type Server = keyof typeof FLUENT_SERVERS;
@@ -122,7 +128,18 @@ const ALWAYS_ASK = new Set<string>([
   'fluentform-upsert-email-notification',
   'fluentform-update-form-fields',
   'fluentform-update-form-styling',
+  // A change to a published page is live within seconds.
+  'cultured-matter-update-page',
 ]);
+
+/** Every read tool on her WordPress: no approval card, and offered in Plan mode and forks. */
+export const WORDPRESS_READ_TOOLS: readonly string[] = [...FLUENT_READ_TOOLS, ...PAGE_READ_TOOLS];
+
+/** Every write tool on her WordPress: each one stops at the approval card. */
+export const WORDPRESS_WRITE_TOOLS: readonly string[] = [
+  ...FLUENT_WRITE_TOOLS,
+  ...PAGE_WRITE_TOOLS,
+];
 
 /**
  * Writes guarded by the plugin's own dry run: the server previews the change and issues a
@@ -173,6 +190,7 @@ const RESTRICTIONS: Record<string, { remove?: string[]; enums?: Record<string, s
 export function serverOf(name: string): Server {
   if (name.startsWith('fluent-crm-')) return 'crm';
   if (name.startsWith('fluentform-')) return 'forms';
+  if (name.startsWith('cultured-matter-')) return 'pages';
   return 'booking';
 }
 
@@ -264,7 +282,7 @@ export function restrictDefinition(definition: Definition): Definition {
       };
     }
   }
-  const write = (FLUENT_WRITE_TOOLS as readonly string[]).includes(definition.name);
+  const write = WORDPRESS_WRITE_TOOLS.includes(definition.name);
   return {
     ...definition,
     ...(guarded
@@ -338,11 +356,15 @@ export async function loadFluentTools(client: MCPClient): Promise<ToolsInput> {
     console.warn(`Fluent ${server} tools unavailable: ${error}`);
   }
   const tools: ToolsInput = {};
-  for (const name of [...FLUENT_READ_TOOLS, ...FLUENT_WRITE_TOOLS]) {
+  for (const name of [...WORDPRESS_READ_TOOLS, ...WORDPRESS_WRITE_TOOLS]) {
     const serverName = serverOf(name);
     const definition = definitions[serverName]?.[name];
     if (!definition) continue;
-    if (isGuarded(definition)) {
+    if (name === 'cultured-matter-update-page') {
+      // Offered with before/after for the approval card (lib/wordpress-pages.ts).
+      const server = (await client.toolFromDefinition({ serverName, definition })) as MCPTool;
+      tools[name] = updatePageTool(definition.description ?? '', server);
+    } else if (isGuarded(definition)) {
       // The executable tool keeps the full schema: it is the one that sends the guard's inputs.
       const server = (await client.toolFromDefinition({ serverName, definition })) as MCPTool;
       tools[name] = guardedWriteTool(definition, server);
@@ -420,7 +442,7 @@ export async function disconnectFluent(): Promise<void> {
  * "Always allow" approves just that one call. Undefined for a tool that is not a Fluent one.
  */
 export function fluentToolCategory(name: string): ToolCategory | null | undefined {
-  if ((FLUENT_READ_TOOLS as readonly string[]).includes(name)) return 'read';
-  if (!(FLUENT_WRITE_TOOLS as readonly string[]).includes(name)) return undefined;
+  if (WORDPRESS_READ_TOOLS.includes(name)) return 'read';
+  if (!WORDPRESS_WRITE_TOOLS.includes(name)) return undefined;
   return ALWAYS_ASK.has(name) ? null : 'edit';
 }

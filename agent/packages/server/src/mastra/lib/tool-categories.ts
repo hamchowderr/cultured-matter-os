@@ -2,7 +2,7 @@ import type { ToolCategory } from '@mastra/core/agent-controller';
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace';
 import { appActionCategory } from '../tools/app-actions';
 import { FIRECRAWL_TOOLS } from './firecrawl';
-import { FLUENT_READ_TOOLS, fluentToolCategory } from './fluent';
+import { fluentToolCategory, WORDPRESS_READ_TOOLS } from './fluent';
 
 const { FILESYSTEM, SANDBOX, SEARCH, LSP } = WORKSPACE_TOOLS;
 
@@ -115,7 +115,7 @@ const CATEGORIES: Record<string, ToolCategory> = {
 };
 
 export function resolveToolCategory(toolName: string): ToolCategory | null {
-  // Cultured Matter: her Fluent tools (lib/fluent.ts) and the app actions are categorized
+  // Cultured Matter: her WordPress tools (lib/fluent.ts) and the app actions are categorized
   // by their own read/write kind.
   return CATEGORIES[toolName] ?? fluentToolCategory(toolName) ?? appActionCategory(toolName);
 }
@@ -136,8 +136,8 @@ export const READ_TOOLS: readonly string[] = Object.keys(CATEGORIES).filter(
  */
 export const PLAN_MODE_TOOLS: readonly string[] = [
   ...READ_TOOLS,
-  // Cultured Matter: the Fluent reads (CRM, forms, bookings) look things up too.
-  ...FLUENT_READ_TOOLS,
+  // Cultured Matter: the WordPress reads (CRM, forms, bookings, pages) look things up too.
+  ...WORDPRESS_READ_TOOLS,
   FILESYSTEM.WRITE_FILE,
   'submit_plan',
 ];
@@ -189,7 +189,7 @@ export const FORKED_RUN_TOOLS: readonly string[] = [
   ...new Set<string>([
     ...AUTO_ALLOWED_TOOLS,
     ...READ_TOOLS.filter((name) => name !== 'browser_goto'),
-    // Cultured Matter: the Fluent reads, which the live session also runs with no card.
-    ...FLUENT_READ_TOOLS,
+    // Cultured Matter: the WordPress reads, which the live session also runs with no card.
+    ...WORDPRESS_READ_TOOLS,
   ]),
 ];

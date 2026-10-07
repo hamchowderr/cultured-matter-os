@@ -2061,6 +2061,156 @@
           "destructiveHint": false
         }
       }
+    ],
+    "pages": [
+      {
+        "name": "cultured-matter-list-pages",
+        "description": "Lists the website's pages with id, title, slug, status (publish = live, draft = not shown) and address on the site.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["any", "publish", "draft", "pending", "private", "future"],
+              "default": "any"
+            }
+          }
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "pages": {
+              "type": "array"
+            }
+          }
+        },
+        "annotations": {
+          "title": "List website pages",
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      {
+        "name": "cultured-matter-get-page",
+        "description": "Returns a page's title, slug, status and its editable blocks. Each block has a \"path\" to use with update-page, its \"kind\" (text, button, image, html) and current content. Layout blocks (sections and grid areas) are not listed because they must not change. Set include_markup to also get the raw block markup (read only).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "description": "Page ID (from list-pages)."
+            },
+            "slug": {
+              "type": "string",
+              "description": "Page slug, e.g. \"series\". Used when no id is given."
+            },
+            "include_markup": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {}
+        },
+        "annotations": {
+          "title": "Get a website page",
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      {
+        "name": "cultured-matter-update-page",
+        "description": "Changes existing blocks of a page, addressed by the \"path\" from get-page. Text blocks take \"text\" (inline HTML: em, strong, a, br); buttons take \"text\" and/or \"href\"; images take \"url\" (a media library image) and/or \"alt\"; Custom HTML blocks take \"html\". Can also change the page title. Blocks cannot be added, removed or moved, so the layout is kept. Set dry_run to see the before/after without saving. Each save keeps a revision. On a published page the change is live within seconds.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer"
+            },
+            "title": {
+              "type": "string"
+            },
+            "changes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["path"],
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  },
+                  "href": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string"
+                  },
+                  "alt": {
+                    "type": "string"
+                  },
+                  "html": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "dry_run": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "required": ["id"]
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {}
+        },
+        "annotations": {
+          "title": "Update a website page",
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      {
+        "name": "cultured-matter-create-page",
+        "description": "Creates a new page as a draft (not shown on the site until it is published in WordPress). Pass template_page_id to start from a copy of an existing page's layout and content, then change its blocks with update-page. Alternatively pass \"content\" as block markup using the site's cm-section / cm-block classes (see the site repo's AGENTS.md).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "slug": {
+              "type": "string"
+            },
+            "template_page_id": {
+              "type": "integer"
+            },
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": ["title"]
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {}
+        },
+        "annotations": {
+          "title": "Create a draft page",
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false
+        }
+      }
     ]
   }
 }

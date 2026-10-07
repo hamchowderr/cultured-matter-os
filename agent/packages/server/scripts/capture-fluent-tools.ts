@@ -1,17 +1,17 @@
 /**
- * Refresh fixtures/fluent-mcp-tools.json: the tool lists Simone's FluentCRM, Fluent Forms and
- * Fluent Booking MCP servers advertise, which the tests serve from AIMock's MCP mock
- * (scripts/fluent-mock.ts) in place of WordPress.
+ * Refresh fixtures/fluent-mcp-tools.json: the tool lists Simone's FluentCRM, Fluent Forms,
+ * Fluent Booking and page MCP servers advertise, which the tests serve from AIMock's MCP
+ * mock (scripts/fluent-mock.ts) in place of WordPress.
  *
  *   infisical run --env dev --path=/cultured-matter-agent -- \
  *     pnpm --filter @mastra-chat-kit/server exec tsx scripts/capture-fluent-tools.ts
  *   pnpm exec biome format --write packages/server/fixtures/fluent-mcp-tools.json
  *
  * It signs in as the agent's WordPress user (WORDPRESS_URL, WORDPRESS_MCP_USER,
- * WORDPRESS_MCP_APP_PASSWORD) and only lists tools, which reads no CRM, form or booking data.
+ * WORDPRESS_MCP_APP_PASSWORD) and only lists tools, which reads no CRM, form, booking or page data.
  *
- * The agent offers only lib/fluent.ts's FLUENT_READ_TOOLS and FLUENT_WRITE_TOOLS, so those
- * keep their full definitions. Every other tool is cut to its name and an empty object
+ * The agent offers only lib/fluent.ts's WORDPRESS_READ_TOOLS and WORDPRESS_WRITE_TOOLS, so
+ * those keep their full definitions. Every other tool is cut to its name and an empty object
  * schema, which is enough to prove the agent leaves it out.
  */
 import { writeFileSync } from 'node:fs';
@@ -22,8 +22,8 @@ import { fileURLToPath } from 'node:url';
 process.env.APP_SECRET ??= 'capture-script-placeholder-secret-0000000000';
 process.env.ANTHROPIC_API_KEY ??= 'unused';
 const {
-  FLUENT_READ_TOOLS,
-  FLUENT_WRITE_TOOLS,
+  WORDPRESS_READ_TOOLS,
+  WORDPRESS_WRITE_TOOLS,
   FLUENT_SERVERS,
   createFluentClient,
   fluentConfigFromEnv,
@@ -45,7 +45,7 @@ const { definitions, errors } = await mcp.listToolDefinitionsWithErrors({
 await mcp.disconnect();
 if (Object.keys(errors).length) throw new Error(JSON.stringify(errors));
 
-const offered = new Set<string>([...FLUENT_READ_TOOLS, ...FLUENT_WRITE_TOOLS]);
+const offered = new Set<string>([...WORDPRESS_READ_TOOLS, ...WORDPRESS_WRITE_TOOLS]);
 const servers = Object.fromEntries(
   Object.keys(FLUENT_SERVERS).map((server) => [
     server,

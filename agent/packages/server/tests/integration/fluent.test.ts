@@ -4,8 +4,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { type FluentMock, startFluentMock } from '../../scripts/fluent-mock';
 
 /**
- * Simone's FluentCRM, Fluent Forms and Fluent Booking tools end to end: the real
- * AgentController and chat agent on AIMock, with her three WordPress MCP servers mocked by
+ * Simone's FluentCRM, Fluent Forms, Fluent Booking and page tools end to end: the real
+ * AgentController and chat agent on AIMock, with her four WordPress MCP servers mocked by
  * AIMock's MCPMock (scripts/fluent-mock.ts) from the tool lists the real servers return.
  */
 
@@ -24,7 +24,7 @@ beforeAll(async () => {
   const fluent = await import('../../src/mastra/lib/fluent');
   disconnectFluent = fluent.disconnectFluent;
   // The same grants the live session gets (getChatSession).
-  grants = [...ac.AUTO_ALLOWED_TOOLS, ...fluent.FLUENT_READ_TOOLS];
+  grants = [...ac.AUTO_ALLOWED_TOOLS, ...fluent.WORDPRESS_READ_TOOLS];
   controller = ac.createChatAgentController({
     storage: new InMemoryStore(),
     resourceId: 'u-fluent',
@@ -169,6 +169,39 @@ describe('Fluent tools — AgentController (AIMock + mocked WordPress MCP)', () 
     expect(approvals).toEqual(['fluent-crm-upsert-contact']);
     expect(wp.calls.length).toBe(before);
     expect(blob).toContain("I didn't add Grace");
+  });
+
+  it('a page read runs with no approval card', async () => {
+    const before = wp.calls.length;
+    const { approvals, blob } = await turn('Which pages are on my website?');
+    expect(approvals).toEqual([]);
+    expect(wp.calls.slice(before).map((c) => c.name)).toEqual(['cultured-matter-list-pages']);
+    expect(blob).toContain('Your website has one page: Home, at /.');
+  });
+
+  it("a page update's card shows the before and after, and the save follows a matching dry run", async () => {
+    const before = wp.calls.length;
+    const { events, approvals, callsAtGate, blob } = await turn(
+      'Change the home heading to Work with us today.',
+    );
+
+    expect(approvals).toEqual(['cultured-matter-update-page']);
+    expect(callsAtGate).toEqual([before]);
+    const gate = events.find((e) => e.type === 'tool_approval_required');
+    expect(gate.args).toEqual({
+      id: 32,
+      page: '/',
+      live: true,
+      changes: [
+        {
+          path: '10.0.0',
+          before: { text: 'Work with us.' },
+          after: { text: 'Work with us today.' },
+        },
+      ],
+    });
+    expect(wp.calls.slice(before).map((c) => c.args.dry_run === true)).toEqual([true, false]);
+    expect(blob).toContain('The home page heading now reads');
   });
 
   it('a guarded write asks once, then runs the dry run and the confirmed call', async () => {

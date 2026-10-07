@@ -1263,6 +1263,50 @@
       "response": { "content": "Booked: Ada Lovelace on 20 October at 10:00." }
     },
     {
+      "_comment": "Her website's pages (lib/wordpress-pages.ts), served by scripts/fluent-mock.ts. A READ: list-pages runs with no card.",
+      "match": { "userMessage": "Which pages are on my website?", "hasToolResult": false },
+      "response": {
+        "toolCalls": [
+          { "id": "toolu_cm_pages", "name": "cultured-matter-list-pages", "arguments": {} }
+        ]
+      }
+    },
+    {
+      "match": { "toolCallId": "toolu_cm_pages", "toolResultContains": "Home" },
+      "response": { "content": "Your website has one page: Home, at /." }
+    },
+    {
+      "_comment": "update-page: the card shows before and after; once approved the tool checks the dry run against them and saves.",
+      "match": {
+        "userMessage": "Change the home heading to Work with us today.",
+        "hasToolResult": false
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_cm_page_update",
+            "name": "cultured-matter-update-page",
+            "arguments": {
+              "id": 32,
+              "page": "/",
+              "live": true,
+              "changes": [
+                {
+                  "path": "10.0.0",
+                  "before": { "text": "Work with us." },
+                  "after": { "text": "Work with us today." }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": { "toolCallId": "toolu_cm_page_update", "toolResultContains": "latest_revision_id" },
+      "response": { "content": "Done. The home page heading now reads \"Work with us today.\"" }
+    },
+    {
       "_comment": "A plain turn while her WordPress is down: the chat still answers (tests/integration/fluent-down.test.ts).",
       "match": { "userMessage": "Say hello to Simone." },
       "response": { "content": "Hello, Simone!" }

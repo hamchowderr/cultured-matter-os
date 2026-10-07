@@ -4,11 +4,11 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { type FluentMock, fluentToolLists, startFluentMock } from '../../scripts/fluent-mock';
 import {
   createFluentClient,
-  FLUENT_READ_TOOLS,
-  FLUENT_WRITE_TOOLS,
   fluentToolCategory,
   getFluentTools,
   loadFluentTools,
+  WORDPRESS_READ_TOOLS,
+  WORDPRESS_WRITE_TOOLS,
 } from '../../src/mastra/lib/fluent';
 import {
   FORKED_RUN_TOOLS,
@@ -18,8 +18,8 @@ import {
 
 /**
  * lib/fluent.ts at the MCP boundary: the real MCPClient against AIMock's MCP mocks of
- * Simone's FluentCRM, Fluent Forms and Fluent Booking servers, which list the tools the real
- * servers list (fixtures/fluent-mcp-tools.json). No model, no WordPress.
+ * Simone's FluentCRM, Fluent Forms, Fluent Booking and page servers, which list the tools
+ * the real servers list (fixtures/fluent-mcp-tools.json). No model, no WordPress.
  */
 
 let wp: FluentMock;
@@ -44,6 +44,20 @@ async function offered(): Promise<Record<string, any>> {
   return { ...tools, disconnect: () => mcp.disconnect() };
 }
 
+/**
+ * A tool's input schema as JSON text. A `createTool` with a JSON schema keeps it behind
+ * Standard Schema's `jsonSchema.input()`; an MCP tool keeps it as data.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: tool schemas are untyped here
+function schemaOf(tool: any): string {
+  const standard = tool.inputSchema?.['~standard']?.jsonSchema;
+  return JSON.stringify(
+    typeof standard?.input === 'function'
+      ? standard.input({ target: 'draft-07' })
+      : tool.inputSchema,
+  );
+}
+
 /** Tools the servers list that the agent must never get. */
 const EXCLUDED = [
   'fluent-crm-send-email-to-contact',
@@ -59,7 +73,7 @@ const EXCLUDED = [
   'fluentform-create-form',
 ];
 
-describe('Fluent tools from the three MCP servers', () => {
+describe('WordPress tools from the four MCP servers', () => {
   it('offers exactly the read and write lists, and none of the excluded tools', async () => {
     // The fixture really holds the excluded tools: they are there to be dropped.
     const listed = Object.values(fluentToolLists()).flatMap((tools) => tools.map((t) => t.name));
@@ -68,7 +82,7 @@ describe('Fluent tools from the three MCP servers', () => {
     const tools = await offered();
     await tools.disconnect();
     const names = Object.keys(tools).filter((name) => name !== 'disconnect');
-    expect(names.sort()).toEqual([...FLUENT_READ_TOOLS, ...FLUENT_WRITE_TOOLS].sort());
+    expect(names.sort()).toEqual([...WORDPRESS_READ_TOOLS, ...WORDPRESS_WRITE_TOOLS].sort());
     for (const name of EXCLUDED) expect(names).not.toContain(name);
   });
 
@@ -162,7 +176,9 @@ describe('Fluent tools from the three MCP servers', () => {
     const tools = await offered();
     await tools.disconnect();
     for (const name of ['fluent-booking-create-booking', 'fluentform-update-form-styling']) {
-      const schema = JSON.stringify(tools[name].inputSchema);
+      const schema = schemaOf(tools[name]);
+      // The tool's own inputs are still there.
+      expect(schema).toMatch(/"(event_id|form_id)"/);
       for (const key of ['dry_run', 'confirm_token', 'idempotency_key']) {
         expect(schema).not.toContain(`"${key}"`);
       }
@@ -177,6 +193,74 @@ describe('Fluent tools from the three MCP servers', () => {
     expect(tools).toEqual({});
   });
 
+  it('update-page is offered with before/after (for the card) and no dry_run', async () => {
+    const tools = await offered();
+    await tools.disconnect();
+    const json = schemaOf(tools['cultured-matter-update-page']);
+    expect(json).not.toContain('"dry_run"');
+    expect(json).toContain('"before"');
+    expect(json).toContain('"after"');
+    expect(json).toContain('"page"');
+    // The server has no delete tool, and none is offered.
+    expect(
+      Object.keys(tools)
+        .filter((n) => n.startsWith('cultured-matter-'))
+        .sort(),
+    ).toEqual([
+      'cultured-matter-create-page',
+      'cultured-matter-get-page',
+      'cultured-matter-list-pages',
+      'cultured-matter-update-page',
+    ]);
+  });
+
+  it('update-page saves after a dry run that matches the card', async () => {
+    const tools = await offered();
+    const before = wp.calls.length;
+    const result = await tools['cultured-matter-update-page'].execute(
+      {
+        id: 32,
+        page: '/',
+        live: true,
+        changes: [
+          {
+            path: '10.0.0',
+            before: { text: 'Work with us.' },
+            after: { text: 'Work with us today.' },
+          },
+        ],
+      },
+      {},
+    );
+    await tools.disconnect();
+    const change = [{ path: '10.0.0', text: 'Work with us today.' }];
+    expect(wp.calls.slice(before)).toEqual([
+      { name: 'cultured-matter-update-page', args: { id: 32, changes: change, dry_run: true } },
+      { name: 'cultured-matter-update-page', args: { id: 32, changes: change } },
+    ]);
+    expect(JSON.stringify(result)).toContain('\\"saved\\":true');
+  });
+
+  it('update-page saves nothing when the page no longer says what the card showed', async () => {
+    const tools = await offered();
+    const before = wp.calls.length;
+    const result = await tools['cultured-matter-update-page'].execute(
+      {
+        id: 32,
+        page: '/',
+        live: true,
+        changes: [{ path: '10.0.0', before: { text: 'Old heading' }, after: { text: 'New' } }],
+      },
+      {},
+    );
+    await tools.disconnect();
+    expect(result.saved).toBe(false);
+    expect(result.error).toContain('Nothing was saved');
+    expect(result.error).toContain('Block 10.0.0 text is now');
+    // Only the dry run reached WordPress.
+    expect(wp.calls.slice(before).map((c) => c.args.dry_run)).toEqual([true]);
+  });
+
   it('with no WordPress settings there are no Fluent tools', async () => {
     expect(await getFluentTools()).toEqual({});
   });
@@ -184,7 +268,7 @@ describe('Fluent tools from the three MCP servers', () => {
 
 describe('Fluent approvals, Plan mode and forked runs', () => {
   it('reads are `read`, plain writes `edit`, and the outward-facing writes ask every time', () => {
-    for (const name of FLUENT_READ_TOOLS) expect(resolveToolCategory(name)).toBe('read');
+    for (const name of WORDPRESS_READ_TOOLS) expect(resolveToolCategory(name)).toBe('read');
     for (const name of [
       'fluent-crm-upsert-contact',
       'fluent-crm-add-contact-note',
@@ -205,14 +289,17 @@ describe('Fluent approvals, Plan mode and forked runs', () => {
       expect(resolveToolCategory(name)).toBeNull();
     }
     // Every write is one or the other.
-    for (const name of FLUENT_WRITE_TOOLS) expect(resolveToolCategory(name)).not.toBe('read');
+    for (const name of WORDPRESS_WRITE_TOOLS) expect(resolveToolCategory(name)).not.toBe('read');
     expect(fluentToolCategory('fluent-crm-delete-contact')).toBeUndefined();
+    // A page change can be live within seconds: it asks every time. A new page is a draft.
+    expect(resolveToolCategory('cultured-matter-update-page')).toBeNull();
+    expect(resolveToolCategory('cultured-matter-create-page')).toBe('edit');
   });
 
   it('Plan mode and forked subagent runs get the reads and no write', () => {
     for (const list of [PLAN_MODE_TOOLS, FORKED_RUN_TOOLS]) {
-      for (const name of FLUENT_READ_TOOLS) expect(list).toContain(name);
-      for (const name of FLUENT_WRITE_TOOLS) expect(list).not.toContain(name);
+      for (const name of WORDPRESS_READ_TOOLS) expect(list).toContain(name);
+      for (const name of WORDPRESS_WRITE_TOOLS) expect(list).not.toContain(name);
     }
   });
 });
