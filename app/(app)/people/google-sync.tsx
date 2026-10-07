@@ -10,10 +10,12 @@ import type { ContactEmail } from "@/actions/gmail";
 import { ConnectGoogleButton, connectGoogle } from "@/components/google/connect-google-button";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { runGmailSync } from "@/lib/gmail-sync-run";
 
 // "Sync Gmail" once connected, "Connect Google" until Google grants Gmail and Contacts.
 export function GoogleSync({ connected }: { connected: boolean }) {
   const [syncing, setSyncing] = useState(false);
+  const [progress, setProgress] = useState<{ read: number; total: number } | null>(null);
   const params = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -34,28 +36,38 @@ export function GoogleSync({ connected }: { connected: boolean }) {
 
   async function sync() {
     setSyncing(true);
-    const result = await syncGoogle({});
+    setProgress(null);
+    const run = await runGmailSync(() => syncGoogle({}), {
+      // Each batch is saved as it goes; the action refreshes the page, so people appear too.
+      onProgress: (read, total) => setProgress({ read, total }),
+      onSlowedDown: () =>
+        toast.info("Gmail asked us to slow down. Continuing in a moment…", { id: "gmail-slow" })
+    });
     setSyncing(false);
-    if (!result.ok) {
-      if (result.error.code === "google_not_connected") {
-        return toast.error(result.error.message, {
-          action: { label: "Connect Google", onClick: () => connectGoogle() }
-        });
-      }
-      return toast.error(result.error.message);
+    setProgress(null);
+    const added = `Added ${run.created} ${run.created === 1 ? "person" : "people"} from Google and logged ${run.emailsLogged} ${
+      run.emailsLogged === 1 ? "email" : "emails"
+    }`;
+    if (run.ok) return toast.success(added);
+    if (run.error.code === "google_not_connected") {
+      return toast.error(run.error.message, {
+        action: { label: "Connect Google", onClick: () => connectGoogle() }
+      });
     }
-    const { created, emailsLogged } = result.data;
-    toast.success(
-      `Added ${created} ${created === 1 ? "person" : "people"} from Google and logged ${emailsLogged} ${
-        emailsLogged === 1 ? "email" : "emails"
-      }`
+    // Whatever was read before it stopped is saved; the next Sync Gmail continues from there.
+    toast.error(
+      run.created || run.emailsLogged ? `${run.error.message} ${added} so far.` : run.error.message
     );
   }
 
   return (
-    <Button size="sm" variant="outline" onClick={sync} disabled={syncing}>
+    <Button size="sm" variant="outline" onClick={sync} disabled={syncing} aria-live="polite">
       {syncing ? <Spinner /> : <RefreshCwIcon />}
-      {syncing ? "Syncing…" : "Sync Gmail"}
+      {syncing
+        ? progress && progress.total
+          ? `Syncing ${progress.read} of ${progress.total}…`
+          : "Syncing…"
+        : "Sync Gmail"}
     </Button>
   );
 }

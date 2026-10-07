@@ -43,6 +43,8 @@ export class ActionError extends Error {
       | "unauthorized"
       // Google hasn't granted the Gmail and Contacts permissions yet; the UI offers "Connect Google".
       | "google_not_connected"
+      // Google asked us to slow down (its usage limits) even after retrying; try again later.
+      | "rate_limited"
       // An outside service (e.g. Gmail) failed.
       | "unavailable",
     message: string
@@ -101,7 +103,9 @@ export function defineAction<I extends z.ZodType, O extends z.ZodType, P = undef
         return config.output.parse(await config.handler(input, db));
       }
 
-      const prepared = (config.prepare ? await config.prepare(input, db, ctx ?? {}) : undefined) as P;
+      const prepared = (
+        config.prepare ? await config.prepare(input, db, ctx ?? {}) : undefined
+      ) as P;
       const committed = await db.transaction(async (tx) => {
         const result = config.output.parse(await config.handler(input, tx, prepared));
         const entry = config.log(input, result);

@@ -205,6 +205,21 @@ export const contactEmails = sqliteTable(
   ]
 );
 
+// Where "Sync Gmail" stands (actions/gmail.ts). A sync lists her recent messages once, then
+// reads them a batch per call; the ids not read yet wait here, so a sync that stops (Gmail's
+// usage limits, a closed page) continues where it left off. One row, id "gmail".
+export const gmailSync = sqliteTable("gmail_sync", {
+  id: text("id").primaryKey(),
+  // The `days` the listing covered; another value starts a new listing.
+  days: integer("days").notNull(),
+  // Message ids listed but not read yet, newest first.
+  pending: text("pending", { mode: "json" }).$type<string[]>().notNull(),
+  // How many the listing found, for "read 120 of 480".
+  total: integer("total").notNull(),
+  listedAt: integer("listed_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: updatedAt()
+});
+
 // ---------------------------------------------------------------- Grants
 
 export const grants = sqliteTable(
