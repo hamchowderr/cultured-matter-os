@@ -44,8 +44,11 @@ export function onAppActionDone(listener: AfterActionListener): () => void {
   return () => afterActionListeners.delete(listener);
 }
 
-/** Writes that remove something ask every time, even after an "Always allow". */
-const ALWAYS_ASK = new Set(['deleteProject']);
+/**
+ * Writes that ask every time, even after an "Always allow": ones that remove something, and
+ * draftGrantApplication, which spends Firecrawl credits and an AI call and replaces her answers.
+ */
+const ALWAYS_ASK = new Set(['deleteProject', 'draftGrantApplication']);
 
 function headers(token: string) {
   return { authorization: `Bearer ${token}`, 'content-type': 'application/json' };

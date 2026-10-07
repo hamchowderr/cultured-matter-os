@@ -10,6 +10,11 @@ import {
 } from "./radar";
 import { searchGrants, setGrantStatus } from "./grants";
 import { tasksDueBetween } from "./grants";
+import {
+  draftGrantApplication,
+  getGrantApplication,
+  updateGrantApplication
+} from "./grant-applications";
 import { listActivity } from "./activity";
 import {
   createProject,
@@ -115,6 +120,9 @@ export {
   searchGrants,
   setGrantStatus,
   tasksDueBetween,
+  getGrantApplication,
+  draftGrantApplication,
+  updateGrantApplication,
   listActivity,
   searchContacts,
   findWarmPath,
@@ -206,6 +214,9 @@ export const allActions = [
   searchGrants,
   setGrantStatus,
   tasksDueBetween,
+  getGrantApplication,
+  draftGrantApplication,
+  updateGrantApplication,
   listActivity,
   searchContacts,
   findWarmPath,

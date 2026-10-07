@@ -559,6 +559,54 @@ type MindMapNodeRow = {
 };
 type MindMapEdgeRow = { id: string; source: string; target: string };
 
+// ---------------------------------------------------------------- Grant applications
+
+// One drafted application per grant (the grant's page and the assistant's draftGrantApplication).
+// The funder's questions and her answers are stored together, in the shape
+// lib/grant-application.ts defines and validates. Nothing here is ever sent to a funder.
+export const grantApplications = sqliteTable("grant_applications", {
+  id: id(),
+  grantId: text("grant_id")
+    .notNull()
+    .unique()
+    .references(() => grants.id, { onDelete: "cascade" }),
+  // needs_questions: the questions couldn't be read (a login wall, no form found), so the page
+  // asks her to upload the PDF or paste them. drafted: answers written by the AI. edited: she
+  // has changed them since.
+  status: text("status", { enum: ["needs_questions", "drafted", "edited"] }).notNull(),
+  questions: text("questions", { mode: "json" })
+    .$type<GrantQuestionRow[]>()
+    .notNull()
+    .default(sql`'[]'`),
+  // Where the questions came from: the funder's page, linked documents, her upload or paste.
+  sources: text("sources", { mode: "json" })
+    .$type<GrantSourceRow[]>()
+    .notNull()
+    .default(sql`'[]'`),
+  // Why the questions couldn't be read, shown to her with the upload/paste fallback.
+  note: text("note"),
+  model: text("model"),
+  createdAt: createdAt(),
+  updatedAt: updatedAt()
+});
+
+// Kept here so the schema has no app dependencies; lib/grant-application.ts validates the same shape.
+type GrantQuestionRow = {
+  id: string;
+  question: string;
+  // The limit as the funder wrote it ("200 words", "1 page"), and the counts when it has one.
+  limit: string | null;
+  maxWords: number | null;
+  maxChars: number | null;
+  answer: string;
+};
+type GrantSourceRow = {
+  kind: "page" | "document" | "upload" | "pasted";
+  url: string | null;
+  title: string;
+  read: boolean;
+};
+
 // ---------------------------------------------------------------- Log
 
 export const activityLog = sqliteTable(

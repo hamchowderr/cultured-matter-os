@@ -1,7 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { BuildingIcon, CalendarDaysIcon, CoinsIcon, ExternalLinkIcon } from "lucide-react";
+import {
+  BuildingIcon,
+  CalendarDaysIcon,
+  CoinsIcon,
+  ExternalLinkIcon,
+  SparklesIcon
+} from "lucide-react";
+import Link from "next/link";
 
 import type { Grant } from "@/actions/schemas";
 import { Badge } from "@/components/ui/badge";
@@ -116,8 +123,15 @@ export function GrantDrawer({
               </MetaRow>
             </div>
 
+            <Button className="h-11 w-full md:h-9" asChild>
+              <Link href={`/grants/${grant.id}`}>
+                <SparklesIcon />
+                Draft application
+              </Link>
+            </Button>
+
             {grant.url && (
-              <Button variant="outline" className="w-full" asChild>
+              <Button variant="outline" className="h-11 w-full md:h-9" asChild>
                 <a href={grant.url} target="_blank" rel="noreferrer">
                   <ExternalLinkIcon />
                   Open the listing

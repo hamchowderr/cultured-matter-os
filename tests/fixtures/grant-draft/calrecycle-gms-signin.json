@@ -1,0 +1,18 @@
+{
+  "_comment": "Captured 2026-10-06 from https://secure.calrecycle.ca.gov/Grants/ (redirects to the GMS sign-in page) with a plain HTTP GET, converted to Firecrawl's /v2/scrape shape. CalRecycle grant applications are filed in GMS behind this sign-in.",
+  "markdown": "Grants Management System (GMS)v2.02.0109\n\nAuthorized Use Only\n\n- [Home](https://secure.calrecycle.ca.gov/Grants/) |\n- [Sign In](javascript:__doPostBack('ctl00$ahAppHeader$lsLoginStatus$ctl02',''))\n\n# CalRecycle Grants Management System (GMS) Sign-In\n\nEmail Address:*\n\n[](https://secure.calrecycle.ca.gov/WebPass2/)\n\nHaving trouble signing in using your WebPass? [Visit the WebPass home page](https://secure.calrecycle.ca.gov/WebPass2/) for help and to manage your own account.\n\nGeneral information CalRecycle's grant programs is available at the [CalRecycle Grant Home Page](http://www.calrecycle.ca.gov/Funding/).\n\nGrants Management System (GMS) http://www.calrecycle.ca.gov/Grants/GMS/Contacts.htm\nContact: [grantassistance@calrecycle.ca.gov](mailto:grantassistance@calrecycle.ca.gov)\nAuthorized Use Only, [Privacy Policy](https://calrecycle.ca.gov/Help/Privacy/)",
+  "links": [
+    "https://secure.calrecycle.ca.gov/Grants/App_Themes/Default/Default.css",
+    "https://secure.calrecycle.ca.gov/Grants/App_Themes/Default/zzOverrides.css",
+    "https://secure.calrecycle.ca.gov/Grants/WebResource.axd?d=rhRRvYQTYv6mNRHqzCKJ7kNdfDi2osmhKtIV2RCesbnWSOYFrL-CE0uB72p1ZLUaG43oKt5R2hh-nYT-iKi3DfML1ZF4YMW-8BAKgsz1TPOGVMv7-TxBqy8m9ykClJ0b35xSbw2&t=636409036300000000",
+    "https://secure.calrecycle.ca.gov/Grants/",
+    "https://secure.calrecycle.ca.gov/WebPass2/",
+    "http://www.calrecycle.ca.gov/Funding/",
+    "https://calrecycle.ca.gov/Help/Privacy/"
+  ],
+  "metadata": {
+    "statusCode": 200,
+    "sourceURL": "https://secure.calrecycle.ca.gov/Grants/SignIn.aspx?ReturnUrl=%2fGrants%2f",
+    "title": "Sign-In: Grants Management System (GMS)"
+  }
+}
