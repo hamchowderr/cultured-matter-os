@@ -87,9 +87,8 @@ export const MONITORS: Monitor[] = [
   }
 ];
 
-// How often a page is checked unless it sets everyDays, and how many pages one daily
-// run may scrape. Two per run matches the free plan's two concurrent browsers and keeps
-// the run well inside the 300-second function limit. Weekly checks of four pages plus a
-// monthly Third Derivative check cost about 90 credits a month.
+// How often a page is checked unless it sets everyDays. Every due page is checked in the
+// daily run: the agent server's monitors workflow scrapes them one at a time, each in its
+// own request to the app. Weekly checks of four pages plus a monthly Third Derivative check
+// cost about 90 credits a month.
 export const CHECK_EVERY_DAYS = 7;
-export const MAX_PAGES_PER_RUN = 2;

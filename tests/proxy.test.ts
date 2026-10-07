@@ -41,7 +41,8 @@ describe("proxy", () => {
     for (const url of [
       "/sign-in",
       "/api/auth/get-session",
-      "/api/cron/radar",
+      "/api/cron/gmail",
+      "/api/agent/jobs/ingestSource",
       "/api/newsletter/signup",
       "/api/capture",
       "/api/apple-notes",

@@ -40,7 +40,8 @@ import { createControllerRoutes } from './routes/controller';
 import { createThreadRoutes } from './routes/threads';
 import type { ChatServerDeps } from './routes/types';
 import { createWorkspaceRoutes } from './routes/workspace';
-import { loadAppActions } from './tools/app-actions';
+import { appConfigured, loadAppActions } from './tools/app-actions';
+import { ingestWorkflows } from './workflows/ingest';
 
 // Load the Cultured Matter app's actions so the chat agent has its tools from the
 // first request. If the app isn't up yet, the first chat request tries again.
@@ -133,6 +134,9 @@ const serverConfig = {
 export const mastra = new Mastra({
   server: serverConfig,
   agents: { chat: chatAgent },
+  // Radar, grants and page-monitor ingestion, each on its own Mastra schedule (workflows/
+  // ingest.ts). They run through the app, so they are registered only when it is configured.
+  workflows: appConfigured() ? ingestWorkflows : {},
   // Registered so the controller runs on THIS Mastra (and its observability). Left
   // unregistered, its init() moves chatAgent onto an internal Mastra with no
   // tracing, and no run creates spans (mastra-chat-kit-9m3).
