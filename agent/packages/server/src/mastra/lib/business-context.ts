@@ -1,9 +1,10 @@
 /**
  * # Cultured Matter: Simone's business and voice on every turn
  *
- * Two turn-context sections (lib/turn-context.ts) that put Simone's business context and
- * her voice guide in front of the model on every step, after the instructions, so the
- * instruction prefix stays cacheable.
+ * Two stable turn-context sections (lib/turn-context.ts) that put Simone's business
+ * context and her voice guide in front of the model on every step, after the instructions.
+ * Being stable, they get their own prompt-cache breakpoint ahead of today's date, so the
+ * cached prefix holds until she edits one.
  *
  * Both come from the app, which owns them and their caps (lib/business-profile.ts
  * businessContext, lib/voice-guide.ts voiceGuide): the agent runs the app's read actions
@@ -18,7 +19,7 @@
  * text yet, the section is left out. It never breaks the turn.
  */
 import { onAppActionDone, runAppAction } from '../tools/app-actions';
-import type { TurnContextSection } from './turn-context';
+import { stableSection } from './turn-context';
 
 /** How long a fetched section is reused. */
 export const CONTEXT_TTL_MS = 60_000;
@@ -77,16 +78,16 @@ export function clearBusinessContextCache() {
   inflight.clear();
 }
 
-export const businessContextSection: TurnContextSection = async () => {
+export const businessContextSection = stableSection(async () => {
   const context = await appContext('getBusinessProfile');
   return context
     ? `About Simone's business (her Settings → Business profile, the source of truth; call getBusinessProfile for more):\n${context}`
     : undefined;
-};
+});
 
-export const voiceGuideSection: TurnContextSection = async () => {
+export const voiceGuideSection = stableSection(async () => {
   const guide = await appContext('getVoiceGuide');
   return guide
     ? `Simone's voice guide (Settings → Your voice). Write anything she will send or publish (emails, posts, messages, replies) in this voice:\n${guide}`
     : undefined;
-};
+});

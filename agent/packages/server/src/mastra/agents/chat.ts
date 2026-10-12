@@ -12,7 +12,7 @@ import { liveScorers } from '../lib/live-scorers';
 import { createDefaultMemory } from '../lib/memory';
 import { defaultInputProcessors, defaultOutputProcessors } from '../lib/processors';
 import { toolScopeProcessor } from '../lib/tool-scope';
-import { TurnContextProcessor, turnContextSections } from '../lib/turn-context';
+import { CACHE_BREAKPOINT, TurnContextProcessor, turnContextSections } from '../lib/turn-context';
 import { getChatWorkspace } from '../lib/workspace';
 import { getAppActionTools } from '../tools/app-actions';
 import { listSchedules, startSchedule, stopSchedule } from '../tools/schedule';
@@ -275,9 +275,9 @@ const FIRECRAWL_BROWSER_INSTRUCTIONS =
   '- When a page needs a real browser — clicking through, filling in a form, content that only appears after interaction — use the browser tools: browser_goto to open the page, browser_snapshot to read it and get element refs (@e1, @e2, …), then act with those refs (browser_click, browser_type, …) and snapshot again to check the result. Opening a site and every action on a page ask the user first, so to just read a page prefer firecrawl_scrape. The browser closes when your turn ends.';
 
 // Cultured Matter: Simone's business context and voice guide go in front of the model on
-// every turn (lib/business-context.ts). They go BEFORE today's date: they change rarely,
-// the date every minute, so the stable text comes first (cmos-djf can then cache it).
-// Subagents read the same list.
+// every turn (lib/business-context.ts). Both are stable sections: they change rarely, the
+// date every minute, so they go before it behind their own prompt-cache breakpoint, and
+// an edit in Settings re-writes only that part of the cache. Subagents read the same list.
 turnContextSections.unshift(businessContextSection, voiceGuideSection);
 
 /** The chat agent's own tools for a set of features (the workspace adds its own). */
@@ -392,19 +392,31 @@ export function createChatAgent(f: ChatFeatures = defaultFeatures): Agent {
     }),
     // Default execution options applied to EVERY run: enable
     // Anthropic extended thinking so the model emits real `reasoning` parts (→ the
-    // <Reasoning> element). Thinking requires temperature 1. Ignored by non-Anthropic
-    // providers, so it's safe regardless of CHAT_MODEL.
+    // <Reasoning> element). Thinking requires temperature 1. With PROMPT_CACHE, a
+    // request-level cacheControl, which Anthropic places on the last block of the prompt:
+    // each step reads the one before it, so a tool loop pays full price only for what it
+    // adds (the other two breakpoints are in lib/turn-context.ts). Ignored by
+    // non-Anthropic providers, so it's safe regardless of CHAT_MODEL.
     defaultOptions: {
       modelSettings: { temperature: 1 },
-      providerOptions: { anthropic: { thinking: { type: 'enabled', budgetTokens: 1500 } } },
+      providerOptions: {
+        anthropic: {
+          thinking: { type: 'enabled', budgetTokens: 1500 },
+          ...(f.promptCache ? CACHE_BREAKPOINT.anthropic : {}),
+        },
+      },
     },
     memory: createDefaultMemory(),
     scorers: liveScorers,
     // toolScopeProcessor: what a forked subagent run and a resumed Plan run are offered
     // (lib/tool-scope.ts). TurnContextProcessor: today's date and time in the user's
     // zone, added after the instructions on every step (lib/turn-context.ts), so the
-    // instructions stay a stable, cacheable prefix.
-    inputProcessors: [...defaultInputProcessors, toolScopeProcessor, new TurnContextProcessor()],
+    // instructions stay a stable, cacheable prefix, with the cache breakpoints.
+    inputProcessors: [
+      ...defaultInputProcessors,
+      toolScopeProcessor,
+      new TurnContextProcessor({ promptCache: f.promptCache }),
+    ],
     outputProcessors: defaultOutputProcessors,
   });
 }

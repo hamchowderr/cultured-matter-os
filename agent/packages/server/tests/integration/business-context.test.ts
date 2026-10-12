@@ -152,6 +152,28 @@ describe("Simone's business context and voice (AIMock)", () => {
     expect(system).toContain(app.guide);
   });
 
+  it('caches both sections apart from the date (cmos-djf)', async () => {
+    const sent = captureProviderRequests();
+    await turn('u-bc-cache');
+
+    type Block = { text: string; cache_control?: unknown };
+    const blocks = sent
+      .map((body) => (JSON.parse(body) as { system?: Block[] }).system ?? [])
+      .filter((system) => system.some((b) => b.text.includes('Current date and time')))
+      .at(-1);
+    const ephemeral = { type: 'ephemeral' };
+    const stable = blocks?.findIndex((b) => b.text.startsWith("About Simone's business")) ?? -1;
+    expect(stable).toBeGreaterThan(0);
+    // Business profile and voice guide: one block, with its own breakpoint.
+    expect(blocks?.[stable]?.text).toContain("Simone's voice guide");
+    expect(blocks?.[stable]?.cache_control).toEqual(ephemeral);
+    // The instructions (and the tool schemas before them) behind the one before it.
+    expect(blocks?.[stable - 1]?.cache_control).toEqual(ephemeral);
+    // The date comes next and is never cached.
+    expect(blocks?.[stable + 1]?.text).toContain('Current date and time');
+    expect(blocks?.[stable + 1]?.cache_control).toBeUndefined();
+  });
+
   it('never sends the EIN to the model', async () => {
     const sent = captureProviderRequests();
     await turn('u-bc-ein');
