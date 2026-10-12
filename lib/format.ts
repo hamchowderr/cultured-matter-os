@@ -33,6 +33,9 @@ const money = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
   notation: "compact",
+  // Explicit minimum: older ICU builds (Node 22) otherwise keep the currency's two decimals
+  // and print "$100.0K" instead of "$100K".
+  minimumFractionDigits: 0,
   maximumFractionDigits: 1
 });
 
