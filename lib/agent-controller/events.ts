@@ -1,3 +1,20 @@
+/**
+ * Client-side model of the Mastra AgentController SSE stream — the TYPE SURFACE.
+ *
+ * The server's POST /agent-controller/stream emits `AgentControllerEvent`s as SSE. The AgentController
+ * surface is richer than AI SDK UIMessage parts (sessions, modes, approvals,
+ * subagents, tasks), so instead of forcing it through `useChat` we reduce the
+ * events into a small transcript model the AI Elements can render directly.
+ * See docs/coverage.md for the full event → element mapping.
+ *
+ * Only the subset of events the UI consumes is typed here; unknown events pass
+ * through the reducer untouched.
+ *
+ * This module is types plus two pure message utilities, and imports nothing —
+ * which is why every skin can depend on it without pulling in the reducer. The
+ * fold itself lives in ./reduce, and its internal helpers in ./reduce-helpers.
+ */
+
 export type AgentControllerContentPart =
   | { type: 'text'; text: string }
   | { type: 'thinking'; thinking: string }
@@ -37,6 +54,11 @@ export type PendingApproval = {
   args: unknown;
   /** The tool's Mastra category ('read', 'edit', ...). Null: no "always allow". */
   category: string | null;
+  /**
+   * What the call would change, from the server's `approvalPreview` (a dry run, the record
+   * as it is now). Host-defined; undefined when the server sent none.
+   */
+  preview?: unknown;
 };
 
 /** One selectable choice on an `ask_user` prompt (label is the answer value). */

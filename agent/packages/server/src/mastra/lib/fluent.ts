@@ -326,9 +326,59 @@ type MCPTool = { execute: (input: unknown, context?: unknown) => Promise<unknown
  * first the dry run, then, with the token it returns, the same call for real. A dry run that
  * fails (bad input, no permission) is what the agent gets back, and nothing changes.
  */
+/**
+ * What a guarded write's dry run reports, for the approval card (lib/approval-preview.ts):
+ * the plugin's `preview` (old and new recipient, fields added and removed, …) without the
+ * confirm token, which only the tool itself uses.
+ */
+export function dryRunPreview(result: unknown): unknown {
+  const body = structuredResult(result);
+  const found = findKey(body, 'preview');
+  return found === undefined ? stripTokens(body) : stripTokens(found);
+}
+
+function structuredResult(result: unknown): unknown {
+  const envelope = result as { content?: { type?: string; text?: string }[] } | null;
+  if (envelope && Array.isArray(envelope.content) && Object.keys(envelope).length <= 2) {
+    const text = envelope.content.find((part) => part?.type === 'text')?.text;
+    if (text) {
+      try {
+        return JSON.parse(text);
+      } catch {
+        return text;
+      }
+    }
+  }
+  return result;
+}
+
+function findKey(value: unknown, key: string): unknown {
+  if (!value || typeof value !== 'object') return undefined;
+  const record = value as Record<string, unknown>;
+  if (key in record) return record[key];
+  for (const v of Object.values(record)) {
+    const found = findKey(v, key);
+    if (found !== undefined) return found;
+  }
+  return undefined;
+}
+
+function stripTokens(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripTokens);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([k]) => !['confirm_token', 'expires_in_seconds', 'next_step'].includes(k))
+      .map(([k, v]) => [k, stripTokens(v)]),
+  );
+}
+
+/** A tool the approval card can preview: `preview(args)` runs nothing that changes data. */
+export type PreviewableTool = { preview?: (args: unknown) => Promise<unknown> };
+
 function guardedWriteTool(definition: Definition, server: MCPTool) {
   const offered = restrictDefinition(definition);
-  return createTool({
+  const tool = createTool({
     id: definition.name,
     description: offered.description ?? '',
     inputSchema: offered.inputSchema as Record<string, unknown>,
@@ -339,6 +389,13 @@ function guardedWriteTool(definition: Definition, server: MCPTool) {
       if (!confirm_token) return preview;
       return server.execute({ ...args, confirm_token, idempotency_key: randomUUID() }, context);
     },
+  });
+  // The same dry run, before the card: what the plugin says the call would change.
+  return Object.assign(tool, {
+    preview: async (args: unknown) =>
+      dryRunPreview(
+        await server.execute({ ...((args ?? {}) as Record<string, unknown>), dry_run: true }, {}),
+      ),
   });
 }
 
@@ -374,6 +431,34 @@ export async function loadFluentTools(client: MCPClient): Promise<ToolsInput> {
         definition: restrictDefinition(definition),
       });
     }
+  }
+  // upsert-contact has no dry run: its card shows the contact as it is now, if there is one.
+  const upsert = tools['fluent-crm-upsert-contact'] as (PreviewableTool & object) | undefined;
+  const getContact = tools['fluent-crm-get-contact'] as MCPTool | undefined;
+  if (upsert && getContact) {
+    Object.assign(upsert, {
+      preview: async (raw: unknown) => {
+        const args = (raw ?? {}) as { contact_id?: number; email?: string };
+        if (!args.contact_id && !args.email) return { exists: false };
+        try {
+          const result = structuredResult(
+            await getContact.execute(
+              args.contact_id
+                ? { contact_id: args.contact_id, include: [] }
+                : { email: args.email, include: [] },
+              {},
+            ),
+          );
+          const contact =
+            (findKey(result, 'email') !== undefined && (result as { data?: unknown })?.data) ||
+            result;
+          return { exists: true, contact: stripTokens(contact) };
+        } catch {
+          // Not found (or unreadable): she is adding someone new.
+          return { exists: false };
+        }
+      },
+    });
   }
   return tools;
 }

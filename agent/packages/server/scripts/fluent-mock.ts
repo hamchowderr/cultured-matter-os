@@ -177,6 +177,11 @@ function answer(
       return ok({ contacts: [MOCK_CONTACT], total: 1 });
     case 'fluent-crm-upsert-contact':
       return ok({ action: 'created', contact: { id: 8, ...args } });
+    case 'fluent-crm-get-contact':
+      if (args.email === MOCK_CONTACT.email || args.contact_id === MOCK_CONTACT.id) {
+        return ok(MOCK_CONTACT);
+      }
+      throw new Error('Contact not found');
     case 'fluent-booking-create-booking':
       return ok({ booking_id: 31, status: 'scheduled', start_time: args.start_time });
     default:
