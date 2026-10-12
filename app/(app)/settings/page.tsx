@@ -195,6 +195,7 @@ export default async function Page() {
                       : stepSummary(step.id, status.data)
                   }
                   state={state}
+                  stateLabel={step.id === "newsletter" && done ? "Ready" : undefined}
                   action={action(step, done)}
                 />
               );

@@ -18,10 +18,12 @@ import {
   ArchiveIcon,
   ChevronRight,
   FolderKanbanIcon,
+  GlobeIcon,
   InboxIcon,
   LandmarkIcon,
   MessageCircleIcon,
   NetworkIcon,
+  PencilLineIcon,
   RadarIcon,
   SunIcon,
   UsersIcon,
@@ -70,6 +72,23 @@ export const navItems: NavGroup[] = [
       { title: "Map", href: "/map", icon: NetworkIcon },
       { title: "Archive", href: "/archive", icon: ArchiveIcon }
     ]
+  },
+  {
+    title: "Website",
+    items: [
+      {
+        title: "Your website",
+        href: "https://www.culturedmatter.com",
+        icon: GlobeIcon,
+        newTab: true
+      },
+      {
+        title: "Edit website (WordPress)",
+        href: "https://culturedmatter.otakusolutions.io/wp-admin",
+        icon: PencilLineIcon,
+        newTab: true
+      }
+    ]
   }
 ];
 
@@ -92,8 +111,8 @@ export function NavMain() {
 
   return (
     <>
-      {items.map((nav) => (
-        <SidebarGroup key={nav.title} data-tour-step-id="tour-nav">
+      {items.map((nav, i) => (
+        <SidebarGroup key={nav.title} data-tour-step-id={i === 0 ? "tour-nav" : undefined}>
           <SidebarGroupLabel>{nav.title}</SidebarGroupLabel>
           <SidebarGroupContent className="flex flex-col gap-2">
             <SidebarMenu className="gap-1">
@@ -172,14 +191,18 @@ export function NavMain() {
                       tooltip={item.title}
                       asChild
                     >
-                      <Link
-                        href={item.href}
-                        target={item.newTab ? "_blank" : ""}
-                        onNavigate={guardLink(item.href)}
-                      >
-                        {item.icon && <item.icon />}
-                        <span>{item.title}</span>
-                      </Link>
+                      {item.newTab ? (
+                        // Outside the app: opens in a new tab, so unsaved work here stays put.
+                        <a href={item.href} target="_blank" rel="noopener noreferrer">
+                          {item.icon && <item.icon />}
+                          <span>{item.title}</span>
+                        </a>
+                      ) : (
+                        <Link href={item.href} onNavigate={guardLink(item.href)}>
+                          {item.icon && <item.icon />}
+                          <span>{item.title}</span>
+                        </Link>
+                      )}
                     </SidebarMenuButton>
                   )}
                   {!!item.isComing && (

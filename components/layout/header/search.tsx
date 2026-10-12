@@ -79,7 +79,8 @@ export default function Search() {
                     key={key}
                     onSelect={() => {
                       setOpen(false);
-                      if (mayNavigate(item.href)) router.push(item.href);
+                      if (item.newTab) window.open(item.href, "_blank", "noopener");
+                      else if (mayNavigate(item.href)) router.push(item.href);
                     }}
                   >
                     {item.icon && <item.icon />}
