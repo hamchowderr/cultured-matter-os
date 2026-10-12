@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 import { ActionError } from "@/actions/define";
 import type { Executor } from "@/db";
 import { accounts, users } from "@/db/schema";
-import { parseAllowedEmails } from "@/lib/allowed-emails";
+import { ownerEmail, parseAllowedEmails } from "@/lib/allowed-emails";
 import { GOOGLE_SCOPES } from "@/lib/google-scopes";
 
 // Gmail API v1 and People API v1 over plain fetch with typed helpers. Permissions are granted on
@@ -142,13 +142,20 @@ export function missingGoogleScopes(scope: string | null | undefined): string[] 
   return GOOGLE_SCOPES.filter((s) => !granted.has(s.toLowerCase()));
 }
 
-// The Google account behind the app. Single-user app: the most recently used one.
+// The Google account behind the app: the owner's (OWNER_EMAIL), so a tester's sign-in never
+// switches Gmail to their mailbox. Without OWNER_EMAIL, the most recently used one.
 export async function googleAccount(db: Executor) {
+  const owner = ownerEmail();
   const [row] = await db
     .select({ account: accounts, email: users.email })
     .from(accounts)
     .innerJoin(users, eq(accounts.userId, users.id))
-    .where(eq(accounts.providerId, "google"))
+    .where(
+      and(
+        eq(accounts.providerId, "google"),
+        owner ? eq(sql`lower(${users.email})`, owner) : undefined
+      )
+    )
     .orderBy(desc(accounts.updatedAt))
     .limit(1);
   return row ?? null;

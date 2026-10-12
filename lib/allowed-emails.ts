@@ -17,5 +17,12 @@ export function isAllowedEmail(
   return parseAllowedEmails(raw).includes(normalized);
 }
 
+// The person the app belongs to (OWNER_EMAIL). Her Google account is the one Gmail, Contacts and
+// the daily summary use, and she gets the summary, so another allowed account signing in to test
+// never takes over her mailbox. Unset (local development): the earlier fallbacks apply.
+export function ownerEmail(raw: string | undefined = process.env.OWNER_EMAIL): string | null {
+  return raw?.trim().toLowerCase() || null;
+}
+
 // Error code the OAuth callback appends to the sign-in page URL when an account is refused.
 export const ACCOUNT_NOT_ALLOWED = "ACCOUNT_NOT_ALLOWED";
