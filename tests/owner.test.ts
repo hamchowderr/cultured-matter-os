@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 import { firstUser } from "@/actions/preferences";
 import type { Database } from "@/db";
 import * as t from "@/db/schema";
-import { ownerEmail } from "@/lib/allowed-emails";
+import { DEFAULT_OWNER_EMAIL, ownerEmail } from "@/lib/allowed-emails";
 import { googleAccount } from "@/lib/google";
 import { freshDb } from "./test-db";
 
@@ -39,9 +39,16 @@ afterEach(() => vi.unstubAllEnvs());
 
 describe("ownerEmail", () => {
   it("normalizes OWNER_EMAIL and treats blank as unset", () => {
-    expect(ownerEmail(" Simone@SimonePaz.com ")).toBe("simone@simonepaz.com");
-    expect(ownerEmail("  ")).toBeNull();
-    expect(ownerEmail(undefined)).toBeNull();
+    expect(ownerEmail(" Simone@SimonePaz.com ", undefined)).toBe("simone@simonepaz.com");
+    expect(ownerEmail("  ", undefined)).toBeNull();
+    expect(ownerEmail(undefined, undefined)).toBeNull();
+  });
+
+  it("falls back to Simone's address in production only", () => {
+    expect(ownerEmail(undefined, "production")).toBe(DEFAULT_OWNER_EMAIL);
+    expect(ownerEmail("", "production")).toBe(DEFAULT_OWNER_EMAIL);
+    expect(ownerEmail(undefined, "preview")).toBeNull();
+    expect(ownerEmail("other@example.com", "production")).toBe("other@example.com");
   });
 });
 
@@ -64,8 +71,9 @@ describe("with OWNER_EMAIL set", () => {
 });
 
 describe("without OWNER_EMAIL", () => {
-  it("keeps the earlier fallbacks", async () => {
+  it("keeps the earlier fallbacks outside production", async () => {
     vi.stubEnv("OWNER_EMAIL", "");
+    vi.stubEnv("VERCEL_ENV", "");
     expect((await googleAccount(db))?.account.id).toBe("acc-tester");
     expect((await firstUser(db))?.id).toBe("tester");
   });
