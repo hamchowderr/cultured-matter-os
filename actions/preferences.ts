@@ -11,6 +11,7 @@ import {
   SUGGESTED_PERSONAL_PROJECTS,
   WORK_SCOPES
 } from "@/lib/personal";
+import { ownerEmail } from "@/lib/allowed-emails";
 import { personalSql } from "@/lib/personal-sql";
 import { HOME_TIME_ZONE, startOfDayIn } from "@/lib/time";
 import { addSeen, getTour, parseSeen, TOURS, type TourId } from "@/lib/tours";
@@ -292,11 +293,14 @@ export const taskHref = (projectId: string | null) =>
 
 // ---------------------------------------------------------------- Daily summary
 
-// The person the app belongs to: the first account created (single-user app).
+// The person the app belongs to: the owner (OWNER_EMAIL), or without it the first account
+// created (single-user app).
 export async function firstUser(db: Executor) {
+  const owner = ownerEmail();
   const [row] = await db
     .select({ id: users.id, email: users.email, name: users.name })
     .from(users)
+    .where(owner ? eq(sql`lower(${users.email})`, owner) : undefined)
     .orderBy(asc(users.createdAt))
     .limit(1);
   return row ?? null;
