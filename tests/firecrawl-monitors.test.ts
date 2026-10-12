@@ -138,35 +138,22 @@ describe("runMonitors", () => {
   const day1 = new Date("2026-10-01T12:00:00Z");
   const companyCount = async () => (await db.select({ n: count() }).from(t.companies))[0].n;
 
-  it("checks at most two due pages a run, then the rest the next day", async () => {
+  it("checks every due page in one run, then nothing until they are due again", async () => {
     // A company Radar already knows from another source.
     await db
       .insert(t.companies)
       .values({ name: "SYRE", normalizedName: "syre", firstSeenAt: day1 });
 
     const first = await runMonitors({ db, scrape: recorded, now: day1 });
-    expect(first.map((r) => r.slug)).toEqual(["fc-fashion-for-good", "fc-elemental-impact"]);
+    expect(first.map((r) => r.slug)).toEqual(MONITORS.map((m) => m.slug));
     expect(first.every((r) => r.ok)).toBe(true);
     // Syre is matched, not duplicated.
     expect(first[0]).toMatchObject({ ok: true, fetched: 48, created: 47 });
+    expect(first.find((r) => r.slug === "fc-third-derivative")).toMatchObject({ fetched: 312 });
 
-    const day2 = new Date("2026-10-02T12:00:00Z");
-    const second = await runMonitors({ db, scrape: recorded, now: day2 });
-    expect(second.map((r) => r.slug)).toEqual(["fc-epa-sbir", "fc-climate-story-fund"]);
-  });
-
-  it("checks Third Derivative's full list on day 3, then nothing is due", async () => {
-    const third = await runMonitors({
-      db,
-      scrape: recorded,
-      now: new Date("2026-10-03T12:00:00Z")
-    });
-    expect(third).toEqual([expect.objectContaining({ slug: "fc-third-derivative", ok: true })]);
-    expect(third[0]).toMatchObject({ fetched: 312 });
-
-    // Nothing is due on day 4.
+    // Nothing is due the next day.
     expect(
-      await runMonitors({ db, scrape: recorded, now: new Date("2026-10-04T12:00:00Z") })
+      await runMonitors({ db, scrape: recorded, now: new Date("2026-10-02T12:00:00Z") })
     ).toEqual([]);
   });
 
@@ -196,7 +183,9 @@ describe("runMonitors", () => {
     const before = await companyCount();
     const week = new Date("2026-10-08T12:30:00Z");
     const recheck = await runMonitors({ db, scrape: recorded, now: week });
-    expect(recheck).toHaveLength(2);
+    // The four weekly pages; Third Derivative is monthly.
+    expect(recheck.map((r) => r.slug)).not.toContain("fc-third-derivative");
+    expect(recheck).toHaveLength(4);
     expect(recheck.every((r) => r.ok && r.created === 0)).toBe(true);
     expect(await companyCount()).toBe(before);
 

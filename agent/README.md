@@ -2,9 +2,10 @@
 > [mastra-chat-kit](https://github.com/hamchowderr/mastra-chat-kit), brought in as a
 > git subtree, plus a few Cultured Matter changes (the app's actions as tools in
 > `packages/server/src/mastra/tools/app-actions.ts`, the assistant's instructions in
-> `agents/chat.ts`). Only `packages/server` is deployed (Coolify, with
-> `packages/server/Dockerfile`); the app's own chat UI comes from the kit's shadcn
-> registry, not from `packages/web`.
+> `agents/chat.ts`, and the daily Radar, grants and page-monitor ingestion as scheduled
+> Mastra workflows in `packages/server/src/mastra/workflows/ingest.ts`).
+> Only `packages/server` is deployed (Coolify, with `packages/server/Dockerfile`);
+> the app's own chat UI comes from the kit's shadcn registry, not from `packages/web`.
 >
 > Pull kit updates from the repo root, then resolve any conflicts in the Cultured
 > Matter changes. The kit's `.beads/` folder is left out on purpose (this repo tracks

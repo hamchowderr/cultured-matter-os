@@ -4,7 +4,7 @@ import { db as appDb, type Database } from "@/db";
 import { sources } from "@/db/schema";
 import { runRadarIngestion } from "@/ingest/radar/run";
 import { firecrawlScrape, monitorSource, type Scrape } from "./firecrawl";
-import { CHECK_EVERY_DAYS, MAX_PAGES_PER_RUN, MONITORS, type Monitor } from "./pages";
+import { CHECK_EVERY_DAYS, MONITORS, type Monitor } from "./pages";
 
 export { MONITORS } from "./pages";
 
@@ -20,7 +20,7 @@ export async function duePages(
   db: Database,
   monitors: Monitor[],
   now: Date,
-  { everyDays = CHECK_EVERY_DAYS, max = MAX_PAGES_PER_RUN } = {}
+  { everyDays = CHECK_EVERY_DAYS } = {}
 ): Promise<Monitor[]> {
   const rows = await db
     .select({ slug: sources.slug, at: sources.lastCheckedAt, status: sources.lastStatus })
@@ -41,8 +41,7 @@ export async function duePages(
   const cutoff = (m: Monitor) => now.getTime() - (m.everyDays ?? everyDays) * DAY + SLACK;
   return monitors
     .filter((m) => rank(m) <= cutoff(m))
-    .sort((a, b) => rank(a) - rank(b))
-    .slice(0, max);
+    .sort((a, b) => rank(a) - rank(b));
 }
 
 // Scrapes the pages that are due and stores entries not already known, with a sighting.
@@ -52,17 +51,15 @@ export async function runMonitors({
   scrape,
   monitors = MONITORS,
   now = new Date(),
-  everyDays,
-  max
+  everyDays
 }: {
   db: Database;
   scrape: Scrape;
   monitors?: Monitor[];
   now?: Date;
   everyDays?: number;
-  max?: number;
 }) {
-  const due = await duePages(db, monitors, now, { everyDays, max });
+  const due = await duePages(db, monitors, now, { everyDays });
   if (!due.length) return [];
   return runRadarIngestion({
     db,
@@ -71,7 +68,8 @@ export async function runMonitors({
   });
 }
 
-// Runs the due monitors against the app database with the live Firecrawl client.
+// Runs every due monitor against the app database with the live Firecrawl client, in one go
+// (npm run ingest:monitors). The scheduled run is the agent server's workflow, one page per step.
 export function ingestMonitors() {
   return runMonitors({ db: appDb, scrape: firecrawlScrape() });
 }

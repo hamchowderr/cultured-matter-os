@@ -173,6 +173,44 @@ export async function runAppAction(
   return body.data;
 }
 
+/** True when the server knows where the app is and how to authenticate to it. */
+export function appConfigured(): boolean {
+  return config !== null;
+}
+
+/**
+ * Run one of the app's scheduled jobs (`POST /api/agent/jobs/:name`, the app's
+ * lib/agent-jobs.ts): the ingestion workflows' calls. Not model tools. Same token as the
+ * actions. Returns the job's data; throws when the app is not configured, can't be reached,
+ * times out or refuses, so the workflow step that called it retries.
+ */
+export async function runAppJob(
+  name: string,
+  input: Record<string, unknown>,
+  // One monitored page's Firecrawl scrape can take minutes; the app's route allows 300 s.
+  { timeoutMs = 320_000 }: { timeoutMs?: number } = {},
+): Promise<unknown> {
+  const current = config;
+  if (!current) throw new Error('the app is not configured (CMOS_APP_URL, AGENT_SERVICE_TOKEN)');
+  const f = current.fetch ?? fetch;
+  const res = await f(
+    `${current.appUrl.replace(/\/$/, '')}/api/agent/jobs/${encodeURIComponent(name)}`,
+    {
+      method: 'POST',
+      headers: headers(current.token),
+      body: JSON.stringify(input),
+      signal: AbortSignal.timeout(timeoutMs),
+    },
+  );
+  const body = (await res.json().catch(() => null)) as
+    | { ok: true; data: unknown }
+    | { ok: false; error: { code: string; message: string } }
+    | null;
+  if (!body) throw new Error(`${name} failed: ${res.status}`);
+  if (!body.ok) throw new Error(`${name}: ${body.error?.message ?? res.status}`);
+  return body.data;
+}
+
 /** The chat agent's app tools, loading them if boot couldn't. */
 export async function getAppActionTools() {
   const actions = await loadAppActions();

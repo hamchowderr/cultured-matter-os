@@ -2,8 +2,8 @@ import { runDailySummary } from "@/lib/daily-summary";
 
 export const maxDuration = 60;
 
-// Called daily by Vercel Cron (see vercel.json) after the morning radar, grants and monitors
-// runs, so the summary covers what they found. The Gmail reply check runs at half past each
+// Called daily by Vercel Cron (see vercel.json), two to three hours after the agent server's
+// radar, grants and monitors workflows start, so the summary covers what they found. The Gmail reply check runs at half past each
 // hour, so it never overlaps this job on the hour.
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
