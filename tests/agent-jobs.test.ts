@@ -129,3 +129,45 @@ describe("agent ingestion jobs", () => {
     expect(after.data.sources).toHaveLength(MONITORS.length - 1);
   });
 });
+
+describe("gmail reply check job", () => {
+  const gmailCall = (gmailReplyCheck: JobDeps["gmailReplyCheck"], body: unknown = {}) =>
+    handleRunAgentJob(
+      new Request("http://localhost/api/agent/jobs/gmailReplyCheck", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...auth },
+        body: JSON.stringify(body)
+      }),
+      "gmailReplyCheck",
+      { db, gmailReplyCheck }
+    );
+
+  it("runs the reply check and returns its counts", async () => {
+    let runs = 0;
+    const res = await gmailCall(async () => {
+      runs++;
+      return { ok: true, checked: 3, replied: 1 };
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, data: { ok: true, checked: 3, replied: 1 } });
+    expect(runs).toBe(1);
+  });
+
+  it("answers 200 with ok: false when the check fails, so the workflow retries it", async () => {
+    const res = await gmailCall(async () => ({ ok: false, error: "Reply check failed" }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).data).toEqual({ ok: false, error: "Reply check failed" });
+  });
+
+  it("refuses a call without the service token", async () => {
+    const res = await handleRunAgentJob(
+      new Request("http://localhost/api/agent/jobs/gmailReplyCheck", {
+        method: "POST",
+        body: "{}"
+      }),
+      "gmailReplyCheck",
+      { db, gmailReplyCheck: async () => ({ ok: true }) }
+    );
+    expect(res.status).toBe(401);
+  });
+});

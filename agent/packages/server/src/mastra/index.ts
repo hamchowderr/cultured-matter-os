@@ -42,6 +42,7 @@ import { createThreadRoutes } from './routes/threads';
 import type { ChatServerDeps } from './routes/types';
 import { createWorkspaceRoutes } from './routes/workspace';
 import { appConfigured, loadAppActions } from './tools/app-actions';
+import { gmailReplyWorkflow } from './workflows/gmail';
 import { ingestWorkflows } from './workflows/ingest';
 
 // Load the Cultured Matter app's actions so the chat agent has its tools from the
@@ -138,9 +139,10 @@ const serverConfig = {
 export const mastra = new Mastra({
   server: serverConfig,
   agents: { chat: chatAgent },
-  // Radar, grants and page-monitor ingestion, each on its own Mastra schedule (workflows/
-  // ingest.ts). They run through the app, so they are registered only when it is configured.
-  workflows: appConfigured() ? ingestWorkflows : {},
+  // Radar, grants and page-monitor ingestion (workflows/ingest.ts) and the hourly Gmail reply
+  // check (workflows/gmail.ts), each on its own Mastra schedule. They run through the app, so
+  // they are registered only when it is configured.
+  workflows: appConfigured() ? { ...ingestWorkflows, 'gmail-reply-check': gmailReplyWorkflow } : {},
   // Registered so the controller runs on THIS Mastra (and its observability). Left
   // unregistered, its init() moves chatAgent onto an internal Mastra with no
   // tracing, and no run creates spans (mastra-chat-kit-9m3).

@@ -5,7 +5,8 @@ import { ActionError } from "@/actions/define";
 import { db } from "@/db";
 import { tasks } from "@/db/schema";
 
-// The hourly reply check behind /api/cron/gmail.
+// The hourly reply check, run by the agent server's gmail-reply-check workflow through the
+// gmailReplyCheck job (lib/agent-jobs.ts).
 export async function runGmailReplyCheck() {
   // Nothing to watch: skip, so the activity log doesn't fill with empty hourly checks.
   const [watching] = await db
