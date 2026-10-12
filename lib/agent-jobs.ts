@@ -9,8 +9,8 @@ import type { Fetch } from "@/ingest/radar/types";
 import { loggableError } from "@/actions/define";
 import { agentAuthorized } from "@/lib/agent-actions";
 
-// Scheduled ingestion, run by the agent server's Mastra workflows (agent/packages/server/src/
-// mastra/workflows/ingest.ts). The workflow asks which sources a pipeline has today, then runs
+// Scheduled jobs, run by the agent server's Mastra workflows: ingestion (agent/packages/server/
+// src/mastra/workflows/ingest.ts) and the hourly Gmail reply check (workflows/gmail.ts). The workflow asks which sources a pipeline has today, then runs
 // each one as its own step, so a failing source retries alone and no run holds one function for
 // every source. The fetching, dedupe and writes stay here, next to the data.
 //
@@ -29,7 +29,12 @@ export type JobDeps = {
   fetchFn?: Fetch;
   scrape?: Scrape;
   now?: Date;
+  // Tests pass a stub; live runs use lib/gmail-cron.ts.
+  gmailReplyCheck?: () => Promise<GmailCheckResult>;
 };
+
+type GmailCheckResult =
+  { ok: true; checked?: number; replied?: number; skipped?: string } | { ok: false; error: string };
 
 async function appDb(deps: JobDeps) {
   return deps.db ?? (await import("@/db")).db;
@@ -85,6 +90,14 @@ export async function runIngestSource(pipeline: Pipeline, slug: string, deps: Jo
   return result;
 }
 
+// The hourly Gmail reply check (lib/gmail-cron.ts), run by the agent server's gmail-reply-check
+// workflow. Like a source, a failed check answers 200 with ok: false and the workflow retries it.
+export async function runGmailCheckJob(deps: JobDeps = {}): Promise<GmailCheckResult> {
+  if (deps.gmailReplyCheck) return deps.gmailReplyCheck();
+  const { runGmailReplyCheck } = await import("@/lib/gmail-cron");
+  return runGmailReplyCheck();
+}
+
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
 
@@ -99,6 +112,10 @@ const JOBS = {
     input: RunInput,
     run: async ({ pipeline, slug }: z.output<typeof RunInput>, deps: JobDeps) =>
       runIngestSource(pipeline, slug, deps)
+  },
+  gmailReplyCheck: {
+    input: z.object({}),
+    run: async (_: unknown, deps: JobDeps) => runGmailCheckJob(deps)
   }
 } as const;
 
