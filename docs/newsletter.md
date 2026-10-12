@@ -14,6 +14,28 @@ The app keeps the newsletter list. FluentCRM, on her WordPress site, sends the e
 
 Until the four `FLUENTCRM_*` settings hold real values, the People page says the newsletter is not connected yet. She can still mark people. They are sent when the connection is set up.
 
+## Sending (FluentSMTP + toSend)
+
+FluentCRM sends through FluentSMTP, and FluentSMTP sends through [toSend](https://tosend.com/docs/) (by the FluentCRM team). The From address is `newsletter@culturedmatter.com`, a free alias on her Google Workspace account, so replies reach her normal inbox. Google Workspace itself is not used for sending: it caps an account at about 2,000 recipients a day, and bulk mail from her mailbox would hurt her everyday email.
+
+1. **Domain.** toSend → Domains → add `culturedmatter.com`, then add these records in Cloudflare ([toSend: domains](https://tosend.com/docs/guide/domains/)):
+
+   | Type | Name | Value |
+   | --- | --- | --- |
+   | TXT | `tosend._domainkey` | The DKIM key shown in the toSend dashboard (unique to the account) |
+   | TXT | `send` | `v=spf1 include:amazonses.com ~all` |
+   | MX | `send` (priority 10) | `feedback-smtp.us-east-1.amazonses.com` (EU accounts: `eu-central-1`) |
+   | TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:<her address>`, added after the others verify |
+
+   The `send` records carry bounces and do not touch her inbox (the root MX stays Google's). The domain also needs Google's own records for her everyday mail: root SPF `v=spf1 include:_spf.google.com ~all` and Google's DKIM (`google._domainkey`, from the Google Admin console). Copy names and values from the toSend dashboard, which shows the exact ones for the domain. toSend re-checks DNS every 10 minutes.
+
+2. **API key.** toSend → API Keys → create one restricted to `culturedmatter.com`. It is shown once. Store it in Infisical, not in the WordPress database.
+3. **FluentSMTP** (2.2.95 or later). Settings → Add Connection → toSend. From Email `newsletter@culturedmatter.com`, From Name "Simone Paz, Cultured Matter", Force From Email on. Store the key in `wp-config.php` as `define( 'FLUENTMAIL_TOSEND_API_KEY', '…' );`, with the value passed in from the Coolify environment ([FluentSMTP: toSend](https://docs.fluentsmtp.com/connect-tosend-with-fluentsmtp)).
+4. **Bounces and complaints.** FluentCRM → Settings → Email Service → Bounce Handler: choose toSend and copy the URL. In toSend → Webhooks, create a webhook to that URL with the bounced and complaint events ([FluentCRM: bounce handling with toSend](https://docs.fluentcrm.com/bounce-handling-with-tosend)). FluentCRM then marks those contacts `bounced` or `complained`, which the sync above never subscribes again. toSend does not retry a failed webhook; its Logs and Suppressions pages are the record if one is missed. toSend also blocks hard bounces for 60 days and complaints for 180 days on its side.
+5. **Test.** Send a test from FluentSMTP, then a test campaign to her, and check it lands in the inbox.
+
+Cost is pay-as-you-go, about $0.30 per 1,000 emails.
+
 ## Settings
 
 | Name                        | Value                                                                              |
