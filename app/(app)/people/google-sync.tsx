@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { runGmailSync } from "@/lib/gmail-sync-run";
 
-// "Sync Gmail" once connected, "Connect Google" until Google grants Gmail and Contacts.
+// "Sync Gmail" once connected, "Sync Google" until Google grants Gmail and Contacts.
 export function GoogleSync({ connected }: { connected: boolean }) {
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState<{ read: number; total: number } | null>(null);
@@ -20,7 +20,7 @@ export function GoogleSync({ connected }: { connected: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Back from Google after Connect Google.
+  // Back from Google after Sync Google.
   useEffect(() => {
     const outcome = params.get("google");
     if (!outcome) return;
@@ -51,7 +51,7 @@ export function GoogleSync({ connected }: { connected: boolean }) {
     if (run.ok) return toast.success(added);
     if (run.error.code === "google_not_connected") {
       return toast.error(run.error.message, {
-        action: { label: "Connect Google", onClick: () => connectGoogle() }
+        action: { label: "Sync Google", onClick: () => connectGoogle() }
       });
     }
     // Whatever was read before it stopped is saved; the next Sync Gmail continues from there.

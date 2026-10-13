@@ -1,4 +1,4 @@
-import { ArrowRightIcon, CheckIcon, ClockIcon } from "lucide-react";
+import { ArrowRightIcon, CheckIcon } from "lucide-react";
 import Link from "next/link";
 
 import type { SetupStatus } from "@/actions/setup";
@@ -30,9 +30,7 @@ export function GetStarted({ status }: { status: SetupStatus }) {
       <ul className="space-y-2">
         {STEPS.map((step) => {
           const done = status[step.id].done;
-          // The newsletter needs her newsletter site first, so it waits quietly.
-          const waiting = step.id === "newsletter" && !done;
-          const Icon = waiting ? ClockIcon : step.icon;
+          const Icon = step.icon;
 
           return (
             <li key={step.id}>
@@ -54,10 +52,7 @@ export function GetStarted({ status }: { status: SetupStatus }) {
                 </span>
                 <span className="min-w-0 flex-1 space-y-1">
                   <span
-                    className={cn(
-                      "block text-sm font-medium",
-                      (done || waiting) && "text-muted-foreground"
-                    )}
+                    className={cn("block text-sm font-medium", done && "text-muted-foreground")}
                   >
                     {step.title}
                   </span>

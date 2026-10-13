@@ -33,14 +33,14 @@ export const auth = betterAuth({
       accessType: "offline",
       prompt: "select_account consent",
       // Gmail and Contacts for People (on top of Better Auth's openid, email and profile).
-      // Accounts that signed in before this ask again through "Connect Google"
+      // Accounts that signed in before this ask again through "Sync Google"
       // (authClient.linkSocial), which records the new scopes.
       scope: [...GOOGLE_SCOPES]
     }
   },
   account: {
     accountLinking: {
-      // "Connect Google" re-links the same Google account to add scopes.
+      // "Sync Google" re-links the same Google account to add scopes.
       trustedProviders: ["google"]
     }
   },

@@ -121,7 +121,7 @@ function GatherNotes({ gathered }: { gathered: Gathered }) {
       <>
         Your sent email isn’t included because Google isn’t connected.{" "}
         <Link href="/settings" className="underline underline-offset-2">
-          Connect Google in Settings
+          Sync Google in Settings
         </Link>{" "}
         to add it.
       </>

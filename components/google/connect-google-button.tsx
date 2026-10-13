@@ -36,7 +36,7 @@ export function ConnectGoogleButton({ size = "sm" }: { size?: "sm" | "default" }
       }}
     >
       {pending ? <Spinner /> : <MailIcon />}
-      Connect Google
+      Sync Google
     </Button>
   );
 }
