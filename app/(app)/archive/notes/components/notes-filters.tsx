@@ -1,32 +1,47 @@
 "use client";
 
-// The kit notes app's top bar (apps/notes/components/note-content.tsx): the folders button for
-// small screens and the search box, plus the Archive's date range picker.
+// The top of the note list: search, the folder picker and "New note". The same on every screen
+// size, so folders are always in one place.
 
-import { FolderIcon, SearchIcon, XIcon } from "lucide-react";
+import { PlusIcon, SearchIcon } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { toast } from "sonner";
 
+import { createNote } from "@/actions/server";
 import { useListNavigation } from "@/components/layout/list-transition";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DateRangeFilter } from "../../archive-filters";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+
+const ALL = "all";
+const NONE = "none";
+const folderValue = (f: string) => `f:${f}`;
 
 export function NotesFilters({
-  filters,
-  folderLabel,
-  folders
+  query: initialQuery,
+  folder,
+  noFolder,
+  folders,
+  all
 }: {
-  filters: { query?: string; from?: string; to?: string };
-  folderLabel?: string;
-  // The folder sheet's trigger, shown below xl.
-  folders: ReactNode;
+  query?: string;
+  folder?: string;
+  noFolder: boolean;
+  folders: { folder: string | null; count: number }[];
+  all: number;
 }) {
   const pathname = usePathname();
   const params = useSearchParams();
   const { navigate } = useListNavigation();
-  const [query, setQuery] = useState(filters.query ?? "");
+  const [query, setQuery] = useState(initialQuery ?? "");
+  const [creating, startCreating] = useTransition();
 
   function update(patch: Record<string, string | undefined>) {
     const next = new URLSearchParams(params.toString());
@@ -35,70 +50,84 @@ export function NotesFilters({
       else next.delete(k);
     }
     next.delete("page");
-    next.delete("note");
     const s = next.toString();
     navigate(s ? `${pathname}?${s}` : pathname, { replace: true });
   }
 
-  useEffect(() => setQuery(filters.query ?? ""), [filters.query]);
+  useEffect(() => setQuery(initialQuery ?? ""), [initialQuery]);
 
   // Search as she types, after a short pause.
   useEffect(() => {
-    if (query === (filters.query ?? "")) return;
+    if (query === (initialQuery ?? "")) return;
     const t = setTimeout(() => update({ q: query.trim() || undefined }), 300);
     return () => clearTimeout(t);
   }, [query]);
 
-  const anyFilter = !!(filters.query || filters.from || filters.to || folderLabel);
+  function newNote() {
+    startCreating(async () => {
+      const result = await createNote({ folder: folder ?? null });
+      if (!result.ok) {
+        toast.error(result.error.message);
+        return;
+      }
+      // Clear the search so the new note shows in the list.
+      const next = new URLSearchParams(params.toString());
+      next.delete("q");
+      next.delete("page");
+      next.set("note", result.data.id);
+      setQuery("");
+      navigate(`${pathname}?${next.toString()}`);
+    });
+  }
+
+  const current = noFolder ? NONE : folder ? folderValue(folder) : ALL;
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap gap-3">
-        <div className="flex min-w-48 grow gap-3">
-          {folders}
-          <div className="relative grow">
-            <SearchIcon className="text-muted-foreground absolute start-3 top-1/2 size-4 -translate-y-1/2" />
-            <Input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search notes"
-              className="ps-9"
-              aria-label="Search notes"
-            />
-          </div>
-        </div>
-        <DateRangeFilter
-          label="Created"
-          from={filters.from}
-          to={filters.to}
-          onChange={(range) => update(range)}
+    <div className="space-y-2 border-b p-3">
+      <div className="relative">
+        <SearchIcon className="text-muted-foreground absolute start-3 top-1/2 size-4 -translate-y-1/2" />
+        <Input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search notes"
+          className="ps-9"
+          aria-label="Search notes"
         />
-        {anyFilter && (
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setQuery("");
-              update({
-                q: undefined,
-                from: undefined,
-                to: undefined,
-                folder: undefined,
-                nofolder: undefined
-              });
-            }}
-          >
-            Reset
-            <XIcon />
-          </Button>
-        )}
       </div>
-      {folderLabel && (
-        <Badge variant="secondary" className="gap-1.5 xl:hidden">
-          <FolderIcon className="size-3" />
-          {folderLabel}
-        </Badge>
-      )}
+      <div className="flex gap-2">
+        <Select
+          value={current}
+          onValueChange={(v) =>
+            update({
+              folder: v.startsWith("f:") ? v.slice(2) : undefined,
+              nofolder: v === NONE ? "1" : undefined
+            })
+          }
+        >
+          <SelectTrigger className="min-w-0 flex-1" aria-label="Folder">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>All notes ({all.toLocaleString()})</SelectItem>
+            {folders.map((f) =>
+              f.folder == null ? (
+                <SelectItem key={NONE} value={NONE}>
+                  No folder ({f.count.toLocaleString()})
+                </SelectItem>
+              ) : (
+                <SelectItem key={f.folder} value={folderValue(f.folder)}>
+                  {f.folder} ({f.count.toLocaleString()})
+                </SelectItem>
+              )
+            )}
+          </SelectContent>
+        </Select>
+        <Button onClick={newNote} disabled={creating}>
+          <PlusIcon />
+          New note
+        </Button>
+      </div>
     </div>
   );
 }

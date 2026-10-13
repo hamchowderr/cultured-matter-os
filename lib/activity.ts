@@ -56,8 +56,8 @@ export function activityHref(row: Linkable): string | null {
       // Open approvals are decided on Today.
       return e ? "/today" : null;
     case "note":
-      // Imports log the batch, not one note.
-      return "/archive/notes";
+      // Imports log the batch, not one note; a note written or edited here opens itself.
+      return row.entityId ? `/archive/notes?${qs({ note: row.entityId })}` : "/archive/notes";
     case "mind_map":
       return e && row.entityId ? `/map/saved/${row.entityId}` : null;
     default:

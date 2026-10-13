@@ -2,13 +2,17 @@ import { and, asc, count, desc, eq, gte, inArray, isNull, lt, or, sql } from "dr
 import { createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-import { captures, notes } from "@/db/schema";
+import { activityLog, captures, notes } from "@/db/schema";
 import { decide, dedupeKey, MAX_BODY, MAX_TITLE } from "@/lib/note-dedupe";
+import { titleFromMarkdown } from "@/lib/note-markdown";
 import { ActionError, defineAction } from "./define";
 import { captureSchema, id, limit, offset } from "./schemas";
 
 export const noteSchema = createSelectSchema(notes);
 export type Note = z.infer<typeof noteSchema>;
+
+// Where a note came from: the Apple Notes Shortcut, or written in the app.
+export const NOTE_SOURCES = { appleNotes: "apple_notes", app: "app" } as const;
 
 // A note in a list: the body is cut to a preview.
 export const noteSummarySchema = noteSchema.omit({ body: true }).extend({
@@ -237,5 +241,109 @@ export const fileNoteToInbox = defineAction({
     entityId: capture.id,
     summary: `Filed the note "${capture.body.split("\n")[0].slice(0, 60)}" to the Inbox`,
     data: { from: "notes" }
+  })
+});
+
+const noteBody = z.string().max(MAX_BODY);
+
+export const createNote = defineAction({
+  name: "createNote",
+  description:
+    "Write a new note in the Notes archive. The text is Markdown; its first line becomes the title, as in Apple Notes. Leave the text out to start an empty note.",
+  kind: "write",
+  input: z.object({
+    body: noteBody.default(""),
+    folder: z.string().trim().max(200).nullable().default(null)
+  }),
+  output: noteSchema,
+  async handler(input, db) {
+    const now = new Date();
+    const [note] = await db
+      .insert(notes)
+      .values({
+        // Never matched by an import: only Apple Notes keys start with c: or t:.
+        dedupeKey: `app:${crypto.randomUUID()}`,
+        title: titleFromMarkdown(input.body),
+        body: input.body,
+        folder: input.folder || null,
+        source: NOTE_SOURCES.app,
+        noteCreatedAt: now,
+        noteModifiedAt: now
+      })
+      .returning();
+    return note;
+  },
+  log: (_input, note) => ({
+    entityType: "note",
+    entityId: note.id,
+    summary: `Wrote the note "${note.title.slice(0, 60)}"`
+  })
+});
+
+// Saves made close together count as one edit in the Activity timeline.
+const EDIT_SESSION_MS = 30 * 60 * 1000;
+
+export const updateNote = defineAction({
+  name: "updateNote",
+  description:
+    "Replace a note's text in the Notes archive. The text is Markdown; its first line becomes the title. Works for imported Apple Notes too (the change stays here, Apple Notes is not changed).",
+  kind: "write",
+  input: z.object({ noteId: id, body: noteBody }),
+  output: noteSchema,
+  async handler(input, db) {
+    const [note] = await db
+      .update(notes)
+      .set({
+        title: titleFromMarkdown(input.body),
+        body: input.body,
+        // The edit's own date: an Apple Notes import only replaces the text when the note was
+        // edited in Apple Notes after this (lib/note-dedupe.ts decide).
+        noteModifiedAt: new Date()
+      })
+      .where(eq(notes.id, input.noteId))
+      .returning();
+    if (!note) throw new ActionError("not_found", "Note not found");
+    // The editor saves as she types: keep one timeline entry per sitting, not one per pause.
+    await db
+      .delete(activityLog)
+      .where(
+        and(
+          eq(activityLog.action, "updateNote"),
+          eq(activityLog.entityId, note.id),
+          gte(activityLog.at, new Date(Date.now() - EDIT_SESSION_MS))
+        )
+      );
+    return note;
+  },
+  log: (_input, note) => ({
+    entityType: "note",
+    entityId: note.id,
+    summary: `Edited the note "${note.title.slice(0, 60)}"`
+  })
+});
+
+export const deleteNote = defineAction({
+  name: "deleteNote",
+  description:
+    "Delete a note written in the app. Imported Apple Notes can't be deleted here: the next import would bring them back.",
+  kind: "write",
+  input: z.object({ noteId: id }),
+  output: z.object({ id: z.string(), title: z.string() }),
+  async handler(input, db) {
+    const [note] = await db.select().from(notes).where(eq(notes.id, input.noteId));
+    if (!note) throw new ActionError("not_found", "Note not found");
+    if (note.source !== NOTE_SOURCES.app) {
+      throw new ActionError(
+        "invalid",
+        "Notes from Apple Notes are deleted in Apple Notes; the next import would bring this one back."
+      );
+    }
+    await db.delete(notes).where(eq(notes.id, note.id));
+    return { id: note.id, title: note.title };
+  },
+  log: (_input, note) => ({
+    entityType: "note",
+    entityId: note.id,
+    summary: `Deleted the note "${note.title.slice(0, 60)}"`
   })
 });
