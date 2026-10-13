@@ -57,8 +57,8 @@ export const STEPS: Step[] = [
   {
     id: "newsletter",
     icon: NewspaperIcon,
-    title: "Connect your newsletter",
-    description: "Send the people you pick to your newsletter list.",
+    title: "Send people to your newsletter",
+    description: "Pick people in People and add them to your newsletter list.",
     href: "/settings",
     todoLabel: "See details",
     doneLabel: "See who gets it",
@@ -85,6 +85,6 @@ export function stepSummary(id: StepId, status: SetupStatus): string {
         ? `Last capture from your iPhone on ${day.format(status.iphone.lastCaptureAt)}`
         : describe("iphone");
     case "newsletter":
-      return status.newsletter.done ? "Connected" : "Waiting on your newsletter tool";
+      return status.newsletter.done ? describe("newsletter") : "Waiting on your newsletter tool";
   }
 }
