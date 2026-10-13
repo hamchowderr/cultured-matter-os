@@ -1,14 +1,8 @@
-import {
-  LinkedinIcon,
-  MailIcon,
-  NewspaperIcon,
-  SmartphoneIcon,
-  type LucideIcon
-} from "lucide-react";
+import { LinkedinIcon, MailIcon, SmartphoneIcon, type LucideIcon } from "lucide-react";
 
 import type { SetupStatus } from "@/actions/setup";
 
-export type StepId = "linkedin" | "google" | "iphone" | "newsletter";
+export type StepId = "linkedin" | "google" | "iphone";
 
 export type Step = {
   id: StepId;
@@ -22,15 +16,15 @@ export type Step = {
   doneHref: string;
 };
 
-// The four things to set up, in the order she does them. Shared by Today and Settings.
+// The three things to set up, in the order she does them. Shared by Today and Settings.
 export const STEPS: Step[] = [
   {
     id: "google",
     icon: MailIcon,
-    title: "Connect Google",
+    title: "Sync Google",
     description: "See recent emails with each person and save follow-up drafts in Gmail.",
     href: "/people",
-    todoLabel: "Connect Google",
+    todoLabel: "Sync Google",
     doneLabel: "Open People",
     doneHref: "/people"
   },
@@ -53,16 +47,6 @@ export const STEPS: Step[] = [
     todoLabel: "Import contacts",
     doneLabel: "Open People",
     doneHref: "/people"
-  },
-  {
-    id: "newsletter",
-    icon: NewspaperIcon,
-    title: "Send people to your newsletter",
-    description: "Pick people in People and add them to your newsletter list.",
-    href: "/settings",
-    todoLabel: "See details",
-    doneLabel: "See who gets it",
-    doneHref: "/people?newsletter=1"
   }
 ];
 
@@ -79,12 +63,10 @@ export function stepSummary(id: StepId, status: SetupStatus): string {
         ? `${status.linkedin.contacts} ${status.linkedin.contacts === 1 ? "person" : "people"} from LinkedIn`
         : describe("linkedin");
     case "google":
-      return status.google.done ? "Connected" : describe("google");
+      return status.google.done ? "Synced" : describe("google");
     case "iphone":
       return status.iphone.lastCaptureAt
         ? `Last capture from your iPhone on ${day.format(status.iphone.lastCaptureAt)}`
         : describe("iphone");
-    case "newsletter":
-      return status.newsletter.done ? describe("newsletter") : "Waiting on your newsletter tool";
   }
 }

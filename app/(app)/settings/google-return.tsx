@@ -4,7 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
-// Back from Google after Connect Google on this page: say how it went, then tidy the URL.
+// Back from Google after Sync Google on this page: say how it went, then tidy the URL.
 export function GoogleReturn() {
   const params = useSearchParams();
   const router = useRouter();

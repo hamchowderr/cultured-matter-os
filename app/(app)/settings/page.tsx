@@ -26,7 +26,7 @@ export async function generateMetadata() {
   return generateMeta({
     title: "Settings",
     description:
-      "Your account, your business profile, what is connected (LinkedIn, Google, iPhone, newsletter), the calendar feed, the daily email and notifications."
+      "Your account, your business profile, what is connected (LinkedIn, Google, iPhone), the calendar feed, the daily email and notifications."
   });
 }
 
@@ -117,8 +117,6 @@ export default async function Page() {
   function action(step: Step, done: boolean) {
     if (done) return <LinkAction href={step.doneHref} label={step.doneLabel} />;
     if (step.id === "google") return <ConnectGoogleDialog />;
-    // The newsletter connects once her newsletter site exists; nothing for her to do yet.
-    if (step.id === "newsletter") return null;
     return <LinkAction href={step.href} label={step.todoLabel} />;
   }
 
@@ -179,23 +177,14 @@ export default async function Page() {
           <div className="grid gap-4 sm:grid-cols-2">
             {STEPS.map((step) => {
               const done = status.data[step.id].done;
-              const state: ConnectionState = done
-                ? "connected"
-                : step.id === "newsletter"
-                  ? "waiting"
-                  : "not_connected";
+              const state: ConnectionState = done ? "connected" : "not_connected";
               return (
                 <ConnectionCard
                   key={step.id}
                   icon={step.icon}
                   title={step.title}
-                  description={
-                    step.id === "newsletter" && !done
-                      ? "Waiting on your newsletter tool. It connects once your newsletter site is ready."
-                      : stepSummary(step.id, status.data)
-                  }
+                  description={stepSummary(step.id, status.data)}
                   state={state}
-                  stateLabel={step.id === "newsletter" && done ? "Ready" : undefined}
                   action={action(step, done)}
                 />
               );

@@ -35,7 +35,7 @@ export function ConnectGoogleDialog() {
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
           <MailIcon />
-          Connect Google
+          Sync Google
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md" showCloseButton={false}>
@@ -50,7 +50,7 @@ export function ConnectGoogleDialog() {
         </div>
 
         <DialogHeader className="items-center text-center">
-          <DialogTitle className="text-lg">Connect Google</DialogTitle>
+          <DialogTitle className="text-lg">Sync Google</DialogTitle>
           <DialogDescription className="max-w-sm">
             Google will ask you to agree. You use the same account you sign in with.
           </DialogDescription>

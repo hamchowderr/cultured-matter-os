@@ -41,7 +41,7 @@ export class ActionError extends Error {
       | "invalid"
       | "conflict"
       | "unauthorized"
-      // Google hasn't granted the Gmail and Contacts permissions yet; the UI offers "Connect Google".
+      // Google hasn't granted the Gmail and Contacts permissions yet; the UI offers "Sync Google".
       | "google_not_connected"
       // Google asked us to slow down (its usage limits) even after retrying; try again later.
       | "rate_limited"

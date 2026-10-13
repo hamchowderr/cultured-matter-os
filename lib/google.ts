@@ -9,7 +9,7 @@ import { ownerEmail, parseAllowedEmails } from "@/lib/allowed-emails";
 import { GOOGLE_SCOPES } from "@/lib/google-scopes";
 
 // Gmail API v1 and People API v1 over plain fetch with typed helpers. Permissions are granted on
-// the Google sign-in (lib/auth.ts) or later through "Connect Google" (authClient.linkSocial).
+// the Google sign-in (lib/auth.ts) or later through "Sync Google" (authClient.linkSocial).
 export const GMAIL_BASE = "https://gmail.googleapis.com/gmail/v1/users/me";
 export const PEOPLE_BASE = "https://people.googleapis.com/v1";
 export { GOOGLE_SCOPES };
@@ -17,7 +17,7 @@ export { GOOGLE_SCOPES };
 export function googleNotConnected() {
   return new ActionError(
     "google_not_connected",
-    "Gmail isn't connected yet. Use Connect Google on the People page."
+    "Gmail isn't connected yet. Use Sync Google on the People page."
   );
 }
 

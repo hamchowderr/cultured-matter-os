@@ -52,7 +52,7 @@ export function DailyEmailCard({
           </p>
           {on && !googleConnected && (
             <p className="text-destructive text-sm">
-              Connect Google above: the email is sent from your Gmail.
+              Sync Google above: the email is sent from your Gmail.
             </p>
           )}
         </div>

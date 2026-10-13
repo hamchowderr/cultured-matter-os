@@ -193,7 +193,7 @@ export const TOURS: TourDef[] = [
       at(
         "people-google",
         "Google contacts",
-        "Connect Google to bring in your Google contacts and your recent emails with them."
+        "Sync Google to bring in your Google contacts and your recent emails with them."
       ),
       at(
         "people-filters",
