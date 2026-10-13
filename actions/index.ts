@@ -86,7 +86,15 @@ import {
   savePushSubscription,
   setPushPreferences
 } from "./push";
-import { fileNoteToInbox, getNote, importNotes, searchNotes } from "./notes";
+import {
+  createNote,
+  deleteNote,
+  fileNoteToInbox,
+  getNote,
+  importNotes,
+  searchNotes,
+  updateNote
+} from "./notes";
 import {
   getBusinessProfile,
   getBusinessProfileForEditing,
@@ -185,6 +193,9 @@ export {
   searchNotes,
   getNote,
   fileNoteToInbox,
+  createNote,
+  updateNote,
+  deleteNote,
   getBusinessProfile,
   getBusinessProfileForEditing,
   updateBusinessProfile,
@@ -268,6 +279,9 @@ export const allActions = [
   searchNotes,
   getNote,
   fileNoteToInbox,
+  createNote,
+  updateNote,
+  deleteNote,
   getBusinessProfile,
   updateBusinessProfile,
   getVoiceGuide,

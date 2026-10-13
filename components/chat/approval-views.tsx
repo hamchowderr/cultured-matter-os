@@ -317,6 +317,15 @@ export const approvalViews: ApprovalViews = {
   ),
   classifyCapture: simple((a) => `File an Inbox item as ${text(a.kind) || "an item"}`),
   fileNoteToInbox: simple(() => "Copy a note into the Inbox"),
+  createNote: simple(
+    () => "Write a new note in Notes",
+    (a) => <p className="text-sm whitespace-pre-wrap">{text(a.body)}</p>
+  ),
+  updateNote: simple(
+    () => "Replace a note's text in Notes",
+    (a) => <p className="text-sm whitespace-pre-wrap">{text(a.body)}</p>
+  ),
+  deleteNote: simple(() => "Delete a note written in Notes"),
   setGrantStatus: simple((a) => `Move a grant to ${status(a.status)}`),
   draftGrantApplication: simple(
     () => "Draft the application for this grant",

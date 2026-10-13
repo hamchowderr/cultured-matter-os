@@ -315,6 +315,15 @@ export async function getNote(input: In<typeof A.getNote>) {
 export async function fileNoteToInbox(input: In<typeof A.fileNoteToInbox>) {
   return toResult(() => A.fileNoteToInbox.run(input, inAction), REFRESH);
 }
+export async function createNote(input: In<typeof A.createNote>) {
+  return toResult(() => A.createNote.run(input, inAction));
+}
+export async function updateNote(input: In<typeof A.updateNote>) {
+  return toResult(() => A.updateNote.run(input, inAction), REFRESH);
+}
+export async function deleteNote(input: In<typeof A.deleteNote>) {
+  return toResult(() => A.deleteNote.run(input, inAction));
+}
 
 // Settings → Business: the business profile the AI reads.
 export async function getBusinessProfile() {

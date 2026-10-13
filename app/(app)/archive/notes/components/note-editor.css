@@ -1,0 +1,121 @@
+/* The note editor (note-editor.tsx). Like Apple Notes, the first line reads as the title. */
+
+.note-editor {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  word-break: break-word;
+}
+
+.note-editor > * + * {
+  margin-top: 0.6em;
+}
+
+.note-editor > :first-child {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.note-editor h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.note-editor h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-top: 1.1em;
+}
+.note-editor h3 {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin-top: 1em;
+}
+
+.note-editor ul {
+  list-style: disc;
+  padding-inline-start: 1.4em;
+}
+.note-editor ol {
+  list-style: decimal;
+  padding-inline-start: 1.4em;
+}
+.note-editor li + li,
+.note-editor li > ul,
+.note-editor li > ol {
+  margin-top: 0.2em;
+}
+
+.note-editor ul[data-type="taskList"] {
+  list-style: none;
+  padding-inline-start: 0.1em;
+}
+.note-editor ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+.note-editor ul[data-type="taskList"] li > label {
+  flex: none;
+  margin-top: 0.3em;
+  user-select: none;
+}
+.note-editor ul[data-type="taskList"] li > label input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+.note-editor ul[data-type="taskList"] li > div {
+  flex: 1;
+  min-width: 0;
+}
+.note-editor ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+}
+
+.note-editor blockquote {
+  border-inline-start: 3px solid var(--border);
+  padding-inline-start: 1em;
+  color: var(--muted-foreground);
+}
+
+.note-editor a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.note-editor code {
+  background: var(--muted);
+  border-radius: 0.25rem;
+  padding: 0.1em 0.3em;
+  font-size: 0.875em;
+}
+.note-editor pre {
+  background: var(--muted);
+  border-radius: 0.5rem;
+  padding: 0.75em 1em;
+  overflow-x: auto;
+  font-size: 0.8125rem;
+}
+.note-editor pre code {
+  background: none;
+  padding: 0;
+}
+
+.note-editor hr {
+  border-color: var(--border);
+  margin-block: 1.25em;
+}
+
+.note-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--muted-foreground);
+}
